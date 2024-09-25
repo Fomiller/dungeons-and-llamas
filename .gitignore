@@ -27,3 +27,6 @@ env.list
 
 # aws
 .aws-assume.ini
+
+# cargo
+**/target
