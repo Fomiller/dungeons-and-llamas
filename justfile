@@ -74,3 +74,10 @@ fmt:
     --name-transformer tf-var  \
     -- terraform fmt \
     --recursive
+
+run app:
+    doppler run -- \
+    cargo run --manifest-path src/Cargo.toml {{app}}
+
+add app crate:
+    cargo add --manifest-path src/{{app}}/Cargo.toml {{crate}}
