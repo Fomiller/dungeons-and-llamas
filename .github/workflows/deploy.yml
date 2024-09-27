@@ -44,7 +44,7 @@ jobs:
     with:
       environment: ${{ contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref) && 'prod' || 'dev' }}
       infra-dir: infra/modules/aws
-      doppler-project: discord
+      doppler-project: dungeons-and-discord
       download-artifacts: true
       artifacts_dir: infra/modules/aws/lambda/bin
     secrets: inherit
