@@ -83,6 +83,7 @@ fmt:
     touch {{infraDir}}/{{dir}}/env-config/us-east-1/prod.tfvars
     touch {{infraDir}}/{{dir}}/_outputs.tf
     touch {{infraDir}}/{{dir}}/_inputs.tf
+    touch {{infraDir}}/{{dir}}/_locals.tf
     touch {{infraDir}}/{{dir}}/_data.tf
     touch {{infraDir}}/{{dir}}/_variables.tf
     touch {{infraDir}}/{{dir}}/main.tf
@@ -104,3 +105,11 @@ run app:
 
 add app crate:
     cargo add --manifest-path src/{{app}}/Cargo.toml {{crate}}
+
+build-lambdas:
+    cargo lambda build \
+    --arm64 \
+    --release \
+    --output-format zip \
+    --manifest-path  src/Cargo.toml \
+    --lambda-dir infra/modules/aws/lambda/bin/
