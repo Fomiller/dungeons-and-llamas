@@ -32,10 +32,10 @@ jobs:
       lambda_output:  infra/modules/aws/lambda/bin/
       artifacts_dir: infra/modules/aws/lambda/bin
       # conditionally build lambdas if these files change
-      # src-filters: |
-      #   lambda:
-      #     - 'src/**'
-      #     - 'infra/modules/aws/lambda/**'
+      src-filters: |
+        lambda:
+          - 'src/**'
+          - 'infra/**'
             
   Deploy-infra:
     name: 'Deploy Infra'
