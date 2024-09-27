@@ -49,6 +49,7 @@ jobs:
       artifacts_dir: infra/modules/aws/lambda/bin
     secrets: inherit
      
+    
     # use if you need to debug workflow
     # - name: DEBUG
     #   uses: lhotari/action-upterm@v1
