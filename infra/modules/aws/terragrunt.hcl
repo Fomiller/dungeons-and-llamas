@@ -1,6 +1,6 @@
 locals {
     namespace = "fomiller"
-    project_name = "{name}"
+    project_name = "dungeons-and-discord"
 }
 
 generate provider {
@@ -24,11 +24,11 @@ generate versions {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 terraform {
-  required_version = ">=1.3.0"
+  required_version = ">=1.5.0"
   required_providers {
       aws = {
           source = "hashicorp/aws"
-          version = ">=5.0.0"
+          version = ">=6.0.0"
       }
   }
 }
