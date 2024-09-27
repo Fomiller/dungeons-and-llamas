@@ -68,13 +68,36 @@ destroy-all:
     -- terragrunt run-all \
     destroy --terragrunt-working-dir {{infraDir}}
     
-
 fmt:
     doppler run \
     --name-transformer tf-var  \
     -- terraform fmt \
     --recursive
+    
+@init-module dir:
+    mkdir -p {{infraDir}}/{{dir}}/env-config/us-east-1
+    
+    touch {{infraDir}}/{{dir}}/env-config/common.tfvars
+    touch {{infraDir}}/{{dir}}/env-config/us-east-1/common.tfvars
+    touch {{infraDir}}/{{dir}}/env-config/us-east-1/dev.tfvars
+    touch {{infraDir}}/{{dir}}/env-config/us-east-1/prod.tfvars
+    touch {{infraDir}}/{{dir}}/_outputs.tf
+    touch {{infraDir}}/{{dir}}/_inputs.tf
+    touch {{infraDir}}/{{dir}}/_data.tf
+    touch {{infraDir}}/{{dir}}/_variables.tf
+    touch {{infraDir}}/{{dir}}/main.tf
+    touch {{infraDir}}/{{dir}}/terragrunt.hcl
+    
+    echo 'asset_name = "{{dir}}"' >> {{infraDir}}/{{dir}}/env-config/common.tfvars
+    echo 'locals {}' >> {{infraDir}}/{{dir}}/main.tf
+    echo 'environment = "dev"' > {{infraDir}}/{{dir}}/env-config/us-east-1/dev.tfvars
+    echo 'environment = "prod"' > {{infraDir}}/{{dir}}/env-config/us-east-1/prod.tfvars
+    echo 'include "root" {\n\
+    \tpath = find_in_parent_folders()\n\
+    }' > {{infraDir}}/{{dir}}/terragrunt.hcl
+    @# {{infraDir}}/{{dir}} created.
 
+######### project cmds #########
 run app:
     doppler run -- \
     cargo run --manifest-path src/Cargo.toml {{app}}
