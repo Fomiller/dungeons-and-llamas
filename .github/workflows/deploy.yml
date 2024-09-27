@@ -6,8 +6,8 @@ on:
   push:
     paths:
       - '.github/**'
-      - 'modules/**'
       - 'infra/**'
+      - 'src/**'
       - 'justfile'
    
 jobs:
@@ -22,6 +22,20 @@ jobs:
         with:
           cancel_others: 'true'
           concurrent_skipping: 'same_content_newer'
+
+  Build-Rust-Lambdas:
+    name: 'Build Rust Lambdas'
+    needs: Pre-check
+    uses: fomiller/gh-actions/.github/workflows/rust-lambda.yaml@main
+    with:
+      lambda_dir: src/
+      lambda_output:  infra/modules/aws/lambda/bin/
+      artifacts_dir: infra/modules/aws/lambda/bin
+      # conditionally build lambdas if these files change
+      src-filters: |
+        lambda:
+          - 'src/**'
+          - 'infra/modules/aws/lambda/**'
             
   Deploy-infra:
     name: 'Deploy Infra'
@@ -31,8 +45,8 @@ jobs:
       environment: ${{ contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref) && 'prod' || 'dev' }}
       infra-dir: infra/modules/aws
       doppler-project: discord
-      # download-artifacts: true
-      # artifacts_dir: infra/modules/aws/lambda/bin
+      download-artifacts: true
+      artifacts_dir: infra/modules/aws/lambda/bin
     secrets: inherit
      
     # use if you need to debug workflow
