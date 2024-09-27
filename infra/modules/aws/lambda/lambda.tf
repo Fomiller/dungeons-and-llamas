@@ -1,8 +1,8 @@
 resource "aws_lambda_function" "dnd_bot" {
   function_name    = "${var.namespace}-${var.app_prefix}-bot"
-  role             = var.iam_role_arn_lambda_twitch_event_sub
+  role             = var.iam_role_arn_lambda_dnd_bot
   handler          = "bootstrap"
-  filename         = "${path.module}/bin/dnd_bot/bootstrap.zip"
+  filename         = "${path.module}/bin/bot/bootstrap.zip"
   source_code_hash = local.source_code_hash["dnd_bot"]
   runtime          = "provided.al2"
   architectures    = ["arm64"]
