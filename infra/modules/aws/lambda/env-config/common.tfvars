@@ -1,1 +1,1 @@
-asset_name = lambda
+asset_name = "lambda"

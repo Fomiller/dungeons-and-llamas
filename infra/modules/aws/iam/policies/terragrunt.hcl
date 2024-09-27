@@ -3,7 +3,7 @@ include "root" {
 }
 
 dependency "roles" {
-    config_path = "../iam/roles"
+    config_path = "../roles"
     mock_outputs_merge_strategy_with_state = "shallow"
     mock_outputs_allowed_terraform_commands = ["validate", "plan", "apply", "destroy"]
     mock_outputs = {
