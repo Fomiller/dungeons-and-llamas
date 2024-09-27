@@ -23,15 +23,6 @@ jobs:
           cancel_others: 'true'
           concurrent_skipping: 'same_content_newer'
             
-  # Build-lambdas:
-  #   name: 'Build Go lambda'
-  #   needs: Pre-check
-  #   uses: fomiller/gh-actions/.github/workflows/go-lambda.yaml@main
-  #   with:
-  #     lambda_src: src/cmd/lambda/{name}/main.go
-  #     lambda_output:  infra/modules/aws/lambda/bin/lambda_{name}
-  #     artifacts_dir: infra/modules/aws/lambda/bin
-        
   Deploy-infra:
     name: 'Deploy Infra'
     needs: [Pre-check]
@@ -39,20 +30,10 @@ jobs:
     with:
       environment: ${{ contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref) && 'prod' || 'dev' }}
       infra-dir: infra/modules/aws
-      doppler-project: {name}
-      download-artifacts: true
-      artifacts_dir: infra/modules/aws/lambda/bin
+      doppler-project: discord
+      # download-artifacts: true
+      # artifacts_dir: infra/modules/aws/lambda/bin
     secrets: inherit
-        
-  # Build-deploy-ecr-images:
-  #   name: 'Build/Deploy ECR images'
-  #   needs: Deploy-infra
-  #   uses: fomiller/gh-actions/.github/workflows/ecr.yaml@main
-  #   with:
-  #     environment: ${{ contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref) && 'prod' || 'dev' }}
-  #     repo: api
-  #     repo-prefix: "fomiller-{name}"
-  #   secrets: inherit
      
     # use if you need to debug workflow
     # - name: DEBUG
