@@ -1,5 +1,5 @@
 output "lambda_name_hello" {
-  value = aws_lambda_function.dnd_bot.name
+  value = aws_lambda_function.dnd_bot.function_name
 }
 
 output "lambda_arn_hello" {
