@@ -90,7 +90,7 @@ fmt:
     touch {{infraDir}}/{{dir}}/terragrunt.hcl
     
     echo 'asset_name = "{{dir}}"' >> {{infraDir}}/{{dir}}/env-config/common.tfvars
-    echo 'locals {}' >> {{infraDir}}/{{dir}}/main.tf
+    echo 'locals {}' >> {{infraDir}}/{{dir}}/_locals.tf
     echo 'environment = "dev"' > {{infraDir}}/{{dir}}/env-config/us-east-1/dev.tfvars
     echo 'environment = "prod"' > {{infraDir}}/{{dir}}/env-config/us-east-1/prod.tfvars
     echo 'include "root" {\n\
