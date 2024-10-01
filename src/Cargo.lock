@@ -717,6 +717,8 @@ name = "hello"
 version = "0.1.0"
 dependencies = [
  "lambda_http",
+ "nacl",
+ "serde_json",
  "tokio",
 ]
 
@@ -1144,6 +1146,12 @@ dependencies = [
  "wasi",
  "windows-sys 0.52.0",
 ]
+
+[[package]]
+name = "nacl"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30aefc44d813c51b5e7952950e87c17f2e0e1a3274d63c8281a701e05323d548"
 
 [[package]]
 name = "num-conv"
