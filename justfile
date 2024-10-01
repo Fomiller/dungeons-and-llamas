@@ -113,3 +113,6 @@ build-lambdas:
     --output-format zip \
     --manifest-path  src/Cargo.toml \
     --lambda-dir infra/modules/aws/lambda/bin/
+
+bacon:
+    bacon --path src
