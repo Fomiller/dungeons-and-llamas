@@ -28,8 +28,8 @@ jobs:
     needs: Pre-check
     uses: fomiller/gh-actions/.github/workflows/rust-lambda.yaml@main
     with:
-      lambda_dir: src/
-      lambda_output:  infra/modules/aws/lambda/bin/
+      lambda_dir: src
+      lambda_output:  infra/modules/aws/lambda/bin
       artifacts_dir: infra/modules/aws/lambda/bin
       cache_file: Cargo.lock
       # conditionally build lambdas if these files change
