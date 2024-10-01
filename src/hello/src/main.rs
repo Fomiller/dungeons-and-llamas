@@ -1,6 +1,4 @@
-use lambda_http::{
-    http::StatusCode, run, service_fn, tracing, Body, Error, Request, RequestExt, Response,
-};
+use lambda_http::{run, service_fn, tracing, Body, Error, Request, Response};
 use nacl::sign::verify;
 use serde_json::json;
 
