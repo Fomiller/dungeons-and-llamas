@@ -2,7 +2,7 @@ use lambda_http::{run, service_fn, tracing, Body, Error, Request, Response};
 use nacl::sign::verify;
 use serde_json::json;
 
-const PUBLIC_KEY: &str = "PUBLIC KEY";
+const PUBLIC_KEY: &str = "d2fe3cc5121565c24dbd2eaa1eb1f3890f0be4cb62cdee654aea9a3dabe7d6ea";
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     println!("EVENT: {:?}", event);
