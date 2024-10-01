@@ -27,6 +27,8 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
 
     let message = timestamp.to_owned() + body;
 
+    println!("MESSAGE: {:?}", message);
+
     let _ = match verify(
         message.as_bytes(),
         signature.as_bytes(),
