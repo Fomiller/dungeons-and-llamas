@@ -60,8 +60,9 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     //     }
     // };
 
-    let body_json = json!(std::str::from_utf8(event.body()).expect("non utf-8 body"));
-    println!("BODY_JSON: {:?}", json!(body_json));
+    let body_json: serde_json::Value =
+        serde_json::from_str(std::str::from_utf8(event.body()).expect("non utf-8 body")).unwrap();
+    println!("BODY_JSON: {:?}", body_json);
 
     let msg_type = body_json.get("type").expect("type not found");
     println!("MSG TYPE: {:?}", msg_type);
@@ -121,9 +122,12 @@ pub fn validate_discord_signature(
         }
         Signature::from_bytes(&sig_arr)
     };
+    println!("ED245519: {}", sig_ed25519);
+
     let sig_timestamp = headers
         .get("X-Signature-Timestamp")
         .ok_or(anyhow!("missing X-Signature-Timestamp header"))?;
+    println!("TIMESTAMP: {:?}", sig_timestamp);
 
     if let Body::Text(body) = body {
         let content = sig_timestamp
