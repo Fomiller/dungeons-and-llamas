@@ -27,7 +27,7 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     // let body = std::str::from_utf8(event.body()).expect("non utf-8 body");
     // println!("BODY: {:?}", body);
 
-    let _ = validate_discord_signature(headers, event.body(), &PUB_KEY);
+    validate_discord_signature(headers, event.body(), &PUB_KEY).unwrap();
     // let timestamp = headers
     //     .get("x-signature-timestamp")
     //     .expect("missing x-signature-timestamp header")
@@ -77,6 +77,7 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
                 .status(200)
                 .body(Body::Text(json.to_string()))
                 .unwrap();
+            println!("RES: {:?}", resp);
             return Ok(resp);
         }
         2 => {
@@ -86,6 +87,7 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
                 .header("content-type", "application/json")
                 .body(Body::Text(json.to_string()))
                 .unwrap();
+            println!("RES: {:?}", resp);
             return Ok(resp);
         }
         _ => {
