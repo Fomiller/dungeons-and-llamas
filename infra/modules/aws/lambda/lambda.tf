@@ -22,7 +22,7 @@ resource "aws_lambda_function" "command_manager" {
   function_name    = "${var.namespace}-${var.app_prefix}-command-manager"
   role             = var.iam_role_arn_lambda_dnd_bot
   handler          = "bootstrap"
-  filename         = "${path.module}/bin/commandmanager/bootstrap.zip"
+  filename         = "${path.module}/bin/command-manager/bootstrap.zip"
   source_code_hash = local.source_code_hash["command_manager"]
   runtime          = "provided.al2"
   architectures    = ["arm64"]
