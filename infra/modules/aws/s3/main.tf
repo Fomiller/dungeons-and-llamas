@@ -10,4 +10,10 @@ resource "aws_s3_bucket" "dungeons_and_discord" {
   }
 }
 
+resource "aws_s3_bucket_object" "commands" {
+  bucket = aws_s3_bucket.dungeons_and_discord.id
+  key    = "data/commands.json"
+  source = local.commands_path
 
+  etag = filemd5(local.commands_path)
+}
