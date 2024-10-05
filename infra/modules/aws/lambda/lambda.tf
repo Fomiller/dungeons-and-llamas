@@ -20,7 +20,7 @@ resource "aws_lambda_function" "dnd_bot" {
 
 resource "aws_lambda_function" "command_manager" {
   function_name    = "${var.namespace}-${var.app_prefix}-command-manager"
-  role             = var.iam_role_arn_lambda_dnd_bot
+  role             = var.iam_role_arn_lambda_command_manager
   handler          = "bootstrap"
   filename         = "${path.module}/bin/command-manager/bootstrap.zip"
   source_code_hash = local.source_code_hash["command_manager"]

@@ -36,6 +36,7 @@ async fn function_handler(event: LambdaEvent<S3Event>) -> Result<Value, Error> {
             "Authorization",
             format!("Bot {}", env::var("DISCORD_BOT_TOKEN")?),
         )
+        .header("Content-Type", "application/json")
         .body(bytes)
         .send()
         .await?;
