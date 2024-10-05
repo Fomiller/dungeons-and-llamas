@@ -32,7 +32,6 @@ resource "aws_lambda_function" "command_manager" {
     variables = {
       REGION            = data.aws_region.current.name
       DISCORD_APP_ID    = var.discord_application_id
-      DISCORD_SERVER_ID = var.discord_server_id
       DISCORD_BOT_TOKEN = var.discord_token
       ACCOUNT           = data.aws_caller_identity.current.account_id
     }
