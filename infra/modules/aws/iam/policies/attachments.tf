@@ -8,7 +8,7 @@ resource "aws_iam_role_policy_attachment" "lambda_command_manager_basic" {
   role       = var.iam_role_name_lambda_command_manager
 }
 
-resource "aws_iam_role_policy_attachment" "lambda_command_manager_basic" {
+resource "aws_iam_role_policy_attachment" "lambda_command_manager_s3" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
   role       = var.iam_role_name_lambda_command_manager
 }
