@@ -3,6 +3,10 @@ resource "aws_s3_bucket" "dungeons_and_discord" {
 
   object_lock_enabled = false
 
+  versioning {
+    enabled = true
+  }
+
   tags = {
     Owner       = "Forrest Miller"
     Email       = "forrestmillerj@gmail.com"
