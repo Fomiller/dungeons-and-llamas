@@ -6,3 +6,7 @@ data "aws_lambda_function" "dnd_bot_exists" {
   function_name = "${var.namespace}-${var.app_prefix}-bot"
 }
 
+data "aws_lambda_function" "command_manager_exists" {
+  count         = fileexists("${path.module}/bin/commandmanager/bootstrap.zip") ? 0 : 1
+  function_name = "${var.namespace}-${var.app_prefix}-command-manager"
+}
