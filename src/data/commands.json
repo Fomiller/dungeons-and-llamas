@@ -1,34 +1,5 @@
-[
-    {
-        "name": "animal",
-        "type": 1,
-        "description": "Send a random adorable animal photo",
-        "options": [
-            {
-                "name": "animal",
-                "description": "The type of animal",
-                "type": 3,
-                "required": true,
-                "choices": [
-                    {
-                        "name": "Dog",
-                        "value": "animal_dog"
-                    },
-                    {
-                        "name": "Cat",
-                        "value": "animal_cat"
-                    },
-                    {
-                        "name": "Penguin",
-                        "value": "animal_penguin"
-                    }
-                ]
-            }
-        ]
-    },
-    {
-        "name": "hello",
-        "type": "1",
-        "description": "A hello world command"
-    }
-]
+{
+    "name": "banana",
+    "type": "1",
+    "description": "A hello world command"
+}
