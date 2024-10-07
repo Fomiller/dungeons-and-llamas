@@ -21,6 +21,7 @@ env.list
 # terraform / terragrunt
 **/.terragrunt-cache
 **/.terraform
+**/.terraform.lock.hcl
 **/*.gen.tf
 **/bin/*
 **/*.zip

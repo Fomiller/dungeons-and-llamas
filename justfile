@@ -5,10 +5,16 @@ infraDir := "infra/modules/aws"
 login env:
     assume-role login -p {{env}}Terraform
 
+login-docker env:
+    doppler run \
+    --preserve-env="AWS_ASSUME_CONFIG_DIR" \
+    -- assume-role login -p {{env}}Terraform
+
 init dir:
     doppler run \
     --name-transformer tf-var  \
     -- terragrunt init \
+    --reconfigure \
     --terragrunt-working-dir {{infraDir}}/{{dir}}
     
 init-all:
@@ -67,6 +73,12 @@ destroy-all:
     --name-transformer tf-var  \
     -- terragrunt run-all \
     destroy --terragrunt-working-dir {{infraDir}}
+
+state-list dir:
+    doppler run \
+    --name-transformer tf-var  \
+    -- terragrunt state list \
+    --terragrunt-working-dir {{infraDir}}/{{dir}}
     
 fmt:
     doppler run \
@@ -113,3 +125,6 @@ build-lambdas:
     --output-format zip \
     --manifest-path  src/Cargo.toml \
     --lambda-dir infra/modules/aws/lambda/bin/
+
+bacon:
+    bacon --path src
