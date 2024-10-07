@@ -1353,6 +1353,7 @@ dependencies = [
  "nacl",
  "serde",
  "serde_json",
+ "serenity",
  "strum",
  "tokio",
 ]

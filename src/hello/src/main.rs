@@ -4,6 +4,8 @@ use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use serenity::all::CommandInteraction;
+use serenity::model::application::CommandType;
 use std::env;
 use std::str::FromStr;
 use strum::EnumString;
@@ -27,50 +29,16 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let headers = event.headers();
     println!("HEADERS: {:?}", headers);
 
-    // let body = std::str::from_utf8(event.body()).expect("non utf-8 body");
-    // println!("BODY: {:?}", body);
-
     validate_discord_signature(headers, event.body(), &PUB_KEY).unwrap();
-    // let timestamp = headers
-    //     .get("x-signature-timestamp")
-    //     .expect("missing x-signature-timestamp header")
-    //     .to_str()
-    //     .unwrap();
-    //
-    // let signature = headers
-    //     .get("x-signature-ed25519")
-    //     .expect("missing x-signature-ed25519 header")
-    //     .to_str()
-    //     .unwrap();
-    //
-    // let message = timestamp.to_owned() + body;
-    //
-    // println!("MESSAGE: {:?}", message);
-    //
-    // let _ = match verify(
-    //     message.as_bytes(),
-    //     signature.as_bytes(),
-    //     PUBLIC_KEY.as_bytes(),
-    // ) {
-    //     Ok(res) => res,
-    //     Err(_) => {
-    //         let resp: Response<Body> = Response::builder()
-    //             .status(401)
-    //             .header("content-type", "text/html")
-    //             .body("invalid request signature".into())
-    //             .map_err(Box::new)?;
-    //         return Ok(resp);
-    //     }
-    // };
 
-    let discord_command: DiscordCommand =
+    let discord_command: serenity::model::application::CommandInteraction =
         serde_json::from_str(std::str::from_utf8(event.body()).expect("non utf-8 body")).unwrap();
-    println!("BODY_JSON: {:?}", discord_command);
+    println!("COMMAND: {:?}", discord_command);
 
     // let msg_type = body_json.get("type").expect("type not found");
-    println!("MSG TYPE: {:?}", discord_command.command_type);
-    match discord_command.command_type {
-        1 => {
+    println!("MSG TYPE: {:?}", discord_command.data.kind);
+    match discord_command.data.kind {
+        CommandType::ChatInput => {
             let json = json!({"type": 1});
             let resp: Response<Body> = Response::builder()
                 .status(200)
@@ -79,14 +47,8 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
             println!("RES: {:?}", resp);
             return Ok(resp);
         }
-        2 => {
-            let name = discord_command.data.name;
-            let cmd = Command::from_str(&name)?;
-            // let opts: Option<Vec<CommandOptions>> = match discord_command.data.options {
-            //     Some(opts) => Some(serde_json::from_value(opts.clone()).unwrap()),
-            //     None => None,
-            // };
-            let json = handle_command(cmd, discord_command.data.options);
+        CommandType::User => {
+            let json = handle_command(discord_command);
             let resp: Response<Body> = Response::builder()
                 .status(200)
                 .header("content-type", "application/json")
@@ -153,46 +115,28 @@ pub fn validate_discord_signature(
 }
 
 #[derive(Debug, PartialEq, EnumString)]
-enum Command {
+enum SlashCommands {
     Hello,
     Class,
     Goodbye,
 }
 
-#[derive(Serialize, Deserialize)]
-struct CommandOptions {
-    name: String,
-    value: String,
-    _type: CommandType,
-}
-
-#[derive(Serialize, Deserialize)]
-enum CommandType {
-    SubCommand,      // 1
-    SubCommandGroup, // 2
-    String,          // 3
-    Integer,         // 4 (Any integer between -2^53 and 2^53)
-    Boolean,         // 5
-    User,            // 6
-    Channel,         // 7 (Includes all channel types + categories)
-    Role,            // 8
-    Mentionable,     // 9 (Includes users and roles)
-    Number,          // 10 (Any double between -2^53 and 2^53)
-    Attachment,      // 11 (Attachment object)
-}
-
-fn handle_command(cmd: Command, opts: Option<Vec<CommandOption>>) -> serde_json::Value {
-    match cmd {
-        Command::Hello => json!({"type": 4,"data": {"content": "Hello, World."}}),
-        Command::Goodbye => json!({"type": 4,"data": {"content": "Goodbye, World."}}),
-        Command::Class => {
-            let class = opts
-                .expect("Could not find options for command.")
+fn handle_command(cmd: CommandInteraction) -> serde_json::Value {
+    let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
+    match command_name {
+        SlashCommands::Hello => json!({"type": 4,"data": {"content": "Hello, World."}}),
+        SlashCommands::Goodbye => json!({"type": 4,"data": {"content": "Goodbye, World."}}),
+        SlashCommands::Class => {
+            let class = &cmd
+                .data
+                .options
                 .first()
                 .expect("No options available")
-                .value
-                .clone();
-            let content = format!("You chose the {} class!", class);
+                .value;
+            let content = format!(
+                "You chose the {} class!",
+                class.as_str().expect("could not unwrap class")
+            );
             json!({"type": 4,"data": {"content": content}})
         }
     }
