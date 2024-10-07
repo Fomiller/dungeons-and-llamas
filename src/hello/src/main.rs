@@ -22,6 +22,16 @@ lazy_static::lazy_static! {
     .expect("Couldn't create a PublicKey from DISCORD_PUBLIC_KEY bytes");
 }
 
+#[derive(Debug, PartialEq, EnumString)]
+enum SlashCommands {
+    #[strum(ascii_case_insensitive)]
+    Hello,
+    #[strum(ascii_case_insensitive)]
+    Class,
+    #[strum(ascii_case_insensitive)]
+    Goodbye,
+}
+
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     println!("EVENT: {:?}", event);
 
@@ -30,14 +40,11 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
 
     validate_discord_signature(headers, event.body(), &PUB_KEY).unwrap();
 
-    // let discord_command: serenity::model::application::CommandInteraction =
-    //     serde_json::from_str(std::str::from_utf8(event.body()).expect("non utf-8 body")).unwrap();
     let discord_command = json::from_slice::<Interaction>(event.body())?;
 
     println!("COMMAND: {:?}", discord_command);
-
-    // let msg_type = body_json.get("type").expect("type not found");
     println!("MSG TYPE: {:?}", discord_command.kind());
+
     let response = match discord_command {
         // Discord rejects the interaction endpoints URL if pings are not acknowledged
         Interaction::Ping(_) => CreateInteractionResponse::Pong,
@@ -51,42 +58,32 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
         .body(Body::Text(serde_json::to_string(&response)?))
         .unwrap();
     Ok(resp)
-
-    // match discord_command.data.kind {
-    //     CommandType::ChatInput => {
-    //         let json = json!({"type": 1});
-    //         let resp: Response<Body> = Response::builder()
-    //             .status(200)
-    //             .body(Body::Text(json.to_string()))
-    //             .unwrap();
-    //         println!("RES: {:?}", resp);
-    //         return Ok(resp);
-    //     }
-    //     CommandType::User => {
-    //         let json = handle_command(discord_command);
-    //         let resp: Response<Body> = Response::builder()
-    //             .status(200)
-    //             .header("content-type", "application/json")
-    //             .body(Body::Text(json))
-    //             .unwrap();
-    //         println!("RES: {:?}", resp);
-    //         return Ok(resp);
-    //     }
-    //     _ => {
-    //         let resp: Response<Body> = Response::builder()
-    //             .status(400)
-    //             .body("unhandled command".into())
-    //             .unwrap();
-    //         return Ok(resp);
-    //     }
-    // };
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    tracing::init_default_subscriber();
-
-    run(service_fn(function_handler)).await
+fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
+    println!("NAME: {:?}", &cmd.data.name);
+    let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
+    println!("COMMAND NAME: {:?}", command_name);
+    match command_name {
+        SlashCommands::Hello => CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content(format!("Hello, World!")),
+        ),
+        SlashCommands::Goodbye => CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content(format!("Goodbye, World!")),
+        ),
+        SlashCommands::Class => {
+            let class = &cmd
+                .data
+                .options
+                .first()
+                .expect("No options available")
+                .value;
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content(format!("You chose the {} class", class.as_str().unwrap())),
+            )
+        }
+    }
 }
 
 pub fn validate_discord_signature(
@@ -129,93 +126,9 @@ pub fn validate_discord_signature(
     }
 }
 
-#[derive(Debug, PartialEq, EnumString)]
-enum SlashCommands {
-    #[strum(ascii_case_insensitive)]
-    Hello,
-    #[strum(ascii_case_insensitive)]
-    Class,
-    #[strum(ascii_case_insensitive)]
-    Goodbye,
-}
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    tracing::init_default_subscriber();
 
-fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
-    println!("NAME: {:?}", &cmd.data.name);
-    let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
-    println!("COMMAND NAME: {:?}", command_name);
-    match command_name {
-        SlashCommands::Hello => CreateInteractionResponse::Message(
-            CreateInteractionResponseMessage::new().content(format!("Hello, World!")),
-        ),
-        SlashCommands::Goodbye => CreateInteractionResponse::Message(
-            CreateInteractionResponseMessage::new().content(format!("Goodbye, World!")),
-        ),
-        SlashCommands::Class => {
-            let class = &cmd
-                .data
-                .options
-                .first()
-                .expect("No options available")
-                .value;
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(format!("You chose the {} class", class.as_str().unwrap())),
-            )
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct DiscordCommand {
-    #[serde(rename = "type")]
-    command_type: u8, // Type of the command
-    token: String,           // Token for the command
-    member: Member,          // Member object
-    id: String,              // Command ID
-    guild_id: String,        // Guild ID
-    app_permissions: String, // Application-specific permissions
-    guild_locale: String,    // Locale of the guild
-    locale: String,          // Locale of the user
-    data: CommandData,       // Command data
-    channel_id: String,      // Channel ID
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Member {
-    user: User,                    // User object
-    roles: Vec<String>,            // List of role IDs
-    premium_since: Option<String>, // Premium since (nullable)
-    permissions: String,           // Permissions bitfield
-    pending: bool,                 // Whether the user is pending
-    nick: Option<String>,          // User's nickname (nullable)
-    mute: bool,                    // Whether the user is muted
-    joined_at: String,             // Date of user joining the guild
-    is_pending: bool,              // Whether the user's membership is pending
-    deaf: bool,                    // Whether the user is deafened
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct User {
-    id: String,            // User ID
-    username: String,      // Username
-    avatar: String,        // Avatar hash
-    discriminator: String, // User discriminator
-    public_flags: u32,     // Public flags of the user
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct CommandData {
-    options: Option<Vec<CommandOption>>, // List of command options
-    #[serde(rename = "type")]
-    data_type: u8, // Type of command data
-    name: String,                        // Command name
-    id: String,                          // Command ID
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct CommandOption {
-    #[serde(rename = "type")]
-    option_type: u8, // Type of option
-    name: String,  // Name of the option
-    value: String, // Value of the option
+    run(service_fn(function_handler)).await
 }
