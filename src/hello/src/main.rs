@@ -63,17 +63,13 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     //     }
     // };
 
-    let body_json: serde_json::Value =
+    let discord_command: DiscordCommand =
         serde_json::from_str(std::str::from_utf8(event.body()).expect("non utf-8 body")).unwrap();
-    println!("BODY_JSON: {:?}", body_json);
+    println!("BODY_JSON: {:?}", discord_command);
 
-    let msg_type = body_json.get("type").expect("type not found");
-    println!("MSG TYPE: {:?}", msg_type);
-    match msg_type
-        .to_string()
-        .parse::<u32>()
-        .expect("unable to parse type")
-    {
+    // let msg_type = body_json.get("type").expect("type not found");
+    println!("MSG TYPE: {:?}", discord_command.command_type);
+    match discord_command.command_type {
         1 => {
             let json = json!({"type": 1});
             let resp: Response<Body> = Response::builder()
@@ -84,13 +80,13 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
             return Ok(resp);
         }
         2 => {
-            let name = body_json.get("name").expect("name not found");
-            let cmd = Command::from_str(name.as_str().unwrap())?;
-            let opts: Option<Vec<CommandOptions>> = match body_json.get("options") {
-                Some(opts) => Some(serde_json::from_value(opts.clone()).unwrap()),
-                None => None,
-            };
-            let json = handle_command(cmd, opts);
+            let name = discord_command.data.name;
+            let cmd = Command::from_str(&name)?;
+            // let opts: Option<Vec<CommandOptions>> = match discord_command.data.options {
+            //     Some(opts) => Some(serde_json::from_value(opts.clone()).unwrap()),
+            //     None => None,
+            // };
+            let json = handle_command(cmd, discord_command.data.options);
             let resp: Response<Body> = Response::builder()
                 .status(200)
                 .header("content-type", "application/json")
@@ -185,7 +181,7 @@ enum CommandType {
     Attachment,      // 11 (Attachment object)
 }
 
-fn handle_command(cmd: Command, opts: Option<Vec<CommandOptions>>) -> serde_json::Value {
+fn handle_command(cmd: Command, opts: Option<Vec<CommandOption>>) -> serde_json::Value {
     match cmd {
         Command::Hello => json!({"type": 4,"data": {"content": "Hello, World."}}),
         Command::Goodbye => json!({"type": 4,"data": {"content": "Goodbye, World."}}),
@@ -200,4 +196,59 @@ fn handle_command(cmd: Command, opts: Option<Vec<CommandOptions>>) -> serde_json
             json!({"type": 4,"data": {"content": content}})
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct DiscordCommand {
+    #[serde(rename = "type")]
+    command_type: u8, // Type of the command
+    token: String,           // Token for the command
+    member: Member,          // Member object
+    id: String,              // Command ID
+    guild_id: String,        // Guild ID
+    app_permissions: String, // Application-specific permissions
+    guild_locale: String,    // Locale of the guild
+    locale: String,          // Locale of the user
+    data: CommandData,       // Command data
+    channel_id: String,      // Channel ID
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Member {
+    user: User,                    // User object
+    roles: Vec<String>,            // List of role IDs
+    premium_since: Option<String>, // Premium since (nullable)
+    permissions: String,           // Permissions bitfield
+    pending: bool,                 // Whether the user is pending
+    nick: Option<String>,          // User's nickname (nullable)
+    mute: bool,                    // Whether the user is muted
+    joined_at: String,             // Date of user joining the guild
+    is_pending: bool,              // Whether the user's membership is pending
+    deaf: bool,                    // Whether the user is deafened
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct User {
+    id: String,            // User ID
+    username: String,      // Username
+    avatar: String,        // Avatar hash
+    discriminator: String, // User discriminator
+    public_flags: u32,     // Public flags of the user
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct CommandData {
+    options: Option<Vec<CommandOption>>, // List of command options
+    #[serde(rename = "type")]
+    data_type: u8, // Type of command data
+    name: String,                        // Command name
+    id: String,                          // Command ID
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct CommandOption {
+    #[serde(rename = "type")]
+    option_type: u8, // Type of option
+    name: String,  // Name of the option
+    value: String, // Value of the option
 }
