@@ -140,7 +140,9 @@ enum SlashCommands {
 }
 
 fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
+    println!("NAME: {:?}", &cmd.data.name);
     let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
+    println!("COMMAND NAME: {:?}", command_name);
     match command_name {
         SlashCommands::Hello => CreateInteractionResponse::Message(
             CreateInteractionResponseMessage::new().content(format!("Hello, World!")),
