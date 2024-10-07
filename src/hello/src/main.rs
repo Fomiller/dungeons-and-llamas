@@ -3,7 +3,6 @@ use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use serenity::all::CommandInteraction;
 use serenity::builder::*;
 use serenity::json;
@@ -22,8 +21,6 @@ lazy_static::lazy_static! {
     )
     .expect("Couldn't create a PublicKey from DISCORD_PUBLIC_KEY bytes");
 }
-
-// const PUBLIC_KEY: &str = "d2fe3cc5121565c24dbd2eaa1eb1f3890f0be4cb62cdee654aea9a3dabe7d6ea";
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     println!("EVENT: {:?}", event);
@@ -134,8 +131,11 @@ pub fn validate_discord_signature(
 
 #[derive(Debug, PartialEq, EnumString)]
 enum SlashCommands {
+    #[strum(ascii_case_insensitive)]
     Hello,
+    #[strum(ascii_case_insensitive)]
     Class,
+    #[strum(ascii_case_insensitive)]
     Goodbye,
 }
 
