@@ -2,8 +2,11 @@ use anyhow::anyhow;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::env;
+use std::str::FromStr;
+use strum::EnumString;
 
 lazy_static::lazy_static! {
     static ref PUB_KEY: VerifyingKey = VerifyingKey::from_bytes(
@@ -81,7 +84,13 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
             return Ok(resp);
         }
         2 => {
-            let json = json!({"type": 4,"data": {"content": "Hello, World."}});
+            let name = body_json.get("name").expect("name not found");
+            let cmd = Command::from_str(name.as_str().unwrap())?;
+            let opts: Option<Vec<CommandOptions>> = match body_json.get("options") {
+                Some(opts) => Some(serde_json::from_value(opts.clone()).unwrap()),
+                None => None,
+            };
+            let json = handle_command(cmd, opts);
             let resp: Response<Body> = Response::builder()
                 .status(200)
                 .header("content-type", "application/json")
@@ -144,5 +153,51 @@ pub fn validate_discord_signature(
             .map_err(anyhow::Error::msg)
     } else {
         Err(anyhow!("Invalid body type"))
+    }
+}
+
+#[derive(Debug, PartialEq, EnumString)]
+enum Command {
+    Hello,
+    Class,
+    Goodbye,
+}
+
+#[derive(Serialize, Deserialize)]
+struct CommandOptions {
+    name: String,
+    value: String,
+    _type: CommandType,
+}
+
+#[derive(Serialize, Deserialize)]
+enum CommandType {
+    SubCommand,      // 1
+    SubCommandGroup, // 2
+    String,          // 3
+    Integer,         // 4 (Any integer between -2^53 and 2^53)
+    Boolean,         // 5
+    User,            // 6
+    Channel,         // 7 (Includes all channel types + categories)
+    Role,            // 8
+    Mentionable,     // 9 (Includes users and roles)
+    Number,          // 10 (Any double between -2^53 and 2^53)
+    Attachment,      // 11 (Attachment object)
+}
+
+fn handle_command(cmd: Command, opts: Option<Vec<CommandOptions>>) -> serde_json::Value {
+    match cmd {
+        Command::Hello => json!({"type": 4,"data": {"content": "Hello, World."}}),
+        Command::Goodbye => json!({"type": 4,"data": {"content": "Goodbye, World."}}),
+        Command::Class => {
+            let class = opts
+                .expect("Could not find options for command.")
+                .first()
+                .expect("No options available")
+                .value
+                .clone();
+            let content = format!("You chose the {} class!", class);
+            json!({"type": 4,"data": {"content": content}})
+        }
     }
 }
