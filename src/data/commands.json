@@ -1,5 +1,12 @@
-{
-    "name": "banana",
-    "type": "1",
-    "description": "A hello world command"
-}
+[
+    {
+        "name": "hello",
+        "type": "1",
+        "description": "A hello world command"
+    },
+    {
+        "name": "goodbye",
+        "type": "1",
+        "description": "A goodbye world command"
+    }
+]

@@ -31,7 +31,7 @@ async fn function_handler(event: LambdaEvent<S3Event>) -> Result<Value, Error> {
 
     let client = reqwest::Client::new();
     let res = client
-        .post(DISCORD_COMMAND_URL.as_str())
+        .put(DISCORD_COMMAND_URL.as_str())
         .header(
             "Authorization",
             format!("Bot {}", env::var("DISCORD_BOT_TOKEN")?),
