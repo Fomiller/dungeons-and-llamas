@@ -5,7 +5,9 @@ use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Reques
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serenity::all::CommandInteraction;
-use serenity::model::application::CommandType;
+use serenity::builder::*;
+use serenity::json;
+use serenity::model::application::*;
 use std::env;
 use std::str::FromStr;
 use strum::EnumString;
@@ -31,40 +33,56 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
 
     validate_discord_signature(headers, event.body(), &PUB_KEY).unwrap();
 
-    let discord_command: serenity::model::application::CommandInteraction =
-        serde_json::from_str(std::str::from_utf8(event.body()).expect("non utf-8 body")).unwrap();
+    // let discord_command: serenity::model::application::CommandInteraction =
+    //     serde_json::from_str(std::str::from_utf8(event.body()).expect("non utf-8 body")).unwrap();
+    let discord_command = json::from_slice::<Interaction>(event.body())?;
+
     println!("COMMAND: {:?}", discord_command);
 
     // let msg_type = body_json.get("type").expect("type not found");
-    println!("MSG TYPE: {:?}", discord_command.data.kind);
-    match discord_command.data.kind {
-        CommandType::ChatInput => {
-            let json = json!({"type": 1});
-            let resp: Response<Body> = Response::builder()
-                .status(200)
-                .body(Body::Text(json.to_string()))
-                .unwrap();
-            println!("RES: {:?}", resp);
-            return Ok(resp);
-        }
-        CommandType::User => {
-            let json = handle_command(discord_command);
-            let resp: Response<Body> = Response::builder()
-                .status(200)
-                .header("content-type", "application/json")
-                .body(Body::Text(json.to_string()))
-                .unwrap();
-            println!("RES: {:?}", resp);
-            return Ok(resp);
-        }
-        _ => {
-            let resp: Response<Body> = Response::builder()
-                .status(400)
-                .body("unhandled command".into())
-                .unwrap();
-            return Ok(resp);
-        }
+    println!("MSG TYPE: {:?}", discord_command.kind());
+    let response = match discord_command {
+        // Discord rejects the interaction endpoints URL if pings are not acknowledged
+        Interaction::Ping(_) => CreateInteractionResponse::Pong,
+        Interaction::Command(interaction) => handle_command(interaction),
+        _ => CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content(format!("Command not handled")),
+        ),
     };
+    let resp: Response<Body> = Response::builder()
+        .status(200)
+        .body(Body::Text(serde_json::to_string(&response)?))
+        .unwrap();
+    Ok(resp)
+
+    // match discord_command.data.kind {
+    //     CommandType::ChatInput => {
+    //         let json = json!({"type": 1});
+    //         let resp: Response<Body> = Response::builder()
+    //             .status(200)
+    //             .body(Body::Text(json.to_string()))
+    //             .unwrap();
+    //         println!("RES: {:?}", resp);
+    //         return Ok(resp);
+    //     }
+    //     CommandType::User => {
+    //         let json = handle_command(discord_command);
+    //         let resp: Response<Body> = Response::builder()
+    //             .status(200)
+    //             .header("content-type", "application/json")
+    //             .body(Body::Text(json))
+    //             .unwrap();
+    //         println!("RES: {:?}", resp);
+    //         return Ok(resp);
+    //     }
+    //     _ => {
+    //         let resp: Response<Body> = Response::builder()
+    //             .status(400)
+    //             .body("unhandled command".into())
+    //             .unwrap();
+    //         return Ok(resp);
+    //     }
+    // };
 }
 
 #[tokio::main]
@@ -121,11 +139,15 @@ enum SlashCommands {
     Goodbye,
 }
 
-fn handle_command(cmd: CommandInteraction) -> serde_json::Value {
+fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
     let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
     match command_name {
-        SlashCommands::Hello => json!({"type": 4,"data": {"content": "Hello, World."}}),
-        SlashCommands::Goodbye => json!({"type": 4,"data": {"content": "Goodbye, World."}}),
+        SlashCommands::Hello => CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content(format!("Hello, World!")),
+        ),
+        SlashCommands::Goodbye => CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content(format!("Goodbye, World!")),
+        ),
         SlashCommands::Class => {
             let class = &cmd
                 .data
@@ -133,11 +155,10 @@ fn handle_command(cmd: CommandInteraction) -> serde_json::Value {
                 .first()
                 .expect("No options available")
                 .value;
-            let content = format!(
-                "You chose the {} class!",
-                class.as_str().expect("could not unwrap class")
-            );
-            json!({"type": 4,"data": {"content": content}})
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content(format!("You chose the {} class", class.as_str().unwrap())),
+            )
         }
     }
 }
