@@ -1,9 +1,9 @@
-resource "aws_lambda_function" "dnd_bot" {
+resource "aws_lambda_function" "dnl_discord_bot" {
   function_name    = "${var.namespace}-${var.app_prefix}-bot"
-  role             = var.iam_role_arn_lambda_dnd_bot
+  role             = var.iam_role_arn_lambda_dnl_discord_bot
   handler          = "bootstrap"
   filename         = "${path.module}/bin/hello/bootstrap.zip"
-  source_code_hash = local.source_code_hash["dnd_bot"]
+  source_code_hash = local.source_code_hash["dnl_discord_bot"]
   runtime          = "provided.al2"
   architectures    = ["arm64"]
   memory_size      = 128

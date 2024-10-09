@@ -1,13 +1,13 @@
 output "lambda_name_hello" {
-  value = aws_lambda_function.dnd_bot.function_name
+  value = aws_lambda_function.dnl_discord_bot.function_name
 }
 
 output "lambda_arn_hello" {
-  value = aws_lambda_function.dnd_bot.arn
+  value = aws_lambda_function.dnl_discord_bot.arn
 }
 
 output "lambda_invoke_arn_hello" {
-  value = aws_lambda_function.dnd_bot.invoke_arn
+  value = aws_lambda_function.dnl_discord_bot.invoke_arn
 }
 
 output "lambda_name_command_manager" {

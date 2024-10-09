@@ -1,6 +1,6 @@
-resource "aws_iam_role_policy_attachment" "lambda_dnd_bot" {
+resource "aws_iam_role_policy_attachment" "lambda_dnl_discord_bot" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  role       = var.iam_role_name_lambda_dnd_bot
+  role       = var.iam_role_name_lambda_dnl_discord_bot
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_command_manager_basic" {

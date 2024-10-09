@@ -1,4 +1,4 @@
-resource "aws_cloudwatch_log_group" "dnd_bot" {
+resource "aws_cloudwatch_log_group" "dnl_discord_bot" {
   name              = "/aws/lambda/${var.lambda_name_hello}"
   retention_in_days = 7
 }
