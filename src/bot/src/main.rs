@@ -146,7 +146,7 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
 
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
-                    .content(format!("Roll: {:?}\nYou rolled {}!", roll_text, roll)),
+                    .content(format!("Roll: {}\nYou rolled {}!", roll_text, roll)),
             )
         }
     }
