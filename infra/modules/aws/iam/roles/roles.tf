@@ -1,4 +1,4 @@
-resource "aws_iam_role" "lambda_dnl_discord_bot" {
+resource "aws_iam_role" "lambda_discord_bot" {
   name               = "${title(var.namespace)}LambdaDungeonsAndLlamasDiscordBot"
   assume_role_policy = <<EOF
 {
@@ -16,7 +16,7 @@ resource "aws_iam_role" "lambda_dnl_discord_bot" {
 EOF
 }
 
-resource "aws_iam_role" "lambda_command_manager" {
+resource "aws_iam_role" "lambda_discord_command_manager" {
   name               = "${title(var.namespace)}LambdaDungeonsAndLlamasDiscordBotCommandManager"
   assume_role_policy = <<EOF
 {

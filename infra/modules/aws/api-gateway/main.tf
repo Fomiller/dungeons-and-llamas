@@ -34,7 +34,7 @@ resource "aws_api_gateway_integration" "lambda" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.lambda_invoke_arn_hello
+  uri                     = var.lambda_invoke_arn_discord_bot
 }
 
 # handle root
@@ -45,7 +45,7 @@ resource "aws_api_gateway_integration" "lambda_root" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = var.lambda_invoke_arn_hello
+  uri                     = var.lambda_invoke_arn_discord_bot
 }
 
 
@@ -62,7 +62,7 @@ resource "aws_api_gateway_deployment" "example" {
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = var.lambda_name_hello
+  function_name = var.lambda_name_discord_bot
   principal     = "apigateway.amazonaws.com"
 
   # The /*/* portion grants access from any method on any resource
