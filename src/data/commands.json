@@ -71,8 +71,8 @@
                 "min_value?": 1
             },
             {
-                "name": "size",
-                "description": "Size of the dice",
+                "name": "sides",
+                "description": "Number of sides on the dice",
                 "type": 4,
                 "required": true,
                 "choices": [
@@ -109,6 +109,13 @@
                         "value": "100"
                     }
                 ]
+            },
+            {
+                "name": "modifier",
+                "description": "modifier to dice roll",
+                "type": 4,
+                "required": false,
+                "min_value?": 0
             }
         ]
     }

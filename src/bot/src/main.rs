@@ -1,8 +1,8 @@
 use anyhow::anyhow;
+use dice::Dice;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
-use serde::{Deserialize, Serialize};
 use serenity::all::CommandInteraction;
 use serenity::builder::*;
 use serenity::json;
@@ -30,6 +30,8 @@ enum SlashCommands {
     Class,
     #[strum(ascii_case_insensitive)]
     Goodbye,
+    #[strum(ascii_case_insensitive)]
+    Roll,
 }
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
@@ -81,6 +83,55 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
                     .content(format!("You chose the {} class", class.as_str().unwrap())),
+            )
+        }
+        SlashCommands::Roll => {
+            let count = &cmd
+                .data
+                .options
+                .iter()
+                .find(|o| o.name == "count")
+                .expect("could not find 'count' option for /roll")
+                .value
+                .as_i64()
+                .expect("could not convert count.value to integer");
+
+            let sides: &usize = &cmd
+                .data
+                .options
+                .iter()
+                .find(|o| o.name == "sides")
+                .expect("Could not find 'sides' option for /roll")
+                .value
+                .as_i64()
+                .expect("could not convert sides.value to integer")
+                .try_into()
+                .expect("could not convert to usize");
+
+            let modifier: &usize = &cmd
+                .data
+                .options
+                .iter()
+                .find(|o| o.name == "modifier")
+                .expect("could not find 'modifier' option for /roll")
+                .value
+                .as_i64()
+                .expect("could not convert modifier.value to integer")
+                .try_into()
+                .expect("could not convert to usize");
+
+            let dice: Vec<Dice> = (0..*count).map(|_| Dice::new(*sides)).collect();
+
+            let roll: usize = dice
+                .into_iter()
+                .map(|d| d.roll())
+                .collect::<Vec<usize>>()
+                .iter()
+                .sum();
+
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content(format!("You rolled {}!", roll + modifier)),
             )
         }
     }
