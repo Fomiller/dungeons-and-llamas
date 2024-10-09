@@ -1,15 +1,5 @@
 [
     {
-        "name": "hello",
-        "type": "1",
-        "description": "A hello world command"
-    },
-    {
-        "name": "goodbye",
-        "type": "1",
-        "description": "A goodbye world command"
-    },
-    {
         "name": "class",
         "type": 1,
         "description": "Which class do you want to play",
@@ -63,6 +53,60 @@
                     {
                         "name": "Ranger",
                         "value": "ranger"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "roll",
+        "type": 1,
+        "description": "Roll Dice",
+        "options": [
+            {
+                "name": "count",
+                "description": "Number of dice to roll",
+                "type": 4,
+                "required": true,
+                "min_value?": 1
+            },
+            {
+                "name": "size",
+                "description": "Size of the dice",
+                "type": 4,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "D4",
+                        "value": "4"
+                    },
+                    {
+                        "name": "D6",
+                        "value": "6"
+                    },
+                    {
+                        "name": "D6",
+                        "value": "6"
+                    },
+                    {
+                        "name": "D8",
+                        "value": "8"
+                    },
+                    {
+                        "name": "D10",
+                        "value": "10"
+                    },
+                    {
+                        "name": "D12",
+                        "value": "20"
+                    },
+                    {
+                        "name": "D20",
+                        "value": "20"
+                    },
+                    {
+                        "name": "D100",
+                        "value": "100"
                     }
                 ]
             }
