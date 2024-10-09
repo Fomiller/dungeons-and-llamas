@@ -141,7 +141,15 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
                     modifier
                 )
             } else {
-                format!("{:?}", dice_values)
+                format!(
+                    "[{}{}]",
+                    dice_values[0],
+                    dice_values[1..]
+                        .iter()
+                        .map(|v| format!(" + {}", v))
+                        .collect::<Vec<String>>()
+                        .join("")
+                )
             };
 
             CreateInteractionResponse::Message(
