@@ -1,6 +1,7 @@
 locals {
     namespace = "fomiller"
-    project_name = "dungeons-and-discord"
+    project_name = "dungeons-and-llamas"
+    app_prefix = "dnl"
 }
 
 generate provider {
@@ -44,6 +45,11 @@ variable "environment" {
 }
 
 variable "app_prefix" {
+    type = string
+    default = "${local.app_prefix}"
+}
+
+variable "project_name" {
     type = string
     default = "${local.project_name}"
 }

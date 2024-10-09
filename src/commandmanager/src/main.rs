@@ -1,8 +1,7 @@
 use aws_config::BehaviorVersion;
 use aws_lambda_events::event::s3::S3Event;
-use lambda_http::tracing::subscriber::fmt::format;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::env;
 
 lazy_static::lazy_static! {

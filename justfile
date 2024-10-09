@@ -2,6 +2,17 @@ set export
 
 infraDir := "infra/modules/aws"
 
+clean:
+    find . -name ".terraform" -type d | xargs rm -rv
+    find . -name ".terragrunt-cache" -type d | xargs rm -rv
+    find . -name "_.*.gen.tf" -type f | xargs rm -rv
+    find . -name "..terraform.lock.hcl" -type f | xargs rm -rv
+    # rm -rf infra/modules/**/_.*.gen.tf
+    # rm -rf infra/modules/**/.terraform.lock.hcl
+    # rm -rf infra/modules/**/.terraform
+    # rm -rf infra/modules/**/.terragrunt-cache
+    
+
 login env:
     assume-role login -p {{env}}Terraform
 
@@ -118,6 +129,10 @@ run app:
 add app crate:
     cargo add --manifest-path src/{{app}}/Cargo.toml {{crate}}
 
+cargo-test: 
+    doppler run -- \
+    cargo test --manifest-path src/Cargo.toml
+    
 build-lambdas:
     cargo lambda build \
     --arm64 \

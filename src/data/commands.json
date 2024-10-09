@@ -1,12 +1,122 @@
 [
     {
-        "name": "hello",
-        "type": "1",
-        "description": "A hello world command"
+        "name": "class",
+        "type": 1,
+        "description": "Which class do you want to play",
+        "options": [
+            {
+                "name": "class",
+                "description": "The type of class",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Warlock",
+                        "value": "warlock"
+                    },
+                    {
+                        "name": "Barbarian",
+                        "value": "barbarian"
+                    },
+                    {
+                        "name": "Mage",
+                        "value": "mage"
+                    },
+                    {
+                        "name": "Rouge",
+                        "value": "rouge"
+                    },
+                    {
+                        "name": "Bard",
+                        "value": "bard"
+                    },
+                    {
+                        "name": "Cleric",
+                        "value": "cleric"
+                    },
+                    {
+                        "name": "Paladin",
+                        "value": "paladin"
+                    },
+                    {
+                        "name": "Monk",
+                        "value": "monk"
+                    },
+                    {
+                        "name": "Druid",
+                        "value": "druid"
+                    },
+                    {
+                        "name": "Fighter",
+                        "value": "fighter"
+                    },
+                    {
+                        "name": "Ranger",
+                        "value": "ranger"
+                    }
+                ]
+            }
+        ]
     },
     {
-        "name": "goodbye",
-        "type": "1",
-        "description": "A goodbye world command"
+        "name": "roll",
+        "type": 1,
+        "description": "Roll Dice",
+        "options": [
+            {
+                "name": "count",
+                "description": "Number of dice to roll",
+                "type": 4,
+                "required": true,
+                "min_value?": 1
+            },
+            {
+                "name": "sides",
+                "description": "Number of sides on the dice",
+                "type": 4,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "D4",
+                        "value": "4"
+                    },
+                    {
+                        "name": "D6",
+                        "value": "6"
+                    },
+                    {
+                        "name": "D6",
+                        "value": "6"
+                    },
+                    {
+                        "name": "D8",
+                        "value": "8"
+                    },
+                    {
+                        "name": "D10",
+                        "value": "10"
+                    },
+                    {
+                        "name": "D12",
+                        "value": "20"
+                    },
+                    {
+                        "name": "D20",
+                        "value": "20"
+                    },
+                    {
+                        "name": "D100",
+                        "value": "100"
+                    }
+                ]
+            },
+            {
+                "name": "modifier",
+                "description": "modifier to dice roll",
+                "type": 4,
+                "required": false,
+                "min_value?": 0
+            }
+        ]
     }
 ]
