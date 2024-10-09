@@ -129,6 +129,10 @@ run app:
 add app crate:
     cargo add --manifest-path src/{{app}}/Cargo.toml {{crate}}
 
+cargo-test: 
+    doppler run -- \
+    cargo test --manifest-path src/Cargo.toml
+    
 build-lambdas:
     cargo lambda build \
     --arm64 \
