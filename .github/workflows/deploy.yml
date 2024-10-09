@@ -37,7 +37,6 @@ jobs:
         lambda:
           - 'src/**'
           - 'infra/**'
-          - '.github/workflows/deploy.yml'
             
   Deploy-infra:
     name: 'Deploy Infra'

@@ -14,6 +14,9 @@ edition = "2021"
 # add the latest version of a dependency to the list,
 # and it will keep the alphabetic ordering for you.
 
+[dependencies.dice]
+path = "../dice"
+
 [dependencies]
 anyhow = "1.0.89"
 ed25519-dalek = "2.1.1"
