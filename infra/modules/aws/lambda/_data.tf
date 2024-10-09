@@ -7,6 +7,6 @@ data "aws_lambda_function" "discord_bot_exists" {
 }
 
 data "aws_lambda_function" "discord_command_manager_exists" {
-  count         = fileexists("${path.module}/bin/command-manager/bootstrap.zip") ? 0 : 1
+  count         = fileexists("${path.module}/bin/discord-command-manager/bootstrap.zip") ? 0 : 1
   function_name = "${var.namespace}-${var.app_prefix}-discord-command-manager"
 }
