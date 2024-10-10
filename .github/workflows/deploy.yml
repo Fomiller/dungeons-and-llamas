@@ -3,6 +3,7 @@
 name: 'Terragrunt Deploy'
   
 on:
+  workflow_dispatch:
   push:
     branches:
       - "develop"
