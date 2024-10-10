@@ -122,16 +122,19 @@ fmt:
     @# {{infraDir}}/{{dir}} created.
 
 ######### project cmds #########
-run app:
+cargo-run app:
     doppler run -- \
     cargo run --manifest-path src/Cargo.toml {{app}}
 
-add app crate:
+cargo-add app crate:
     cargo add --manifest-path src/{{app}}/Cargo.toml {{crate}}
 
 cargo-test: 
     doppler run -- \
     cargo test --manifest-path src/Cargo.toml
+
+cargo-new path: 
+    cargo new src/{{ path }}
     
 build-lambdas:
     cargo lambda build \
