@@ -3,15 +3,10 @@ set export
 infraDir := "infra/modules/aws"
 
 clean:
-    find . -name ".terraform" -type d | xargs rm -rv
-    find . -name ".terragrunt-cache" -type d | xargs rm -rv
-    find . -name "_.*.gen.tf" -type f | xargs rm -rv
-    find . -name "..terraform.lock.hcl" -type f | xargs rm -rv
-    # rm -rf infra/modules/**/_.*.gen.tf
-    # rm -rf infra/modules/**/.terraform.lock.hcl
-    # rm -rf infra/modules/**/.terraform
-    # rm -rf infra/modules/**/.terragrunt-cache
-    
+    find . -name "_.*.gen.tf" -type f | xargs -r rm -rv
+    find . -name ".terraform.lock.hcl" -type f | xargs -r rm -rv
+    find . -name ".terraform" -type d | xargs -r rm -rv
+    find . -name ".terragrunt-cache" -type d | xargs -r rm -rv
 
 login env:
     assume-role login -p {{env}}Terraform
@@ -117,7 +112,7 @@ fmt:
     echo 'environment = "dev"' > {{infraDir}}/{{dir}}/env-config/us-east-1/dev.tfvars
     echo 'environment = "prod"' > {{infraDir}}/{{dir}}/env-config/us-east-1/prod.tfvars
     echo 'include "root" { path = find_in_parent_folders() }' > {{infraDir}}/{{dir}}/terragrunt.hcl
-    echo 'data "aws_caller_identity" "current" {}' > {{infraDir}}/{{dir}}/_data.tf
+    echo 'data "aws_caller_identity" "current" {}' > {{infraDir}}/{{dir}}/_data.tf'
     echo 'data "aws_region" "current" {}' > {{infraDir}}/{{dir}}/_data.tf'
     @# {{infraDir}}/{{dir}} created.
 
@@ -144,5 +139,15 @@ build-lambdas:
     --manifest-path  src/Cargo.toml \
     --lambda-dir infra/modules/aws/lambda/bin/
 
+
+deploy-lambdas: build-lambdas
+    doppler run \
+    --name-transformer tf-var  \
+    -- terragrunt apply \
+    -auto-approve \
+    --terragrunt-working-dir {{infraDir}}/lambda
+
+
 bacon:
     bacon --path src
+    
