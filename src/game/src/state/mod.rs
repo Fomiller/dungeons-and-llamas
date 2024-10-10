@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -19,7 +19,17 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Weapon {
+pub struct StateComponent<T: Serialize> {
+    #[serde(rename = "UserId")]
+    pub user_id: String,
+    #[serde(rename = "StateComponent")]
+    pub state_component: String,
+    #[serde(rename = "State")]
+    pub state: Option<Vec<T>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StateComponentWeapon {
     pub name: String,
     pub price: u8,
     pub damage: u8,
