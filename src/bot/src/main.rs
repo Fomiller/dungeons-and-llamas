@@ -25,11 +25,7 @@ lazy_static::lazy_static! {
 #[derive(Debug, PartialEq, EnumString)]
 enum SlashCommands {
     #[strum(ascii_case_insensitive)]
-    Hello,
-    #[strum(ascii_case_insensitive)]
     Class,
-    #[strum(ascii_case_insensitive)]
-    Goodbye,
     #[strum(ascii_case_insensitive)]
     Roll,
 }
@@ -67,12 +63,6 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
     let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
     println!("COMMAND NAME: {:?}", command_name);
     match command_name {
-        SlashCommands::Hello => CreateInteractionResponse::Message(
-            CreateInteractionResponseMessage::new().content(format!("Hello, World!")),
-        ),
-        SlashCommands::Goodbye => CreateInteractionResponse::Message(
-            CreateInteractionResponseMessage::new().content(format!("Goodbye, World!")),
-        ),
         SlashCommands::Class => {
             let class = &cmd
                 .data
