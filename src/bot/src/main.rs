@@ -1,5 +1,5 @@
+mod roll;
 use anyhow::anyhow;
-use dice::Dice;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
@@ -85,78 +85,7 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
                     .content(format!("You chose the {} class", class.as_str().unwrap())),
             )
         }
-        SlashCommands::Roll => {
-            let count = &cmd
-                .data
-                .options
-                .iter()
-                .find(|o| o.name == "count")
-                .expect("could not find 'count' option for /roll")
-                .value
-                .as_i64()
-                .expect("could not convert count.value to integer");
-
-            let sides: &usize = &cmd
-                .data
-                .options
-                .iter()
-                .find(|o| o.name == "sides")
-                .expect("Could not find 'sides' option for /roll")
-                .value
-                .as_i64()
-                .expect("could not convert sides.value to integer")
-                .try_into()
-                .expect("could not convert to usize");
-
-            let _modifier: &Option<&CommandDataOption> =
-                &cmd.data.options.iter().find(|o| o.name == "modifier");
-
-            let modifier: usize = match _modifier {
-                Some(m) => m
-                    .value
-                    .as_i64()
-                    .expect("could not convert modifier.value to integer")
-                    .try_into()
-                    .expect("could not convert to usize"),
-                None => 0,
-            };
-
-            let dice: Vec<Dice> = (0..*count).map(|_| Dice::new(*sides)).collect();
-
-            let dice_values: Vec<usize> =
-                dice.into_iter().map(|d| d.roll()).collect::<Vec<usize>>();
-
-            let roll: usize = dice_values.iter().sum();
-
-            //TODO: make into function
-            let roll_text = if modifier > 0 {
-                format!(
-                    "[{}{}] + {}",
-                    dice_values[0],
-                    dice_values[1..]
-                        .iter()
-                        .map(|v| format!(" + {}", v))
-                        .collect::<Vec<String>>()
-                        .join(""),
-                    modifier
-                )
-            } else {
-                format!(
-                    "[{}{}]",
-                    dice_values[0],
-                    dice_values[1..]
-                        .iter()
-                        .map(|v| format!(" + {}", v))
-                        .collect::<Vec<String>>()
-                        .join("")
-                )
-            };
-
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(format!("Roll: {}\nYou rolled {}!", roll_text, roll)),
-            )
-        }
+        SlashCommands::Roll => roll::roll_command(cmd),
     }
 }
 
