@@ -2,10 +2,14 @@ use crate::state::GameState;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_json::Value;
-use std::{env, fmt::format};
+use std::env;
 
 pub struct Client {
     client: aws_sdk_dynamodb::Client,
+}
+
+lazy_static::lazy_static! {
+    static ref GAME_STATE_TABLE: String = format!("fomiller-dnl-{}-game-state", env::var("ENVIRONMENT").unwrap());
 }
 
 impl Client {
@@ -23,10 +27,7 @@ impl Client {
         let res = self
             .client
             .get_item()
-            .table_name(format!(
-                "fomiler-dnl-{}-game-state",
-                env::var("ENVIRONMENT")?
-            ))
+            .table_name(GAME_STATE_TABLE.to_string())
             .key("UserId", AttributeValue::S(user_id.to_string()))
             .send()
             .await?;
@@ -49,10 +50,7 @@ impl Client {
         let res = self
             .client
             .put_item()
-            .table_name(format!(
-                "fomiler-dnl-{}-game-state",
-                env::var("ENVIRONMENT")?
-            ))
+            .table_name(GAME_STATE_TABLE.to_string())
             .set_item(Some(item))
             .send()
             .await?;

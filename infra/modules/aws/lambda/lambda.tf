@@ -10,9 +10,10 @@ resource "aws_lambda_function" "discord_bot" {
   timeout          = 10
   environment {
     variables = {
+      ENVIRONMENT        = var.environment
+      ACCOUNT            = data.aws_caller_identity.current.account_id
       REGION             = data.aws_region.current.name
       DISCORD_PUBLIC_KEY = var.discord_public_key
-      ACCOUNT            = data.aws_caller_identity.current.account_id
     }
   }
 }
@@ -30,10 +31,11 @@ resource "aws_lambda_function" "discord_command_manager" {
   timeout          = 10
   environment {
     variables = {
+      ENVIRONMENT       = var.environment
+      ACCOUNT           = data.aws_caller_identity.current.account_id
       REGION            = data.aws_region.current.name
       DISCORD_APP_ID    = var.discord_application_id
       DISCORD_BOT_TOKEN = var.discord_token
-      ACCOUNT           = data.aws_caller_identity.current.account_id
     }
   }
 }
