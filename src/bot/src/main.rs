@@ -1,9 +1,10 @@
-mod roll;
+mod commands;
+
 use anyhow::anyhow;
+use commands::Roll;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
-use roll::Roll;
 use serenity::all::CommandInteraction;
 use serenity::builder::*;
 use serenity::json;
@@ -76,7 +77,7 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
                     .content(format!("You chose the {} class", class.as_str().unwrap())),
             )
         }
-        SlashCommands::Roll => roll::Roll::command(cmd),
+        SlashCommands::Roll => Roll::command(cmd),
     }
 }
 
