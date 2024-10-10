@@ -1,4 +1,4 @@
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -10,6 +10,8 @@ pub struct GameState {
 pub struct User {
     #[serde(rename = "UserId")]
     pub user_id: String,
+    #[serde(rename = "Name")]
+    pub name: String,
     #[serde(rename = "StateComponent")]
     pub state_component: String,
     #[serde(rename = "ActiveGameId", skip_serializing_if = "Option::is_none")]
@@ -19,13 +21,39 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StateComponent<T: Serialize> {
+pub struct StateComponent<T> {
     #[serde(rename = "UserId")]
     pub user_id: String,
     #[serde(rename = "StateComponent")]
     pub state_component: String,
     #[serde(rename = "State")]
     pub state: Option<Vec<T>>,
+}
+
+#[derive(strum::Display)]
+pub enum UserSortKeys<'a> {
+    #[strum(to_string = "{0}#ActiveGameId")]
+    ActiveGameId(&'a str),
+}
+
+#[derive(strum::Display)]
+pub enum ItemSortKeys<'a> {
+    #[strum(to_string = "{0}#Item#Weapons")]
+    Weapons(&'a str),
+    #[strum(to_string = "{0}#Item#Spells")]
+    Spells(&'a str),
+    #[strum(to_string = "{0}#Item#Armor")]
+    Armor(&'a str),
+}
+
+#[derive(strum::Display)]
+pub enum GameSortKeys<'a> {
+    #[strum(to_string = "{0}#Enemies")]
+    Enemies(&'a str),
+    #[strum(to_string = "{0}#Level")]
+    Level(&'a str),
+    #[strum(to_string = "{0}#Round")]
+    Round(&'a str),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

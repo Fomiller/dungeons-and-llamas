@@ -2,11 +2,7 @@ use crate::state::*;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::types::AttributeValue;
 use lambda_http::tracing::info;
-use serde_json::json;
-use std::collections::HashMap;
-use std::convert::From;
 use std::env;
-use uuid::Uuid;
 
 pub struct Client {
     client: aws_sdk_dynamodb::Client,
@@ -48,7 +44,7 @@ impl Client {
         Ok(state)
     }
 
-    pub async fn try_new_game_state(&self, user_id: &str) -> anyhow::Result<()> {
+    pub async fn try_new_game_state(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
         let sqids = sqids::Sqids::builder()
             .min_length(10)
             .alphabet(SQID_ALPHABET.chars().collect())
@@ -58,14 +54,15 @@ impl Client {
 
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
-            state_component: format!("{}#ActiveGameId", user_id.to_string()),
+            name: name.to_string(),
+            state_component: UserSortKeys::ActiveGameId(user_id).to_string(),
             active_game_id: Some(new_game_id.to_string()),
             games: Some(vec![new_game_id.to_string()]),
         })?;
 
         let state_comp_wep = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: format!("{}#Item#Weapon", new_game_id.to_string()),
+            state_component: ItemSortKeys::Weapons(&new_game_id).to_string(),
             state: Some(vec![StateComponentWeapon {
                 name: "great-sword".to_string(),
                 price: 100,
