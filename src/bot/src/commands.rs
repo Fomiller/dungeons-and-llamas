@@ -98,9 +98,9 @@ impl NewGame {
     pub async fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
-        let result = client.try_new_game_state(&user_id).await?;
+        client.try_new_game_state(&user_id).await?;
 
-        let content = format!("New game created.\n{:?}", result);
+        let content = format!("New game created.");
         Ok(format_interaction_response(content))
     }
 }

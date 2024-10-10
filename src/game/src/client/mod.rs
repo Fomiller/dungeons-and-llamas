@@ -43,26 +43,18 @@ impl Client {
         Ok(state)
     }
 
-    pub async fn try_new_game_state(self, user_id: &str) -> anyhow::Result<Value> {
+    pub async fn try_new_game_state(self, user_id: &str) -> anyhow::Result<()> {
         let item = serde_dynamo::to_item(GameState {
             user_id: user_id.to_string(),
         })?;
-        let res = self
-            .client
+
+        self.client
             .put_item()
             .table_name(GAME_STATE_TABLE.to_string())
             .set_item(Some(item))
             .send()
             .await?;
 
-        let item_key: Value = serde_dynamo::from_item(
-            res.item_collection_metrics()
-                .unwrap()
-                .item_collection_key()
-                .unwrap()
-                .clone(),
-        )?;
-
-        Ok(item_key)
+        Ok(())
     }
 }
