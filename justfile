@@ -116,9 +116,9 @@ fmt:
     echo 'locals {}' >> {{infraDir}}/{{dir}}/_locals.tf
     echo 'environment = "dev"' > {{infraDir}}/{{dir}}/env-config/us-east-1/dev.tfvars
     echo 'environment = "prod"' > {{infraDir}}/{{dir}}/env-config/us-east-1/prod.tfvars
-    echo 'include "root" {\n\
-    \tpath = find_in_parent_folders()\n\
-    }' > {{infraDir}}/{{dir}}/terragrunt.hcl
+    echo 'include "root" { path = find_in_parent_folders() }' > {{infraDir}}/{{dir}}/terragrunt.hcl
+    echo 'data "aws_caller_identity" "current" {}' > {{infraDir}}/{{dir}}/_data.tf
+    echo 'data "aws_region" "current" {}' > {{infraDir}}/{{dir}}/_data.tf'
     @# {{infraDir}}/{{dir}} created.
 
 ######### project cmds #########
