@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "dynamodb_rw" {
   }
 }
 resource "aws_iam_policy" "dnl_dynamodb_rw" {
-  name   = "${title(var.namespace)}${title(var.app_prefix)}DynamoDBReadWrite"
+  name   = "${local.policy_prefix}DynamoDBReadWrite"
   policy = data.aws_iam_policy_document.dynamodb_rw.json
 }
 
