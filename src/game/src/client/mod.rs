@@ -1,7 +1,6 @@
 use crate::state::GameState;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::types::AttributeValue;
-use serde_json::Value;
 use std::env;
 
 pub struct Client {
