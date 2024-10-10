@@ -1,7 +1,9 @@
-# aws-repo-template
-Template for initializing repos that deploy aws infrastructure
+# Dungeons-and-LLamas
+## Description
+A serverless Discord bot written in Rust, leveraging AWS services such as API-Gateway, DynamoDB, Lambda, Bedrock and more! This bot creates dynamic text-based adventures, powered by LLMs, allowing users to experience unique, AI-generated stories each time they play.
 
-inital setup commmands
+## Docs
+inital project setup commmands
 ```
 doppler setup -p {project_name} -c {config_name}
 ```
