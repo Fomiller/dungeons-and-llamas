@@ -50,7 +50,9 @@ impl Client {
         let new_game_id = Uuid::new_v4();
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
-            active_game_id: new_game_id.to_string(),
+            state_component: format!("{}#ActiveGameId", user_id.to_string()),
+            active_game_id: Some(new_game_id.to_string()),
+            games: Some(vec![new_game_id.to_string()]),
         })?;
 
         let weapon = HashMap::from([
