@@ -2,6 +2,21 @@ use dice::Dice;
 use game::client::Client;
 use serenity::builder::*;
 use serenity::model::application::*;
+use strum::EnumString;
+
+#[derive(Debug, PartialEq, EnumString)]
+pub enum SlashCommands {
+    #[strum(ascii_case_insensitive)]
+    Class,
+    #[strum(ascii_case_insensitive)]
+    Roll,
+    #[strum(serialize = "new-game", ascii_case_insensitive)]
+    NewGame,
+    #[strum(serialize = "resume-game", ascii_case_insensitive)]
+    ResumeGame,
+    #[strum(serialize = "list-games", ascii_case_insensitive)]
+    ListGames,
+}
 
 pub struct Roll;
 impl Roll {
@@ -127,6 +142,22 @@ pub struct ListGames;
 impl ListGames {
     pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
         let content = format!("No games found.");
+
+        Ok(format_interaction_response(content))
+    }
+}
+
+pub struct Class;
+impl Class {
+    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let class = &cmd
+            .data
+            .options
+            .first()
+            .expect("No options available")
+            .value;
+
+        let content = format!("You chose the {} class", class.as_str().unwrap());
 
         Ok(format_interaction_response(content))
     }
