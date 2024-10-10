@@ -2,6 +2,7 @@ use crate::state::*;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::types::AttributeValue;
 use lambda_http::tracing::info;
+use rand::Rng;
 use std::env;
 
 pub struct Client {
@@ -50,7 +51,12 @@ impl Client {
             .alphabet(SQID_ALPHABET.chars().collect())
             .build()?;
 
-        let new_game_id = sqids.encode(&[1, 2, 3])?;
+        let new_game_id = sqids.encode(&[
+            rand::thread_rng().gen_range(0..1000),
+            rand::thread_rng().gen_range(0..1000),
+            rand::thread_rng().gen_range(0..1000),
+            rand::thread_rng().gen_range(0..1000),
+        ])?;
 
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
