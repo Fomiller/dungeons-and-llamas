@@ -85,7 +85,7 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
                     .content(format!("You chose the {} class", class.as_str().unwrap())),
             )
         }
-        SlashCommands::Roll => roll::roll_command(cmd),
+        SlashCommands::Roll => roll::Roll::command(cmd),
     }
 }
 
