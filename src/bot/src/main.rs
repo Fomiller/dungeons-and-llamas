@@ -30,11 +30,11 @@ enum SlashCommands {
     Class,
     #[strum(ascii_case_insensitive)]
     Roll,
-    #[strum(ascii_case_insensitive)]
+    #[strum(serialize = "new-game", ascii_case_insensitive)]
     NewGame,
-    #[strum(ascii_case_insensitive)]
+    #[strum(serialize = "resume-game", ascii_case_insensitive)]
     ResumeGame,
-    #[strum(ascii_case_insensitive)]
+    #[strum(serialize = "list-games", ascii_case_insensitive)]
     ListGames,
 }
 
