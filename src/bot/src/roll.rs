@@ -2,7 +2,7 @@ use dice::Dice;
 use serenity::builder::*;
 use serenity::model::application::*;
 
-pub struct Roll {}
+pub struct Roll;
 impl Roll {
     pub fn command(cmd: CommandInteraction) -> CreateInteractionResponse {
         let count = Self::get_count(&cmd);

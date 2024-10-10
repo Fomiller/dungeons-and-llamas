@@ -3,6 +3,7 @@ use anyhow::anyhow;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
+use roll::Roll;
 use serenity::all::CommandInteraction;
 use serenity::builder::*;
 use serenity::json;
