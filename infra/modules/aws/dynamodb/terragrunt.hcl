@@ -1,1 +1,3 @@
-include "root" {\n\tpath = find_in_parent_folders()\n}
+include "root" {
+    path = find_in_parent_folders()
+}
