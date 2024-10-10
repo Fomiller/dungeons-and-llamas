@@ -182,6 +182,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-sdk-dynamodb"
+version = "1.49.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab0ade000608877169533a54326badd6b5a707d2faf876cfc3976a7f9d7e5329"
+dependencies = [
+ "aws-credential-types",
+ "aws-runtime",
+ "aws-smithy-async",
+ "aws-smithy-http",
+ "aws-smithy-json",
+ "aws-smithy-runtime",
+ "aws-smithy-runtime-api",
+ "aws-smithy-types",
+ "aws-types",
+ "bytes",
+ "fastrand",
+ "http 0.2.12",
+ "once_cell",
+ "regex-lite",
+ "tracing",
+]
+
+[[package]]
 name = "aws-sdk-s3"
 version = "1.54.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -882,6 +905,7 @@ dependencies = [
  "anyhow",
  "dice",
  "ed25519-dalek",
+ "game",
  "hex",
  "lambda_http",
  "lazy_static",
@@ -1149,6 +1173,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
 dependencies = [
  "byteorder",
+]
+
+[[package]]
+name = "game"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-config",
+ "aws-sdk-dynamodb",
+ "lazy_static",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
 ]
 
 [[package]]
@@ -2404,6 +2441,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.77",
+]
+
+[[package]]
+name = "serde_dynamo"
+version = "4.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e36c1b1792cfd9de29eb373ee6a4b74650369c096f55db7198ceb7b8921d1f7f"
+dependencies = [
+ "aws-sdk-dynamodb",
+ "base64 0.21.7",
+ "serde",
 ]
 
 [[package]]

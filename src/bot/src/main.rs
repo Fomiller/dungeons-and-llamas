@@ -1,7 +1,7 @@
 mod commands;
 
 use anyhow::anyhow;
-use commands::Roll;
+use commands::*;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
 use lambda_http::{http::HeaderMap, run, service_fn, tracing, Body, Error, Request, Response};
@@ -30,6 +30,12 @@ enum SlashCommands {
     Class,
     #[strum(ascii_case_insensitive)]
     Roll,
+    #[strum(ascii_case_insensitive)]
+    NewGame,
+    #[strum(ascii_case_insensitive)]
+    ResumeGame,
+    #[strum(ascii_case_insensitive)]
+    ListGames,
 }
 
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
@@ -48,7 +54,7 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let response = match discord_command {
         // Discord rejects the interaction endpoints URL if pings are not acknowledged
         Interaction::Ping(_) => CreateInteractionResponse::Pong,
-        Interaction::Command(interaction) => handle_command(interaction),
+        Interaction::Command(interaction) => handle_command(interaction).await?,
         _ => CreateInteractionResponse::Message(
             CreateInteractionResponseMessage::new().content(format!("Command not handled")),
         ),
@@ -60,7 +66,7 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     Ok(resp)
 }
 
-fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
+async fn handle_command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
     println!("NAME: {:?}", &cmd.data.name);
     let command_name = SlashCommands::from_str(&cmd.data.name).unwrap();
     println!("COMMAND NAME: {:?}", command_name);
@@ -72,12 +78,15 @@ fn handle_command(cmd: CommandInteraction) -> CreateInteractionResponse {
                 .first()
                 .expect("No options available")
                 .value;
-            CreateInteractionResponse::Message(
+            Ok(CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
                     .content(format!("You chose the {} class", class.as_str().unwrap())),
-            )
+            ))
         }
         SlashCommands::Roll => Roll::command(cmd),
+        SlashCommands::NewGame => NewGame::command(cmd).await,
+        SlashCommands::ResumeGame => ResumeGame::command(cmd).await,
+        SlashCommands::ListGames => ListGames::command(cmd),
     }
 }
 

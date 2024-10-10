@@ -1,10 +1,11 @@
 use dice::Dice;
+use game::client::Client;
 use serenity::builder::*;
 use serenity::model::application::*;
 
 pub struct Roll;
 impl Roll {
-    pub fn command(cmd: CommandInteraction) -> CreateInteractionResponse {
+    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
         let count = Self::get_count(&cmd);
 
         let sides = Self::get_sides(&cmd);
@@ -33,7 +34,7 @@ impl Roll {
 
         let message = CreateInteractionResponseMessage::new().content(content);
 
-        CreateInteractionResponse::Message(message)
+        Ok(CreateInteractionResponse::Message(message))
     }
 
     fn create_roll_text(dice_values: Vec<usize>, modifier: usize) -> String {
@@ -90,4 +91,49 @@ impl Roll {
             .expect("could not convert to usize");
         count
     }
+}
+
+pub struct NewGame;
+impl NewGame {
+    pub async fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let client = Client::new().await;
+        let user_id = cmd.user.id.to_string();
+        let result = client.try_new_game_state(&user_id).await?;
+
+        let content = format!("New game created.\n{:?}", result);
+        Ok(format_interaction_response(content))
+    }
+}
+
+pub struct ResumeGame;
+impl ResumeGame {
+    pub async fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let client = Client::new().await;
+        let user_id = cmd.user.id.to_string();
+        let result = client.try_get_game_state(&user_id).await?;
+
+        if let Some(state) = result {
+            let content = format!("{:?}", state);
+            Ok(format_interaction_response(content))
+        } else {
+            Ok(format_interaction_response(
+                "No games available to resume.\nUse '/new-game' to start a new game.".to_string(),
+            ))
+        }
+    }
+}
+
+pub struct ListGames;
+impl ListGames {
+    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let content = format!("No games found.");
+
+        Ok(format_interaction_response(content))
+    }
+}
+
+pub fn format_interaction_response(content: String) -> CreateInteractionResponse {
+    let message = CreateInteractionResponseMessage::new().content(content);
+
+    CreateInteractionResponse::Message(message)
 }

@@ -1,5 +1,20 @@
 [
     {
+        "name": "new-game",
+        "type": 1,
+        "description": "Start a new game"
+    },
+    {
+        "name": "resume-game",
+        "type": 1,
+        "description": "Resume a game"
+    },
+    {
+        "name": "list-games",
+        "type": 1,
+        "description": "List all games"
+    },
+    {
         "name": "class",
         "type": 1,
         "description": "Which class do you want to play",
