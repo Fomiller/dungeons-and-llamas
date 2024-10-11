@@ -1,5 +1,5 @@
-resource "aws_s3_bucket" "dungeons_and_discord" {
-  bucket = "${var.namespace}-${var.environment}-dungeons-and-discord"
+resource "aws_s3_bucket" "dnl" {
+  bucket = "${var.namespace}-${var.environment}-${var.project_name}"
 
   object_lock_enabled = false
 
@@ -15,7 +15,7 @@ resource "aws_s3_bucket" "dungeons_and_discord" {
 }
 
 resource "aws_s3_bucket_object" "commands" {
-  bucket = aws_s3_bucket.dungeons_and_discord.id
+  bucket = aws_s3_bucket.dnl.id
   key    = "data/commands.json"
   source = local.commands_path
 
