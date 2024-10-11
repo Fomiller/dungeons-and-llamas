@@ -2,7 +2,11 @@ mod commands;
 mod verify;
 
 use commands::*;
-use lambda_http::{run, service_fn, tracing, tracing::info, Body, Error, Request, Response};
+use lambda_http::{
+    run, service_fn, tracing,
+    tracing::{debug, info},
+    Body, Error, Request, Response,
+};
 use serenity::all::CommandInteraction;
 use serenity::builder::*;
 use serenity::json;
@@ -28,13 +32,25 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let response = match discord_command {
         Interaction::Ping(_) => CreateInteractionResponse::Pong,
         Interaction::Command(interaction) => handle_command(interaction).await?,
+        Interaction::Component(interaction) => {
+            let content = format!(
+                "custom_id: {:?}, kind: {:?}",
+                interaction.data.custom_id, interaction.data.kind
+            );
+            let message = CreateInteractionResponseMessage::new().content(content);
+
+            CreateInteractionResponse::Message(message)
+        }
         _ => commands::format_interaction_response(format!("Command not found.")),
     };
 
     let resp: Response<Body> = Response::builder()
         .status(200)
+        .header("Content-Type", "application/json")
         .body(Body::Text(serde_json::to_string(&response)?))
         .unwrap();
+
+    debug!("RESPONSE: {:?}", resp);
 
     Ok(resp)
 }
@@ -51,11 +67,16 @@ async fn handle_command(cmd: CommandInteraction) -> anyhow::Result<CreateInterac
         SlashCommands::NewGame => NewGame::command(cmd).await,
         SlashCommands::ResumeGame => ResumeGame::command(cmd).await,
         SlashCommands::ListGames => ListGames::command(cmd),
+        SlashCommands::Buttons => Buttons::command(cmd),
+        SlashCommands::Menu => Menu::command(cmd),
+        SlashCommands::Text => Text::command(cmd),
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    // logging discussion for future reference
+    // https://github.com/awslabs/aws-lambda-rust-runtime/discussions/672
     tracing::init_default_subscriber();
 
     run(service_fn(function_handler)).await

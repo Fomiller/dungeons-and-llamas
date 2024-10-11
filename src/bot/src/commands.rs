@@ -1,5 +1,6 @@
 use dice::Dice;
 use game::client::Client;
+use serenity::all::ReactionType;
 use serenity::builder::*;
 use serenity::model::application::*;
 use strum::EnumString;
@@ -16,6 +17,12 @@ pub enum SlashCommands {
     ResumeGame,
     #[strum(serialize = "list-games", ascii_case_insensitive)]
     ListGames,
+    #[strum(serialize = "buttons", ascii_case_insensitive)]
+    Buttons,
+    #[strum(serialize = "menu", ascii_case_insensitive)]
+    Menu,
+    #[strum(serialize = "text", ascii_case_insensitive)]
+    Text,
 }
 
 pub struct Roll;
@@ -168,4 +175,59 @@ pub fn format_interaction_response(content: String) -> CreateInteractionResponse
     let message = CreateInteractionResponseMessage::new().content(content);
 
     CreateInteractionResponse::Message(message)
+}
+
+pub struct Buttons;
+impl Buttons {
+    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let content = format!("My Button!");
+        let button = CreateButton::new("my_button")
+            .style(ButtonStyle::Primary)
+            .label("Click me!");
+        // let action_row = CreateActionRow::Buttons(vec![button]);
+        // let components = vec![action_row];
+        let message = CreateInteractionResponseMessage::new()
+            .content(content)
+            .button(button);
+
+        Ok(CreateInteractionResponse::Message(message))
+    }
+}
+
+pub struct Menu;
+impl Menu {
+    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let content = format!("My Menu!");
+        let options = vec![
+            CreateSelectMenuOption::new("Pizza", "pizza"),
+            CreateSelectMenuOption::new("Ice cream", "ice cream"),
+            CreateSelectMenuOption::new("Burger", "Burger"),
+        ];
+        let menu = CreateSelectMenu::new("my_menu", CreateSelectMenuKind::String { options })
+            .placeholder("select something");
+
+        let action_row = CreateActionRow::SelectMenu(menu);
+        let components = vec![action_row];
+        let message = CreateInteractionResponseMessage::new()
+            .content(content)
+            .components(components);
+
+        Ok(CreateInteractionResponse::Message(message))
+    }
+}
+
+pub struct Text;
+impl Text {
+    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+        let class = &cmd
+            .data
+            .options
+            .first()
+            .expect("No options available")
+            .value;
+
+        let content = format!("You chose the {} class", class.as_str().unwrap());
+
+        Ok(format_interaction_response(content))
+    }
 }

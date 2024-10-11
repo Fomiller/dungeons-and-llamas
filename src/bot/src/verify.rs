@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use hex;
-use lambda_http::{http::HeaderMap, Body};
+use lambda_http::{http::HeaderMap, tracing::debug, Body};
 use std::env;
 
 lazy_static::lazy_static! {
@@ -32,12 +32,12 @@ pub fn validate_discord_signature(
         }
         Signature::from_bytes(&sig_arr)
     };
-    println!("ED245519: {}", sig_ed25519);
+    debug!("ED245519: {}", sig_ed25519);
 
     let sig_timestamp = headers
         .get("X-Signature-Timestamp")
         .ok_or(anyhow!("missing X-Signature-Timestamp header"))?;
-    println!("TIMESTAMP: {:?}", sig_timestamp);
+    debug!("TIMESTAMP: {:?}", sig_timestamp);
 
     if let Body::Text(body) = body {
         let content = sig_timestamp

@@ -17,7 +17,7 @@ async fn function_handler(event: LambdaEvent<S3Event>) -> Result<Value, Error> {
 
     let object = s3_client
         .get_object()
-        .bucket("fomiller-dev-dungeons-and-discord")
+        .bucket("fomiller-dev-dungeons-and-llamas")
         .key("data/commands.json")
         .send()
         .await?;
