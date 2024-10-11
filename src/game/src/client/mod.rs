@@ -76,28 +76,6 @@ impl Client {
             }]),
         })?;
 
-        // let weapon = HashMap::from([
-        //     (
-        //         "UserId".to_string(),
-        //         AttributeValue::S(String::from(user_id)),
-        //     ),
-        //     (
-        //         "StateComponent".to_string(),
-        //         AttributeValue::S(format!("{}#Items#Weapons", new_game_id.to_string())),
-        //     ),
-        //     (
-        //         "State".to_string(),
-        //         serde_dynamo::to_item(
-        //             StateComponentWeapon {}
-        //                 & Weapon {
-        //                     name: "sword".to_string(),
-        //                     damage: 10,
-        //                     price: 5,
-        //                 },
-        //         )?,
-        //     ),
-        // ]);
-
         self.client
             .put_item()
             .table_name(GAME_STATE_TABLE.to_string())
