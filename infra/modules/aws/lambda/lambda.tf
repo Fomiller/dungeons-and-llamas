@@ -10,11 +10,12 @@ resource "aws_lambda_function" "discord_bot" {
   timeout          = 10
   environment {
     variables = {
-      ACCOUNT              = data.aws_caller_identity.current.account_id
-      AWS_LAMBDA_LOG_LEVEL = "INFO"
-      DISCORD_PUBLIC_KEY   = var.discord_public_key
-      ENVIRONMENT          = var.environment
-      REGION               = data.aws_region.current.name
+      ACCOUNT               = data.aws_caller_identity.current.account_id
+      AWS_LAMBDA_LOG_LEVEL  = "INFO"
+      AWS_LAMBDA_LOG_FORMAT = "JSON"
+      DISCORD_PUBLIC_KEY    = var.discord_public_key
+      ENVIRONMENT           = var.environment
+      REGION                = data.aws_region.current.name
     }
   }
 }
@@ -32,12 +33,13 @@ resource "aws_lambda_function" "discord_command_manager" {
   timeout          = 10
   environment {
     variables = {
-      ACCOUNT              = data.aws_caller_identity.current.account_id
-      AWS_LAMBDA_LOG_LEVEL = "INFO"
-      DISCORD_APP_ID       = var.discord_application_id
-      DISCORD_BOT_TOKEN    = var.discord_token
-      ENVIRONMENT          = var.environment
-      REGION               = data.aws_region.current.name
+      ACCOUNT               = data.aws_caller_identity.current.account_id
+      AWS_LAMBDA_LOG_LEVEL  = "INFO"
+      AWS_LAMBDA_LOG_FORMAT = "JSON"
+      DISCORD_APP_ID        = var.discord_application_id
+      DISCORD_BOT_TOKEN     = var.discord_token
+      ENVIRONMENT           = var.environment
+      REGION                = data.aws_region.current.name
     }
   }
 }
