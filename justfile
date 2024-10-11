@@ -9,7 +9,8 @@ clean:
     find . -name ".terragrunt-cache" -type d | xargs -r rm -rv
 
 login env:
-    assume-role login -p {{env}}Terraform
+    doppler run \
+    -- assume-role login -p {{env}}Terraform
 
 login-docker env:
     doppler run \
@@ -147,6 +148,8 @@ deploy-lambdas: build-lambdas
     -auto-approve \
     --terragrunt-working-dir {{infraDir}}/lambda
 
+update-commands:
+    aws s3 cp src/data/commands.json s3://fomiller-dev-dungeons-and-llamas/data/commands.json
 
 bacon:
     bacon --path src
