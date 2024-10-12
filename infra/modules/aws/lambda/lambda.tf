@@ -14,6 +14,8 @@ resource "aws_lambda_function" "discord_bot" {
       AWS_LAMBDA_LOG_LEVEL  = "INFO"
       AWS_LAMBDA_LOG_FORMAT = "JSON"
       DISCORD_PUBLIC_KEY    = var.discord_public_key
+      DISCORD_APP_ID        = var.discord_application_id
+      DISCORD_BOT_TOKEN     = var.discord_token
       ENVIRONMENT           = var.environment
       REGION                = data.aws_region.current.name
     }
