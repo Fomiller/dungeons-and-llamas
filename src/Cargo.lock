@@ -975,8 +975,7 @@ dependencies = [
  "hex",
  "lambda_http",
  "lazy_static",
- "nacl",
- "serde",
+ "reqwest 0.12.8",
  "serde_json",
  "serenity",
  "strum",
@@ -987,15 +986,12 @@ dependencies = [
 name = "discord-command-manager"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "aws-config",
  "aws-sdk-s3",
  "aws_lambda_events",
- "lambda_http",
  "lambda_runtime",
  "lazy_static",
  "reqwest 0.12.8",
- "serde",
  "serde_json",
  "tokio",
 ]
@@ -1253,10 +1249,8 @@ dependencies = [
  "rand",
  "serde",
  "serde_dynamo",
- "serde_json",
  "sqids",
  "strum",
- "uuid",
 ]
 
 [[package]]
@@ -1804,12 +1798,6 @@ dependencies = [
  "wasi",
  "windows-sys 0.52.0",
 ]
-
-[[package]]
-name = "nacl"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30aefc44d813c51b5e7952950e87c17f2e0e1a3274d63c8281a701e05323d548"
 
 [[package]]
 name = "num-conv"
@@ -3265,9 +3253,6 @@ name = "uuid"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
-dependencies = [
- "getrandom",
-]
 
 [[package]]
 name = "uwl"
