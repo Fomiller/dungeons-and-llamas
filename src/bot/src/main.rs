@@ -32,18 +32,37 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let response = match discord_command {
         Interaction::Ping(_) => CreateInteractionResponse::Pong,
         Interaction::Command(interaction) => handle_command(interaction).await?,
-        Interaction::Component(interaction) => {
+        Interaction::Modal(interaction) => {
             let content = format!(
                 "custom_id: {:?}, kind: {:?}",
-                interaction.data.custom_id, interaction.data.kind
+                interaction.data.custom_id, interaction.data.components
             );
             let message = CreateInteractionResponseMessage::new().content(content);
-
             CreateInteractionResponse::Message(message)
+        }
+        Interaction::Component(interaction) => {
+            if interaction.data.custom_id == "class_menu" {
+                Edit::command(interaction).await?;
+                let message = CreateInteractionResponseMessage::new()
+                    .embeds(vec![])
+                    .content("EDITED")
+                    .components(vec![]);
+                // THIS LINE
+                CreateInteractionResponse::UpdateMessage(message)
+            } else {
+                let content = format!(
+                    "custom_id: {:?}, kind: {:?}",
+                    interaction.data.custom_id, interaction.data.kind
+                );
+                let message = CreateInteractionResponseMessage::new().content(content);
+                CreateInteractionResponse::UpdateMessage(message)
+                // CreateInteractionResponse::Message(message)
+            }
         }
         _ => commands::format_interaction_response(format!("Command not found.")),
     };
-
+    debug!("RES MESSAGE: {:?}", response);
+    debug!("SERIALIZE {}", serde_json::to_string(&response)?);
     let resp: Response<Body> = Response::builder()
         .status(200)
         .header("Content-Type", "application/json")
@@ -69,7 +88,7 @@ async fn handle_command(cmd: CommandInteraction) -> anyhow::Result<CreateInterac
         SlashCommands::ListGames => ListGames::command(cmd),
         SlashCommands::Buttons => Buttons::command(cmd),
         SlashCommands::Menu => Menu::command(cmd),
-        SlashCommands::Text => Text::command(cmd),
+        SlashCommands::Text => Embed::command(cmd).await,
     }
 }
 
