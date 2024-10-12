@@ -1,5 +1,6 @@
 use crate::state::*;
 use aws_config::BehaviorVersion;
+use aws_sdk_dynamodb::operation::query::QueryOutput;
 use aws_sdk_dynamodb::types::AttributeValue;
 use lambda_http::tracing::info;
 use rand::Rng;
@@ -127,5 +128,38 @@ impl Client {
             .await?;
 
         Ok(())
+    }
+
+    pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
+        let last_message_token = serde_dynamo::to_item(StateComponent {
+            user_id: user_id.to_string(),
+            state_component: MessageSortKeys::LastMessageToken(user_id).to_string(),
+            state: Some(token),
+        })?;
+
+        self.client
+            .put_item()
+            .table_name(GAME_STATE_TABLE.to_string())
+            .set_item(Some(last_message_token))
+            .send()
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
+        let sort_key = MessageSortKeys::LastMessageToken(user_id).to_string();
+        let res = self
+            .client
+            .query()
+            .table_name(GAME_STATE_TABLE.to_string())
+            .key_condition_expression("#pk = :user_id AND #sk = :sort_key")
+            .expression_attribute_names("#pk", "UserId")
+            .expression_attribute_names("#sk", "StateComponent")
+            .expression_attribute_values(":user_id", AttributeValue::S(user_id.to_string()))
+            .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
+            .send()
+            .await?;
+        Ok(res)
     }
 }

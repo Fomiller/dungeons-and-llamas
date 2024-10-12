@@ -7,6 +7,12 @@ pub struct GameState {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Message<'a> {
+    #[serde(rename = "LastMessageToken")]
+    pub last_message_token: &'a str,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     #[serde(rename = "UserId")]
     pub user_id: String,
@@ -27,13 +33,19 @@ pub struct StateComponent<T> {
     #[serde(rename = "StateComponent")]
     pub state_component: String,
     #[serde(rename = "State")]
-    pub state: Option<Vec<T>>,
+    pub state: Option<T>,
 }
 
 #[derive(strum::Display)]
 pub enum UserSortKeys<'a> {
     #[strum(to_string = "{0}#ActiveGameId")]
     ActiveGameId(&'a str),
+}
+
+#[derive(strum::Display)]
+pub enum MessageSortKeys<'a> {
+    #[strum(to_string = "{0}#LastMessageToken")]
+    LastMessageToken(&'a str),
 }
 
 #[derive(strum::Display)]
@@ -61,4 +73,10 @@ pub struct StateComponentWeapon {
     pub name: String,
     pub price: u8,
     pub damage: u8,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StateComponentMessage<'a> {
+    #[serde(rename = "LastMessageToken", skip_serializing_if = "Option::is_none")]
+    pub last_message_token: Option<&'a str>,
 }
