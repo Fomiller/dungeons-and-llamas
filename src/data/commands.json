@@ -1,5 +1,15 @@
 [
     {
+        "name": "modal",
+        "type": 1,
+        "description": "create a modal response"
+    },
+    {
+        "name": "text",
+        "type": 1,
+        "description": "create a text input response"
+    },
+    {
         "name": "menu",
         "type": 1,
         "description": "Create a menu response"
