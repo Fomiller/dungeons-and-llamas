@@ -6,31 +6,81 @@ use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;
 use std::collections::HashMap;
+use std::str::FromStr;
 use strum::EnumString;
+
+pub async fn handle_command_interaction(
+    interaction: CommandInteraction,
+) -> anyhow::Result<CreateInteractionResponse> {
+    info!("NAME: {:?}", &interaction.data.name);
+
+    let command_name = SlashCommands::from_str(&interaction.data.name).unwrap();
+    info!("COMMAND NAME: {:?}", command_name);
+
+    match command_name {
+        SlashCommands::Class(cmd) => cmd.execute(interaction),
+        SlashCommands::Roll(cmd) => cmd.execute(interaction),
+        SlashCommands::NewGame(cmd) => cmd.execute(interaction).await,
+        SlashCommands::ResumeGame(cmd) => cmd.execute(interaction).await,
+        SlashCommands::ListGames(cmd) => cmd.execute(),
+        SlashCommands::Buttons(cmd) => cmd.execute(),
+        SlashCommands::Menu(cmd) => cmd.execute(),
+        SlashCommands::Text(cmd) => cmd.execute(interaction).await,
+    }
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct ClassCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct RollCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct NewGameCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct ResumeGameCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct ListGamesCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct ButtonsCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct MenuCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct TextCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct EmbedCmd;
+
+#[derive(Debug, PartialEq, Default)]
+pub struct EditCmd;
 
 #[derive(Debug, PartialEq, EnumString)]
 pub enum SlashCommands {
     #[strum(ascii_case_insensitive)]
-    Class,
+    Class(ClassCmd),
     #[strum(ascii_case_insensitive)]
-    Roll,
+    Roll(RollCmd),
     #[strum(serialize = "new-game", ascii_case_insensitive)]
-    NewGame,
+    NewGame(NewGameCmd),
     #[strum(serialize = "resume-game", ascii_case_insensitive)]
-    ResumeGame,
+    ResumeGame(ResumeGameCmd),
     #[strum(serialize = "list-games", ascii_case_insensitive)]
-    ListGames,
+    ListGames(ListGamesCmd),
     #[strum(serialize = "buttons", ascii_case_insensitive)]
-    Buttons,
+    Buttons(ButtonsCmd),
     #[strum(serialize = "menu", ascii_case_insensitive)]
-    Menu,
+    Menu(MenuCmd),
     #[strum(serialize = "text", ascii_case_insensitive)]
-    Text,
+    Text(TextCmd),
 }
 
-pub struct Roll;
-impl Roll {
-    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl RollCmd {
+    pub fn execute(&self, cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
         let count = Self::get_count(&cmd);
 
         let sides = Self::get_sides(&cmd);
@@ -118,9 +168,11 @@ impl Roll {
     }
 }
 
-pub struct NewGame;
-impl NewGame {
-    pub async fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl NewGameCmd {
+    pub async fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<CreateInteractionResponse> {
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
         let name = cmd.user.name.to_string();
@@ -131,9 +183,11 @@ impl NewGame {
     }
 }
 
-pub struct ResumeGame;
-impl ResumeGame {
-    pub async fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl ResumeGameCmd {
+    pub async fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<CreateInteractionResponse> {
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
         let result = client.try_get_game_state(&user_id).await?;
@@ -149,18 +203,16 @@ impl ResumeGame {
     }
 }
 
-pub struct ListGames;
-impl ListGames {
-    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl ListGamesCmd {
+    pub fn execute(&self) -> anyhow::Result<CreateInteractionResponse> {
         let content = format!("No games found.");
 
         Ok(format_interaction_response(content))
     }
 }
 
-pub struct Class;
-impl Class {
-    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl ClassCmd {
+    pub fn execute(&self, cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
         let class = &cmd
             .data
             .options
@@ -180,9 +232,8 @@ pub fn format_interaction_response(content: String) -> CreateInteractionResponse
     CreateInteractionResponse::Message(message)
 }
 
-pub struct Buttons;
-impl Buttons {
-    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl ButtonsCmd {
+    pub fn execute(&self) -> anyhow::Result<CreateInteractionResponse> {
         let content = format!("My Button!");
         let button = CreateButton::new("my_button")
             .style(ButtonStyle::Primary)
@@ -197,9 +248,8 @@ impl Buttons {
     }
 }
 
-pub struct Menu;
-impl Menu {
-    pub fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl MenuCmd {
+    pub fn execute(&self) -> anyhow::Result<CreateInteractionResponse> {
         let content = format!("My Menu!");
         let options = vec![
             CreateSelectMenuOption::new("Pizza", "pizza"),
@@ -219,16 +269,18 @@ impl Menu {
     }
 }
 
-pub struct Embed;
-impl Embed {
-    pub async fn command(cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl TextCmd {
+    pub async fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<CreateInteractionResponse> {
         let token = cmd.token;
 
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
         client.try_save_message_token(&user_id, &token).await?;
 
-        let character_name = CreateActionRow::InputText(
+        let _character_name = CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Name", "name")
                 .placeholder("Legolas")
                 .required(true),
@@ -325,9 +377,15 @@ impl Embed {
     }
 }
 
-pub struct Edit;
-impl Edit {
-    pub async fn command(cmd: ComponentInteraction) -> anyhow::Result<CreateInteractionResponse> {
+impl EditCmd {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub async fn execute(
+        &self,
+        cmd: ComponentInteraction,
+    ) -> anyhow::Result<CreateInteractionResponse> {
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
 
