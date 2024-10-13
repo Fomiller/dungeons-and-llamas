@@ -4,7 +4,7 @@ use serenity::model::application::*;
 use std::str::FromStr;
 use strum::EnumString;
 
-pub async fn handle_component_interaction(
+pub async fn try_handle_component_interaction(
     interaction: ComponentInteraction,
 ) -> anyhow::Result<CreateInteractionResponse> {
     // custom_id's need to become Enums

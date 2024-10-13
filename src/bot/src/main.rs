@@ -22,7 +22,7 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let body = event.body();
     info!("BODY: {:?}", body);
 
-    verify::validate_discord_signature(headers, body, &verify::PUB_KEY).unwrap();
+    verify::try_validate_discord_signature(headers, body, &verify::PUB_KEY).unwrap();
 
     let interaction_type: Interaction = json::from_slice(body)?;
     info!("COMMAND: {:?}", interaction_type);
@@ -30,9 +30,11 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
 
     let response = match interaction_type {
         Interaction::Ping(_) => CreateInteractionResponse::Pong,
-        Interaction::Command(interaction) => handle_command_interaction(interaction).await?,
-        Interaction::Modal(interaction) => handle_modal_interaction(interaction),
-        Interaction::Component(interaction) => handle_component_interaction(interaction).await?,
+        Interaction::Command(interaction) => try_handle_command_interaction(interaction).await?,
+        Interaction::Modal(interaction) => try_handle_modal_interaction(interaction),
+        Interaction::Component(interaction) => {
+            try_handle_component_interaction(interaction).await?
+        }
         _ => commands::format_interaction_response(format!("Command not found.")),
     };
 

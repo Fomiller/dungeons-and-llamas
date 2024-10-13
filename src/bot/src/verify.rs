@@ -15,7 +15,7 @@ lazy_static::lazy_static! {
     .expect("Couldn't create a PublicKey from DISCORD_PUBLIC_KEY bytes");
 }
 
-pub fn validate_discord_signature(
+pub fn try_validate_discord_signature(
     headers: &HeaderMap,
     body: &Body,
     pub_key: &VerifyingKey,

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
 
-pub async fn handle_command_interaction(
+pub async fn try_handle_command_interaction(
     interaction: CommandInteraction,
 ) -> anyhow::Result<CreateInteractionResponse> {
     info!("NAME: {:?}", &interaction.data.name);
