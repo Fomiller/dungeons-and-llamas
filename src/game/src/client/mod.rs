@@ -1,9 +1,12 @@
 use crate::state::*;
 use aws_config::BehaviorVersion;
+use aws_sdk_dynamodb::operation::get_item::GetItemOutput;
+use aws_sdk_dynamodb::operation::put_item::PutItemOutput;
 use aws_sdk_dynamodb::operation::query::QueryOutput;
 use aws_sdk_dynamodb::types::AttributeValue;
 use lambda_http::tracing::info;
 use rand::Rng;
+use std::collections::HashMap;
 use std::env;
 
 pub struct Client {
@@ -26,14 +29,52 @@ impl Client {
         Self { client }
     }
 
-    pub async fn try_get_game_state(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
+    pub async fn try_generic_query(
+        &self,
+        primary_key: String,
+        sort_key: String,
+    ) -> anyhow::Result<QueryOutput> {
+        let res = self
+            .client
+            .query()
+            .table_name(GAME_STATE_TABLE.to_string())
+            .key_condition_expression("#pk = :user_id AND #sk = :sort_key")
+            .expression_attribute_names("#pk", "UserId")
+            .expression_attribute_names("#sk", "StateComponent")
+            .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
+            .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
+            .send()
+            .await?;
+        Ok(res)
+    }
+
+    pub async fn try_generic_get(&self, key: String) -> anyhow::Result<GetItemOutput> {
         let res = self
             .client
             .get_item()
             .table_name(GAME_STATE_TABLE.to_string())
-            .key("UserId", AttributeValue::S(user_id.to_string()))
+            .key("UserId", AttributeValue::S(key))
             .send()
             .await?;
+        Ok(res)
+    }
+
+    pub async fn try_generic_put(
+        &self,
+        item: HashMap<String, AttributeValue>,
+    ) -> anyhow::Result<PutItemOutput> {
+        let res = self
+            .client
+            .put_item()
+            .table_name(GAME_STATE_TABLE.to_string())
+            .set_item(Some(item))
+            .send()
+            .await?;
+        Ok(res)
+    }
+
+    pub async fn try_get_game_state(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
+        let res = self.try_generic_get(user_id.to_string()).await?;
 
         let state: Option<GameState> = match res.item {
             Some(item) => {
@@ -47,17 +88,7 @@ impl Client {
     }
 
     pub async fn try_new_game_state(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
-        let sqids = sqids::Sqids::builder()
-            .min_length(10)
-            .alphabet(SQID_ALPHABET.chars().collect())
-            .build()?;
-
-        let new_game_id = sqids.encode(&[
-            rand::thread_rng().gen_range(0..1000),
-            rand::thread_rng().gen_range(0..1000),
-            rand::thread_rng().gen_range(0..1000),
-            rand::thread_rng().gen_range(0..1000),
-        ])?;
+        let new_game_id = try_create_sqid(None)?;
 
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
@@ -77,31 +108,14 @@ impl Client {
             }]),
         })?;
 
-        self.client
-            .put_item()
-            .table_name(GAME_STATE_TABLE.to_string())
-            .set_item(Some(user))
-            .send()
-            .await?;
-
-        self.client
-            .put_item()
-            .table_name(GAME_STATE_TABLE.to_string())
-            .set_item(Some(state_comp_wep))
-            .send()
-            .await?;
+        self.try_generic_put(user).await?;
+        self.try_generic_put(state_comp_wep).await?;
 
         Ok(())
     }
 
     pub async fn try_find_user(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
-        let res = self
-            .client
-            .get_item()
-            .table_name(GAME_STATE_TABLE.to_string())
-            .key("UserId", AttributeValue::S(user_id.to_string()))
-            .send()
-            .await?;
+        let res = self.try_generic_get(user_id.to_string()).await?;
 
         match res.item {
             Some(item) => {
@@ -120,12 +134,7 @@ impl Client {
             user_id: user_id.to_string(),
         })?;
 
-        self.client
-            .put_item()
-            .table_name(GAME_STATE_TABLE.to_string())
-            .set_item(Some(item))
-            .send()
-            .await?;
+        self.try_generic_put(item).await?;
 
         Ok(())
     }
@@ -137,29 +146,31 @@ impl Client {
             state: Some(token),
         })?;
 
-        self.client
-            .put_item()
-            .table_name(GAME_STATE_TABLE.to_string())
-            .set_item(Some(last_message_token))
-            .send()
-            .await?;
+        self.try_generic_put(last_message_token).await?;
 
         Ok(())
     }
 
     pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
         let sort_key = MessageSortKeys::LastMessageToken(user_id).to_string();
+
         let res = self
-            .client
-            .query()
-            .table_name(GAME_STATE_TABLE.to_string())
-            .key_condition_expression("#pk = :user_id AND #sk = :sort_key")
-            .expression_attribute_names("#pk", "UserId")
-            .expression_attribute_names("#sk", "StateComponent")
-            .expression_attribute_values(":user_id", AttributeValue::S(user_id.to_string()))
-            .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
-            .send()
+            .try_generic_query(user_id.to_string(), sort_key)
             .await?;
+
         Ok(res)
     }
+}
+pub fn try_create_sqid(min_length: Option<u8>) -> anyhow::Result<String> {
+    let sqids = sqids::Sqids::builder()
+        .min_length(min_length.unwrap_or(10))
+        .alphabet(SQID_ALPHABET.chars().collect())
+        .build()?;
+
+    Ok(sqids.encode(&[
+        rand::thread_rng().gen_range(0..1000),
+        rand::thread_rng().gen_range(0..1000),
+        rand::thread_rng().gen_range(0..1000),
+        rand::thread_rng().gen_range(0..1000),
+    ])?)
 }
