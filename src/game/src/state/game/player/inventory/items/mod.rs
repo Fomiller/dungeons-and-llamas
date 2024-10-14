@@ -16,24 +16,24 @@ use weapons::WeaponEquippedStateSortKey;
 
 #[derive(strum::Display)]
 pub enum ItemSortKey {
-    #[strum(to_string = "#Weapons#{0}")]
+    #[strum(to_string = "Weapons#{0}")]
     Weapons(WeaponEquippedStateSortKey),
-    #[strum(to_string = "#Armor#{0}")]
+    #[strum(to_string = "Armor#{0}")]
     Armor(ArmorEquippedStateSortKey),
-    #[strum(to_string = "#Tools#{0}")]
+    #[strum(to_string = "Tools#{0}")]
     Tools(ToolSortKey),
-    #[strum(to_string = "#AdventuringGear")]
+    #[strum(to_string = "AdventuringGear")]
     AdventuringGear,
-    #[strum(to_string = "#MagicItems#{0}")]
-    MagicItems(MagicItemSortKey),
-    #[strum(to_string = "#Consumables")]
+    #[strum(to_string = "Magic#{0}")]
+    Magical(MagicItemSortKey),
+    #[strum(to_string = "Consumables")]
     Consumables,
-    #[strum(to_string = "#Clothing#{0}")]
+    #[strum(to_string = "Clothing#{0}")]
     Clothing(ClothingSortKey),
-    #[strum(to_string = "#Currency")]
+    #[strum(to_string = "Currency")]
     Currency,
-    #[strum(to_string = "#BooksAndScrolls#{0}")]
+    #[strum(to_string = "BooksAndScrolls#{0}")]
     BooksAndScrolls(BookAndScrollSortKey),
-    #[strum(to_string = "#Miscellaneous")]
+    #[strum(to_string = "Miscellaneous")]
     Miscellaneous,
 }
