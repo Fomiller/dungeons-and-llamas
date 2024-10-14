@@ -13,6 +13,7 @@ pub enum SpellTypeSortKey {
     #[strum(to_string = "Instant")]
     Instant,
 }
+
 #[cfg(test)]
 mod tests {
     use super::super::super::super::super::RootSortKey;
