@@ -23,5 +23,5 @@ pub enum StatsSortKey {
     #[strum(to_string = "Conditions#{0}")]
     Conditions(ConditionsSortKey),
     #[strum(to_string = "Defenses")]
-    Defenses(),
+    Defenses,
 }

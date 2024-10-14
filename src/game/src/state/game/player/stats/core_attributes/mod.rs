@@ -12,6 +12,10 @@ pub enum CoreAttributesSortKey {
     ProficiencyBonus,
     #[strum(to_string = "Initiative")]
     Initiative,
+    #[strum(to_string = "Defenses")]
+    Defenses,
+    #[strum(to_string = "Level")]
+    Level,
 }
 
 #[cfg(test)]
@@ -26,6 +30,24 @@ mod tests {
     fn test_core_attributes_sort_key() {
         let game_id = "12345";
         let variants = vec![
+            (
+                "12345#Game#Player#Stats#CoreAttributes#Level",
+                RootSortKey::Game(
+                    game_id,
+                    GameSortKey::Player(PlayerSortKey::Stats(StatsSortKey::CoreAttributes(
+                        CoreAttributesSortKey::Level,
+                    ))),
+                ),
+            ),
+            (
+                "12345#Game#Player#Stats#CoreAttributes#Defenses",
+                RootSortKey::Game(
+                    game_id,
+                    GameSortKey::Player(PlayerSortKey::Stats(StatsSortKey::CoreAttributes(
+                        CoreAttributesSortKey::Defenses,
+                    ))),
+                ),
+            ),
             (
                 "12345#Game#Player#Stats#CoreAttributes#ArmorClass",
                 RootSortKey::Game(
