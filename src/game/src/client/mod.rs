@@ -1,12 +1,20 @@
 use crate::state::{
-    RootSortKey,
-    user::{UserSortKey, User},
-    game::inventory::{
-        item::{
-            item::weapons::StateComponentWeapon
-        ItemSortKey,
+    game::{
+        player::{
+            inventory::{
+                items::{
+                    weapons::{StateComponentWeapon, WeaponEquippedStateSortKey, WeaponSortKey},
+                    ItemSortKey,
+                },
+                InventorySortKey,
+            },
+            PlayerSortKey,
         },
-    }
+        GameSortKey,
+    },
+    message::MessageSortKey,
+    user::{User, UserSortKey},
+    GameState, RootSortKey, StateComponent,
 };
 
 use aws_config::BehaviorVersion;
@@ -103,14 +111,22 @@ impl Client {
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
             name: name.to_string(),
-            state_component: UserSortKey::ActiveGameId(user_id).to_string(),
+            state_component: RootSortKey::User(user_id, UserSortKey::ActiveGameId).to_string(),
             active_game_id: Some(new_game_id.to_string()),
             games: Some(vec![new_game_id.to_string()]),
         })?;
 
         let state_comp_wep = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: ItemSortKeys::Weapons(&new_game_id).to_string(),
+            state_component: RootSortKey::Game(
+                &new_game_id,
+                GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
+                    ItemSortKey::Weapons(WeaponEquippedStateSortKey::UnEquipped(
+                        WeaponSortKey::Melee,
+                    )),
+                ))),
+            )
+            .to_string(),
             state: Some(vec![StateComponentWeapon {
                 name: "great-sword".to_string(),
                 price: 100,
@@ -152,7 +168,8 @@ impl Client {
     pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
         let last_message_token = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: MessageSortKeys::LastMessageToken(user_id).to_string(),
+            state_component: RootSortKey::Message(user_id, MessageSortKey::LastMessageToken)
+                .to_string(),
             state: Some(token),
         })?;
 
@@ -162,7 +179,7 @@ impl Client {
     }
 
     pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
-        let sort_key = MessageSortKeys::LastMessageToken(user_id).to_string();
+        let sort_key = RootSortKey::Message(user_id, MessageSortKey::LastMessageToken).to_string();
 
         let res = self
             .try_generic_query(user_id.to_string(), sort_key)
