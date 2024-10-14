@@ -11,9 +11,9 @@ use user::UserSortKey;
 pub enum RootSortKey<'a> {
     #[strum(to_string = "{0}#Game#{1}")]
     Game(&'a str, GameSortKey),
-    #[strum(to_string = "{0}#Enemy#{1}")]
+    #[strum(to_string = "{0}#User#{1}")]
     User(&'a str, UserSortKey),
-    #[strum(to_string = "{0}#Message#{1}")]
+    #[strum(to_string = "{0}#Messages#{1}")]
     Message(&'a str, MessageSortKey),
 }
 
