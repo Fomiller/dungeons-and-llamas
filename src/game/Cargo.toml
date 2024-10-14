@@ -10,7 +10,7 @@ aws-sdk-dynamodb = "1.49.0"
 lambda_http = "0.13.0"
 lazy_static = "1.5.0"
 rand = "0.8.5"
-serde = "1.0.210"
+serde = { version = "1.0.210", features = ["derive"] }
 serde_dynamo = { version = "4.2.14", features = ["aws-sdk-dynamodb+1"] }
 sqids = "0.4.1"
 strum = { version = "0.26.3", features = ["derive"] }

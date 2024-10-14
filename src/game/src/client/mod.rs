@@ -1,4 +1,14 @@
-use crate::state::*;
+use crate::state::{
+    RootSortKey,
+    user::{UserSortKey, User},
+    game::inventory::{
+        item::{
+            item::weapons::StateComponentWeapon
+        ItemSortKey,
+        },
+    }
+};
+
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::operation::get_item::GetItemOutput;
 use aws_sdk_dynamodb::operation::put_item::PutItemOutput;
@@ -93,7 +103,7 @@ impl Client {
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
             name: name.to_string(),
-            state_component: UserSortKeys::ActiveGameId(user_id).to_string(),
+            state_component: UserSortKey::ActiveGameId(user_id).to_string(),
             active_game_id: Some(new_game_id.to_string()),
             games: Some(vec![new_game_id.to_string()]),
         })?;

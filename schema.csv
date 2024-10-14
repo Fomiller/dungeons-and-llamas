@@ -1,0 +1,110 @@
+    <UserId>#Stats#GamesPlayed
+    <UserId>#Stats#Wins
+    <UserId>#Stats#Losses
+    <UserId>#Stats#CurrentStreak
+    
+    <UserId>#Metadata#Username
+    <UserId>#Metadata#Avatar
+    <UserId>#Metadata#JoinDate
+    <UserId>#Metadata#LastActive
+    
+    <UserId>#Preferences#PreferredLanguage
+    <UserId>#Preferences#NotificationSettings
+    <UserId>#Preferences#FavoriteCharacter
+    <UserId>#Preferences#Theme
+    
+	345345345345#GameState#Game#Level#Round#X#<Round
+    345345345345#GameState#Level#1#Round#1#<Encounter>
+    
+	345345345345#GameState#Enemy#Inventory
+	345345345345#GameState#NPC#Inventory
+    
+	345345345345#GameState#Player#Inventory#Item#Armor
+	345345345345#GameState#Player#Inventory#Item#Weapon
+	345345345345#GameState#Player#Inventory#Item#Tools
+	345345345345#GameState#Player#Inventory#Item#Misc
+
+    345345345345#GameState#Player#Inventory#Item##Weapons#<Equipped/UnEquipped>#Melee
+    345345345345#GameState#Player#Inventory#Item##Weapons#<Equipped/UnEquipped>#Ranged
+    345345345345#GameState#Player#Inventory#Item##Weapons#<Equipped/UnEquipped>#Thrown
+    345345345345#GameState#Player#Inventory#Item##Armor#<Equipped/UnEquipped>#Light
+    345345345345#GameState#Player#Inventory#Item##Armor#<Equipped/UnEquipped>#Medium
+    345345345345#GameState#Player#Inventory#Item##Armor#<Equipped/UnEquipped>#Heavy
+    345345345345#GameState#Player#Inventory#Item##Armor#<Equipped/UnEquipped>#Shield
+    345345345345#GameState#Player#Inventory#Item#Tools#Artisan
+    345345345345#GameState#Player#Inventory#Item#Tools#Thieves
+    345345345345#GameState#Player#Inventory#Item#Tools#Instrument
+    345345345345#GameState#Player#Inventory#Item#AdventuringGear
+    345345345345#GameState#Player#Inventory#Item#MagicItems#Potion
+    345345345345#GameState#Player#Inventory#Item#MagicItems#Wondrous
+    345345345345#GameState#Player#Inventory#Item#MagicItems#Ring
+    345345345345#GameState#Player#Inventory#Item#Consumables
+    345345345345#GameState#Player#Inventory#Item#Clothing#Travelers
+    345345345345#GameState#Player#Inventory#Item#Clothing#Cloak
+    345345345345#GameState#Player#Inventory#Item#Clothing#Jewelry
+    345345345345#GameState#Player#Inventory#Item#Currency
+    345345345345#GameState#Player#Inventory#Item#Currency
+    345345345345#GameState#Player#Inventory#Item#BooksAndScrolls#Reading
+    345345345345#GameState#Player#Inventory#Item#BooksAndScrolls#Spellbook
+    345345345345#GameState#Player#Inventory#Item#BooksAndScrolls#Scroll
+    345345345345#GameState#Player#Inventory#Item#Miscellaneous
+
+    
+	
+	345345345345#GameState#Player#CharacterInfo#Meta
+	345345345345#GameState#Player#CharacterInfo#Feats
+	345345345345#GameState#Player#CharacterInfo#Traits
+	345345345345#GameState#Player#CharacterInfo#BackGround
+    
+	345345345345#GameState#Player#Stats#Level
+
+    345345345345#GameState#Player#Stats#Conditions#Buff
+    345345345345#GameState#Player#Stats#Conditions#Debuf
+    
+    345345345345#GameState#Player#Stats#Defenses
+    
+    345345345345#GameState#Player#Stats#Abilities#Strength
+    345345345345#GameState#Player#Stats#Abilities#Dexterity
+    345345345345#GameState#Player#Stats#Abilities#Constitution
+    345345345345#GameState#Player#Stats#Abilities#Intelligence
+    345345345345#GameState#Player#Stats#Abilities#Wisdom
+    345345345345#GameState#Player#Stats#Abilities#Charisma
+    
+    345345345345#GameState#Player#Stats#CoreAttributes#ArmorClass
+    345345345345#GameState#Player#Stats#CoreAttributes#HitPoints
+    345345345345#GameState#Player#Stats#CoreAttributes#Speed
+    345345345345#GameState#Player#Stats#CoreAttributes#ProficiencyBonus
+    345345345345#GameState#Player#Stats#CoreAttributes#Initiative
+    
+    345345345345#GameState#Player#Stats#SavingThrows#Strength
+    345345345345#GameState#Player#Stats#SavingThrows#Dexterity
+    345345345345#GameState#Player#Stats#SavingThrows#Constitution
+    345345345345#GameState#Player#Stats#SavingThrows#Intelligence
+    345345345345#GameState#Player#Stats#SavingThrows#Wisdom
+    345345345345#GameState#Player#Stats#SavingThrows#Charisma
+    
+    345345345345#GameState#Player#Stats#Skills#Acrobatics
+    345345345345#GameState#Player#Stats#Skills#AnimalHandling
+    345345345345#GameState#Player#Stats#Skills#Arcana
+    345345345345#GameState#Player#Stats#Skills#Athletics
+    345345345345#GameState#Player#Stats#Skills#Deception
+    345345345345#GameState#Player#Stats#Skills#History
+    345345345345#GameState#Player#Stats#Skills#Insight
+    345345345345#GameState#Player#Stats#Skills#Intimidation
+    345345345345#GameState#Player#Stats#Skills#Investigation
+    345345345345#GameState#Player#Stats#Skills#Medicine
+    345345345345#GameState#Player#Stats#Skills#Nature
+    345345345345#GameState#Player#Stats#Skills#Perception
+    345345345345#GameState#Player#Stats#Skills#Performance
+    345345345345#GameState#Player#Stats#Skills#Persuasion
+    345345345345#GameState#Player#Stats#Skills#Religion
+    345345345345#GameState#Player#Stats#Skills#SleightOfHand
+    345345345345#GameState#Player#Stats#Skills#Stealth
+    345345345345#GameState#Player#Stats#Skills#Survival
+    
+	345345345345#GameState#Player#Actions#Spells#Cantrip
+	345345345345#GameState#Player#Actions#Spells#Spell#Concentration
+	345345345345#GameState#Player#Actions#Spells#Spell#Instant
+	345345345345#GameState#Player#Actions#Action
+	345345345345#GameState#Player#Actions#BonusAction
+	345345345345#GameState#Player#Actions#Reaction
