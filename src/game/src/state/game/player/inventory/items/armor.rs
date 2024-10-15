@@ -1,3 +1,5 @@
+use super::equipped::EquippedStateSortKey;
+
 #[derive(strum::Display)]
 pub enum ArmorSortKey {
     #[strum(to_string = "Light")]
@@ -8,6 +10,35 @@ pub enum ArmorSortKey {
     Heavy,
     #[strum(to_string = "Shield")]
     Shield,
+}
+
+#[derive(Default)]
+pub struct ArmorSortKeyBuilder {
+    armor: Option<ArmorSortKey>,
+    equipped: EquippedStateSortKey,
+}
+
+impl ArmorSortKeyBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn armor(mut self, armor: ArmorSortKey) -> Self {
+        self.armor = Some(armor);
+        self
+    }
+    pub fn equipped(mut self, equipped: EquippedStateSortKey) -> Self {
+        self.equipped = equipped;
+        self
+    }
+
+    pub fn build(self) -> String {
+        let mut result = String::from(format!("GameState#{}#", self.equipped.to_string()));
+        if let Some(weapon) = self.armor {
+            result.push_str(&format!("#{}", weapon.to_string()));
+        }
+        result
+    }
 }
 
 // #[cfg(test)]

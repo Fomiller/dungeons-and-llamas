@@ -1,20 +1,21 @@
-use crate::state::{
+pub use crate::state::{
     game::{
         player::{
             inventory::{
                 items::{
-                    weapons::{StateComponentWeapon, WeaponSortKey},
-                    ItemSortKey,
+                    equipped::EquippedStateSortKey,
+                    weapons::{StateComponentWeapon, WeaponSortKey, WeaponSortKeyBuilder},
+                    ItemSortKey, ItemSortKeyBuilder,
                 },
-                InventorySortKey,
+                InventorySortKey, InventorySortKeyBuilder,
             },
-            PlayerSortKey,
+            PlayerSortKey, PlayerSortKeyBuilder,
         },
-        GameSortKey,
+        GameSortKeyBuilder,
     },
     message::MessageSortKey,
     user::{User, UserSortKey},
-    GameState, RootSortKey, StateComponent,
+    GameState, RootSortKey, SortKeyBuilder, StateComponent,
 };
 
 use aws_config::BehaviorVersion;
@@ -111,22 +112,27 @@ impl Client {
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
             name: name.to_string(),
-            state_component: RootSortKey::User(user_id, UserSortKey::ActiveGameId).to_string(),
+            state_component: SortKeyBuilder::new()
+                .id(user_id.to_string())
+                .user(UserSortKey::ActiveGameId)
+                .build(),
             active_game_id: Some(new_game_id.to_string()),
             games: Some(vec![new_game_id.to_string()]),
         })?;
 
+        let weapon_sk = WeaponSortKeyBuilder::new()
+            .weapon(WeaponSortKey::Melee)
+            .equipped(EquippedStateSortKey::Equipped);
+        let item_sk = ItemSortKeyBuilder::new().weapons(weapon_sk);
+        let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
+        let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
+        let game_sk = GameSortKeyBuilder::new().player(player_sk);
+
+        let sort_key = SortKeyBuilder::new().id(new_game_id).game(game_sk).build();
+
         let state_comp_wep = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: RootSortKey::Game(
-                &new_game_id,
-                GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-                    ItemSortKey::Weapons(WeaponEquippedStateSortKey::UnEquipped(
-                        WeaponSortKey::Melee,
-                    )),
-                ))),
-            )
-            .to_string(),
+            state_component: sort_key,
             state: Some(vec![StateComponentWeapon {
                 name: "great-sword".to_string(),
                 price: 100,
@@ -168,8 +174,10 @@ impl Client {
     pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
         let last_message_token = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: RootSortKey::Message(user_id, MessageSortKey::LastMessageToken)
-                .to_string(),
+            state_component: SortKeyBuilder::new()
+                .id(user_id.to_string())
+                .message(MessageSortKey::LastMessageToken)
+                .build(),
             state: Some(token),
         })?;
 
@@ -179,7 +187,10 @@ impl Client {
     }
 
     pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
-        let sort_key = RootSortKey::Message(user_id, MessageSortKey::LastMessageToken).to_string();
+        let sort_key = SortKeyBuilder::new()
+            .id(user_id.to_string())
+            .message(MessageSortKey::LastMessageToken)
+            .build();
 
         let res = self
             .try_generic_query(user_id.to_string(), sort_key)

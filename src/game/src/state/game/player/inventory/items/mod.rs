@@ -8,13 +8,12 @@ pub mod magic;
 pub mod tools;
 pub mod weapons;
 
-use armor::ArmorSortKey;
+use armor::ArmorSortKeyBuilder;
 use books_and_scrolls::BookAndScrollSortKey;
 use clothing::ClothingSortKey;
-use equipped::EquippedStateSortKey;
 use magic::MagicItemSortKey;
 use tools::ToolSortKey;
-use weapons::WeaponSortKey;
+use weapons::WeaponSortKeyBuilder;
 
 #[derive(strum::Display)]
 pub enum ItemSortKey {
@@ -44,7 +43,7 @@ pub enum ItemSortKey {
 pub struct ItemSortKeyBuilder {
     // inventory options
     adventuring_gear: Option<bool>,
-    armor: Option<ArmorSortKey>,
+    armor: Option<ArmorSortKeyBuilder>,
     books_and_scrolls: Option<BookAndScrollSortKey>,
     clothing: Option<ClothingSortKey>,
     consumables: Option<bool>,
@@ -52,7 +51,7 @@ pub struct ItemSortKeyBuilder {
     magical: Option<MagicItemSortKey>,
     miscellaneous: Option<bool>,
     tools: Option<ToolSortKey>,
-    weapons: Option<WeaponSortKey>,
+    weapons: Option<WeaponSortKeyBuilder>,
 }
 
 impl ItemSortKeyBuilder {
@@ -64,7 +63,7 @@ impl ItemSortKeyBuilder {
         self.adventuring_gear = Some(adventuring_gear);
         self
     }
-    pub fn armor(mut self, armor: ArmorSortKey) -> Self {
+    pub fn armor(mut self, armor: ArmorSortKeyBuilder) -> Self {
         self.armor = Some(armor);
         self
     }
@@ -96,7 +95,7 @@ impl ItemSortKeyBuilder {
         self.tools = Some(tools);
         self
     }
-    pub fn weapons(mut self, weapons: WeaponSortKey) -> Self {
+    pub fn weapons(mut self, weapons: WeaponSortKeyBuilder) -> Self {
         self.weapons = Some(weapons);
         self
     }
@@ -106,7 +105,7 @@ impl ItemSortKeyBuilder {
         if let Some(adventuring_gear) = self.adventuring_gear {
             result.push_str(&format!("#{}", adventuring_gear.to_string()));
         } else if let Some(armor) = self.armor {
-            result.push_str(&format!("#{}", armor));
+            result.push_str(&format!("#{}", armor.build().to_string()));
         } else if let Some(books_and_scrolls) = self.books_and_scrolls {
             result.push_str(&format!("#{}", books_and_scrolls.to_string()));
         } else if let Some(clothing) = self.clothing {
@@ -122,7 +121,7 @@ impl ItemSortKeyBuilder {
         } else if let Some(tools) = self.tools {
             result.push_str(&format!("#{}", tools.to_string()))
         } else if let Some(weapons) = self.weapons {
-            result.push_str(&format!("#{}", weapons.to_string()))
+            result.push_str(&format!("#{}", weapons.build().to_string()))
         }
         result
     }

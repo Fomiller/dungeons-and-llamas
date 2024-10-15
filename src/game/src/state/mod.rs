@@ -2,12 +2,10 @@ pub mod game;
 pub mod message;
 pub mod user;
 
-use game::GameSortKey;
+use game::GameSortKeyBuilder;
 use message::MessageSortKey;
 use serde::{Deserialize, Serialize};
 use user::UserSortKey;
-
-use self::game::player::PlayerSortKeyBuilder;
 
 #[derive(strum::Display)]
 pub enum RootSortKey {
@@ -38,7 +36,7 @@ pub struct StateComponent<T> {
 #[derive(Default)]
 pub struct SortKeyBuilder {
     id: String,
-    game: Option<GameSortKey>,
+    game: Option<GameSortKeyBuilder>,
     user: Option<UserSortKey>,
     message: Option<MessageSortKey>,
 }
@@ -48,8 +46,21 @@ impl SortKeyBuilder {
         Self::default()
     }
 
-    pub fn game(mut self, game: GameSortKey) -> Self {
+    pub fn game(mut self, game: GameSortKeyBuilder) -> Self {
         self.game = Some(game);
+        self
+    }
+    pub fn user(mut self, user: UserSortKey) -> Self {
+        self.user = Some(user);
+        self
+    }
+    pub fn message(mut self, message: MessageSortKey) -> Self {
+        self.message = Some(message);
+        self
+    }
+
+    pub fn id(mut self, id: String) -> Self {
+        self.id = id;
         self
     }
 
@@ -57,33 +68,13 @@ impl SortKeyBuilder {
         let mut result = String::from(format!("{}#", self.id));
 
         if let Some(game) = self.game {
-            result.push_str(&format!(
-                "#{}",
-                match game {
-                    GameSortKey::Player => {
-                        PlayerSortKeyBuilder
-                    }
-                    GameSortKey::NPC => GameSortKey::NPC.to_string(),
-                    GameSortKey::Level => GameSortKey::Level.to_string(),
-                    GameSortKey::Round => GameSortKey::Round.to_string(),
-                    GameSortKey::Enemy => GameSortKey::Enemy.to_string(),
-                }
-            ));
+            result.push_str(&format!("#{}", game.build().to_string()));
         }
         if let Some(user) = self.user {
             result.push_str(&format!("#{}", user.to_string()));
         }
-        if let Some(item_type) = self.game {
-            result.push_str(&format!(
-                "#{}",
-                match item_type {
-                    GameSortKey::Player => GameSortKey::Player.to_string(),
-                    GameSortKey::NPC => GameSortKey::NPC.to_string(),
-                    GameSortKey::Level => GameSortKey::Level.to_string(),
-                    GameSortKey::Round => GameSortKey::Round.to_string(),
-                    GameSortKey::Enemy => GameSortKey::Enemy.to_string(),
-                }
-            ));
+        if let Some(message) = self.message {
+            result.push_str(&format!("#{}", message.to_string()));
         }
 
         result
