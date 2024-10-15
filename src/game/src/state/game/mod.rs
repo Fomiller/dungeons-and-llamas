@@ -4,16 +4,14 @@ pub mod npc;
 pub mod player;
 pub mod round;
 
-use player::PlayerSortKey;
-
 #[derive(strum::Display)]
 pub enum GameSortKey {
-    #[strum(to_string = "Player#{0}")]
-    Player(PlayerSortKey),
-    #[strum(to_string = "Enemy#{0}")]
-    Enemy(PlayerSortKey),
-    #[strum(to_string = "NPC#{0}")]
-    NPC(PlayerSortKey),
+    #[strum(to_string = "Player#")]
+    Player,
+    #[strum(to_string = "Enemy#")]
+    Enemy,
+    #[strum(to_string = "NPC#")]
+    NPC,
     #[strum(to_string = "Level")]
     Level,
     #[strum(to_string = "Round")]

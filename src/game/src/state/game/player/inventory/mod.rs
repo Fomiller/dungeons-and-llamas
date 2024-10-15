@@ -4,6 +4,11 @@ pub mod items;
 
 #[derive(strum::Display)]
 pub enum InventorySortKey {
-    #[strum(to_string = "Item#{0}")]
-    Item(ItemSortKey),
+    #[strum(to_string = "Item#")]
+    Item,
+}
+
+#[derive(Default)]
+pub struct InventorySortKeyBuilder {
+    item: Option<ItemSortKey>,
 }

@@ -3,7 +3,7 @@ use crate::state::{
         player::{
             inventory::{
                 items::{
-                    weapons::{StateComponentWeapon, WeaponEquippedStateSortKey, WeaponSortKey},
+                    weapons::{StateComponentWeapon, WeaponSortKey},
                     ItemSortKey,
                 },
                 InventorySortKey,
