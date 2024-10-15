@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(strum::Display)]
+#[derive(strum::Display, strum::EnumIter)]
 pub enum UserSortKey {
     #[strum(to_string = "ActiveGameId")]
     ActiveGameId,
@@ -19,23 +19,3 @@ pub struct User {
     #[serde(rename = "Games", skip_serializing_if = "Option::is_none")]
     pub games: Option<Vec<String>>,
 }
-//
-// #[cfg(test)]
-// mod tests {
-//     use super::super::RootSortKey;
-//     use super::UserSortKey;
-//
-//     #[test]
-//     fn test_user_sort_key() {
-//         // maybe use EnumIter here, initial exploration did not work b/c of
-//         // having to use a default
-//         let user_id = "12345";
-//         let variants = vec![(
-//             "12345#User#ActiveGameId",
-//             RootSortKey::User(user_id, UserSortKey::ActiveGameId),
-//         )];
-//         for variant in variants.iter() {
-//             assert_eq!(variant.0, variant.1.to_string())
-//         }
-//     }
-// }

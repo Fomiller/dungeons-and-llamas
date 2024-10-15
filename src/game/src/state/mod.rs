@@ -134,14 +134,6 @@ mod tests {
         // having to use a default
         let game_id = "12345";
 
-        // 345345345345#GameState#Player#Stats#Level
-        //
-        //
-        //    345345345345#GameState#Player#Stats#Defenses
-        //
-        //
-        //    345345345345#GameState#Player#Stats#Skills#Arcana
-
         let stats_st_str_expected = "12345#Game#Player#Stats#SavingThrows#Strength";
         let stats_ca_ac_expected = "12345#Game#Player#Stats#CoreAttributes#ArmorClass";
         let stats_abilities_wis_expected = "12345#Game#Player#Stats#Abilities#Wisdom";
@@ -151,12 +143,17 @@ mod tests {
 
         let stats_st_str_sk =
             StatsSortKeyBuilder::new().saving_throws(SavingThrowsSortKey::Strength);
+
         let stats_ca_ac_sk =
             StatsSortKeyBuilder::new().core_attributes(CoreAttributesSortKey::ArmorClass);
+
         let stats_abilities_wis_sk = StatsSortKeyBuilder::new().abilities(AbilitiesSortKey::Wisdom);
+
         let stats_conditions_debuff_sk =
             StatsSortKeyBuilder::new().conditions(ConditionsSortKey::Debuff);
+
         let stats_defenses_sk = StatsSortKeyBuilder::new().defenses(true);
+
         let stats_skills_arc_sk = StatsSortKeyBuilder::new().skills(SkillsSortKey::Arcana);
 
         for stat in vec![

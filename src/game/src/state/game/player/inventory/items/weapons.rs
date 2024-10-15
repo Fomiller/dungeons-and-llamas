@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::equipped::EquippedStateSortKey;
 
-#[derive(strum::Display, Debug)]
+#[derive(strum::Display, Debug, strum::EnumIter)]
 pub enum WeaponSortKey {
     #[strum(to_string = "Melee")]
     Melee,

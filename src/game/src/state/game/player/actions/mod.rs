@@ -2,7 +2,7 @@ pub mod spells;
 
 use spells::SpellSortKey;
 
-#[derive(strum::Display)]
+#[derive(strum::Display, strum::EnumIter)]
 pub enum ActionsSortKey {
     #[strum(to_string = "Spells#")]
     Spells,

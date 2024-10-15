@@ -1,4 +1,4 @@
-#[derive(strum::Display)]
+#[derive(strum::Display, strum::EnumIter)]
 pub enum ToolSortKey {
     #[strum(to_string = "Artisan")]
     Artisan,

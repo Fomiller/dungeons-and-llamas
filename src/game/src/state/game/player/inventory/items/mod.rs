@@ -1,5 +1,3 @@
-pub use serde::{Deserialize, Serialize};
-
 pub mod armor;
 pub mod books_and_scrolls;
 pub mod clothing;
@@ -15,7 +13,9 @@ use magic::MagicItemSortKey;
 use tools::ToolSortKey;
 use weapons::WeaponSortKeyBuilder;
 
-#[derive(strum::Display)]
+pub use serde::{Deserialize, Serialize};
+
+#[derive(strum::Display, strum::EnumIter)]
 pub enum ItemSortKey {
     #[strum(to_string = "Weapons#")]
     Weapons,

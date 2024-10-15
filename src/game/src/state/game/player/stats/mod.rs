@@ -79,7 +79,7 @@ impl StatsSortKeyBuilder {
         } else if let Some(abilities) = self.abilities {
             result.push_str(&format!("Abilities#{}", abilities));
         } else if let Some(_) = self.defenses {
-            result.push_str("Defenses");
+            result.push_str(&format!("{}", StatsSortKey::Defenses.to_string()));
         }
         result
     }

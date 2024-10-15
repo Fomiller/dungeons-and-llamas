@@ -1,6 +1,6 @@
 use super::equipped::EquippedStateSortKey;
 
-#[derive(strum::Display)]
+#[derive(strum::Display, strum::EnumIter)]
 pub enum ArmorSortKey {
     #[strum(to_string = "Light")]
     Light,

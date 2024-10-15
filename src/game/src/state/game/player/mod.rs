@@ -7,7 +7,7 @@ use actions::ActionsSortKeyBuilder;
 use inventory::InventorySortKeyBuilder;
 use stats::StatsSortKeyBuilder;
 
-#[derive(strum::Display)]
+#[derive(strum::Display, strum::EnumIter)]
 pub enum PlayerSortKey {
     #[strum(to_string = "Inventory#")]
     Inventory,

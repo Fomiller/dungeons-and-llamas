@@ -1,8 +1,8 @@
-use items::ItemSortKeyBuilder;
-
 pub mod items;
 
-#[derive(strum::Display)]
+use items::ItemSortKeyBuilder;
+
+#[derive(strum::Display, strum::EnumIter)]
 pub enum InventorySortKey {
     #[strum(to_string = "Item#")]
     Item,
