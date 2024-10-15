@@ -33,9 +33,9 @@ impl WeaponSortKeyBuilder {
     }
 
     pub fn build(self) -> String {
-        let mut result = String::from(format!("GameState#{}#", self.equipped.to_string()));
+        let mut result = String::from(format!("Weapons#{}", self.equipped.to_string()));
         if let Some(weapon) = self.weapon {
-            result.push_str(&format!("#{}", weapon.to_string()));
+            result.push_str(&format!("{}", weapon.to_string()));
         }
         result
     }

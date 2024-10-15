@@ -101,27 +101,27 @@ impl ItemSortKeyBuilder {
     }
 
     pub fn build(self) -> String {
-        let mut result = String::from("GameState#");
+        let mut result = String::from("Item#");
         if let Some(adventuring_gear) = self.adventuring_gear {
-            result.push_str(&format!("#{}", adventuring_gear.to_string()));
+            result.push_str(&format!("{}", adventuring_gear.to_string()));
         } else if let Some(armor) = self.armor {
-            result.push_str(&format!("#{}", armor.build().to_string()));
+            result.push_str(&format!("{}", armor.build().to_string()));
         } else if let Some(books_and_scrolls) = self.books_and_scrolls {
-            result.push_str(&format!("#{}", books_and_scrolls.to_string()));
+            result.push_str(&format!("{}", books_and_scrolls.to_string()));
         } else if let Some(clothing) = self.clothing {
-            result.push_str(&format!("#{}", clothing.to_string()));
+            result.push_str(&format!("{}", clothing.to_string()));
         } else if let Some(consumables) = self.consumables {
-            result.push_str(&format!("#{}", consumables.to_string()));
+            result.push_str(&format!("{}", consumables.to_string()));
         } else if let Some(currency) = self.currency {
-            result.push_str(&format!("#{}", currency.to_string()));
+            result.push_str(&format!("{}", currency.to_string()));
         } else if let Some(magical) = self.magical {
-            result.push_str(&format!("#{}", magical.to_string()));
+            result.push_str(&format!("{}", magical.to_string()));
         } else if let Some(miscellaneous) = self.miscellaneous {
-            result.push_str(&format!("#{}", miscellaneous.to_string()));
+            result.push_str(&format!("{}", miscellaneous.to_string()));
         } else if let Some(tools) = self.tools {
-            result.push_str(&format!("#{}", tools.to_string()))
+            result.push_str(&format!("{}", tools.to_string()))
         } else if let Some(weapons) = self.weapons {
-            result.push_str(&format!("#{}", weapons.build().to_string()))
+            result.push_str(&format!("{}", weapons.build().to_string()))
         }
         result
     }

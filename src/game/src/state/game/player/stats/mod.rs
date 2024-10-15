@@ -67,21 +67,19 @@ impl StatsSortKeyBuilder {
     }
 
     pub fn build(self) -> String {
-        let mut result = String::from("GameState#");
+        let mut result = String::from("Stats#");
         if let Some(skills) = self.skills {
-            result.push_str(&format!("#{}", skills.to_string()));
-        } else if let Some(skills) = self.skills {
-            result.push_str(&format!("#{}", skills));
+            result.push_str(&format!("Skills#{}", skills.to_string()));
         } else if let Some(conditions) = self.conditions {
-            result.push_str(&format!("#{}", conditions));
+            result.push_str(&format!("Conditions#{}", conditions));
         } else if let Some(saving_throws) = self.saving_throws {
-            result.push_str(&format!("#{}", saving_throws));
+            result.push_str(&format!("SavingThrows#{}", saving_throws));
         } else if let Some(core_attributes) = self.core_attributes {
-            result.push_str(&format!("#{}", core_attributes));
+            result.push_str(&format!("CoreAttributes#{}", core_attributes));
         } else if let Some(abilities) = self.abilities {
-            result.push_str(&format!("#{}", abilities));
-        } else if let Some(defenses) = self.defenses {
-            result.push_str(&format!("#{}", defenses));
+            result.push_str(&format!("Abilities#{}", abilities));
+        } else if let Some(_) = self.defenses {
+            result.push_str("Defenses");
         }
         result
     }

@@ -50,15 +50,15 @@ impl PlayerSortKeyBuilder {
     }
 
     pub fn build(self) -> String {
-        let mut result = String::from("GameState#");
+        let mut result = String::from("Player#");
         if let Some(inventory) = self.inventory {
-            result.push_str(&format!("#{}", inventory.build().to_string()));
+            result.push_str(&format!("{}", inventory.build().to_string()));
         } else if let Some(character) = self.character {
-            result.push_str(&format!("#{}", character.to_string()));
+            result.push_str(&format!("{}", character.to_string()));
         } else if let Some(stats) = self.stats {
-            result.push_str(&format!("#{}", stats.build().to_string()));
+            result.push_str(&format!("{}", stats.build().to_string()));
         } else if let Some(actions) = self.actions {
-            result.push_str(&format!("#{}", actions.build().to_string()));
+            result.push_str(&format!("{}", actions.build().to_string()));
         }
         result
     }

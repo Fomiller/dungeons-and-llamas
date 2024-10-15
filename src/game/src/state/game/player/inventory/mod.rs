@@ -24,9 +24,9 @@ impl InventorySortKeyBuilder {
     }
 
     pub fn build(self) -> String {
-        let mut result = String::from("");
+        let mut result = String::from("Inventory#");
         if let Some(item) = self.item {
-            result.push_str(&format!("#{}", item.build().to_string()));
+            result.push_str(&format!("{}", item.build().to_string()));
         }
         result
     }
