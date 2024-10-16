@@ -31,3 +31,6 @@ env.list
 
 # cargo
 **/target
+
+# local files
+schema.csv

@@ -1,5 +1,5 @@
-#[derive(strum::Display)]
+#[derive(strum::Display, strum::EnumIter)]
 pub enum CharacterSortKey {
-    #[strum(to_string = "#Spells#")]
-    Spells,
+    // #[strum(to_string = "#Spells#")]
+    // Spells,
 }

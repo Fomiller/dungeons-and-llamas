@@ -1,7 +1,7 @@
 use dice::Dice;
 use game::client::Client;
 use game::state::message::MessageSortKey;
-use game::state::RootSortKey;
+use game::state::SortKeyBuilder;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
 use serenity::builder::*;
@@ -394,7 +394,10 @@ impl EditCmd {
         let items = query.items.expect(
             format!(
                 "Could not find {}",
-                RootSortKey::Message(&user_id, MessageSortKey::LastMessageToken),
+                SortKeyBuilder::new()
+                    .id(user_id)
+                    .message(MessageSortKey::LastMessageToken)
+                    .build()
             )
             .as_str(),
         );
