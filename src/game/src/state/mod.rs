@@ -7,6 +7,27 @@ use message::MessageSortKey;
 use serde::{Deserialize, Serialize};
 use user::UserSortKey;
 
+use crate::{
+    client::{
+        EquippedStateSortKey, InventorySortKeyBuilder, ItemSortKeyBuilder, PlayerSortKeyBuilder,
+        WeaponSortKey, WeaponSortKeyBuilder,
+    },
+    state::game::player::{
+        inventory::items::{
+            armor::{ArmorSortKey, ArmorSortKeyBuilder},
+            books_and_scrolls::BookAndScrollSortKey,
+            clothing::ClothingSortKey,
+            magic::MagicItemSortKey,
+            tools::ToolSortKey,
+        },
+        stats::{
+            abilities::AbilitiesSortKey, conditions::ConditionsSortKey,
+            core_attributes::CoreAttributesSortKey, saving_throws::SavingThrowsSortKey,
+            skills::SkillsSortKey, StatsSortKeyBuilder,
+        },
+    },
+};
+
 #[derive(strum::Display)]
 pub enum RootSortKey {
     #[strum(to_string = "Game#")]
@@ -79,24 +100,152 @@ impl SortKeyBuilder {
 
         result
     }
+
+    pub fn create_player_sk(id: String, player: PlayerSortKeyBuilder) -> SortKeyBuilder {
+        SortKeyBuilder::new()
+            .id(id)
+            .game(GameSortKeyBuilder::new().player(player))
+    }
+
+    pub fn create_inventory_sk(id: String, inventory: InventorySortKeyBuilder) -> SortKeyBuilder {
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_item_sk(id: String, item: ItemSortKeyBuilder) -> SortKeyBuilder {
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_weapon_sk(
+        id: String,
+        weapon: WeaponSortKey,
+        equipped: EquippedStateSortKey,
+    ) -> SortKeyBuilder {
+        let weapons = WeaponSortKeyBuilder::new()
+            .weapon(weapon)
+            .equipped(equipped);
+        let item = ItemSortKeyBuilder::new().weapons(weapons);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_armor_sk(
+        id: String,
+        armor: ArmorSortKey,
+        equipped: EquippedStateSortKey,
+    ) -> SortKeyBuilder {
+        let armor = ArmorSortKeyBuilder::new().armor(armor).equipped(equipped);
+        let item = ItemSortKeyBuilder::new().armor(armor);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_books_and_scrolls_sk(
+        id: String,
+        books_and_scrolls: BookAndScrollSortKey,
+    ) -> SortKeyBuilder {
+        let item = ItemSortKeyBuilder::new().books_and_scrolls(books_and_scrolls);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_magic_sk(id: String, magic: MagicItemSortKey) -> SortKeyBuilder {
+        let item = ItemSortKeyBuilder::new().magical(magic);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_tool_sk(id: String, tool: ToolSortKey) -> SortKeyBuilder {
+        let item = ItemSortKeyBuilder::new().tools(tool);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_clothing_sk(id: String, clothing: ClothingSortKey) -> SortKeyBuilder {
+        let item = ItemSortKeyBuilder::new().clothing(clothing);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let player = PlayerSortKeyBuilder::new().inventory(inventory);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_skills_sk(id: String, skills: SkillsSortKey) -> SortKeyBuilder {
+        let stats = StatsSortKeyBuilder::new().skills(skills);
+        let player = PlayerSortKeyBuilder::new().stats(stats);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_abilities_sk(id: String, abilities: AbilitiesSortKey) -> SortKeyBuilder {
+        let stats = StatsSortKeyBuilder::new().abilities(abilities);
+        let player = PlayerSortKeyBuilder::new().stats(stats);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_conditions_sk(id: String, conditions: ConditionsSortKey) -> SortKeyBuilder {
+        let stats = StatsSortKeyBuilder::new().conditions(conditions);
+        let player = PlayerSortKeyBuilder::new().stats(stats);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_core_attributes_sk(
+        id: String,
+        core_attributes: CoreAttributesSortKey,
+    ) -> SortKeyBuilder {
+        let stats = StatsSortKeyBuilder::new().core_attributes(core_attributes);
+        let player = PlayerSortKeyBuilder::new().stats(stats);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
+
+    pub fn create_savings_throw_sk(
+        id: String,
+        saving_throws: SavingThrowsSortKey,
+    ) -> SortKeyBuilder {
+        let stats = StatsSortKeyBuilder::new().saving_throws(saving_throws);
+        let player = PlayerSortKeyBuilder::new().stats(stats);
+        let game = GameSortKeyBuilder::new().player(player);
+        SortKeyBuilder::new().id(id).game(game)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use super::game::player::inventory::items::equipped::EquippedStateSortKey;
-    use super::game::player::inventory::items::weapons::{WeaponSortKey, WeaponSortKeyBuilder};
-    use super::game::player::inventory::items::ItemSortKeyBuilder;
-    use super::game::player::inventory::InventorySortKeyBuilder;
-    use super::game::player::stats::abilities::AbilitiesSortKey;
-    use super::game::player::stats::conditions::ConditionsSortKey;
-    use super::game::player::stats::core_attributes::CoreAttributesSortKey;
-    use super::game::player::stats::saving_throws::SavingThrowsSortKey;
-    use super::game::player::stats::skills::SkillsSortKey;
-    use super::game::player::stats::StatsSortKeyBuilder;
-    use super::game::player::PlayerSortKeyBuilder;
-    use super::game::GameSortKeyBuilder;
-    use super::SortKeyBuilder;
+    use super::{
+        game::{
+            player::{
+                inventory::items::equipped::EquippedStateSortKey,
+                inventory::items::weapons::{WeaponSortKey, WeaponSortKeyBuilder},
+                inventory::items::ItemSortKeyBuilder,
+                inventory::InventorySortKeyBuilder,
+                stats::abilities::AbilitiesSortKey,
+                stats::conditions::ConditionsSortKey,
+                stats::core_attributes::CoreAttributesSortKey,
+                stats::saving_throws::SavingThrowsSortKey,
+                stats::skills::SkillsSortKey,
+                stats::StatsSortKeyBuilder,
+                PlayerSortKeyBuilder,
+            },
+            GameSortKeyBuilder,
+        },
+        SortKeyBuilder,
+    };
 
     #[test]
     fn test_sort_key_builder_weapons() {
