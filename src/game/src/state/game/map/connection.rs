@@ -46,6 +46,7 @@ impl Connection {
             }
         }
 
-        false // No perpendicular intersection in the middle of the lines
+        // No perpendicular intersection in the middle of the lines
+        false
     }
 }

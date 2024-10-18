@@ -1,20 +1,31 @@
-#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
+use super::connection::Point;
+
+#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EncounterType {
+    #[strum(to_string = "M")]
     Monster,
+    #[strum(to_string = "B")]
     Boss,
+    #[strum(to_string = "E")]
     Elite,
+    #[strum(to_string = "?")]
     Event,
+    #[strum(to_string = "$")]
     Merchant,
+    #[strum(to_string = "R")]
     Rest,
-    Reward,
+    #[strum(to_string = "T")]
     Treasure,
+    #[strum(to_string = "N")]
+    None,
 }
 
 #[derive(Debug, Clone)]
 pub struct Encounter {
-    encounter_type: EncounterType,
-    visited: bool,
-    starting_room: bool,
-    connected: bool,
-    marker: String,
+    pub encounter_type: EncounterType,
+    pub visited: bool,
+    pub starting_room: bool,
+    pub connected: bool,
+    pub symbol: String,
+    pub parent: Option<Point>,
 }
