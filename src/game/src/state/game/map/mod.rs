@@ -1,4 +1,5 @@
 pub mod connection;
+pub mod encounter;
 
 use rand::seq::SliceRandom;
 
@@ -7,34 +8,7 @@ use std::usize;
 use rand::Rng;
 
 use self::connection::{Connection, Point};
-
-#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
-pub enum EncounterType {
-    Monster,
-    Boss,
-    Elite,
-    Event,
-    Merchant,
-    Rest,
-    Reward,
-    Treasure,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct MatrixValue {
-    row: usize,
-    col: usize,
-}
-
-#[derive(Debug, Clone)]
-pub struct Encounter {
-    encounter_type: EncounterType,
-    // connections: Vec<(usize, usize)>,
-    visited: bool,
-    starting_room: bool,
-    connected: bool,
-    marker: String,
-}
+use self::encounter::{Encounter, EncounterType};
 
 #[derive(Debug, Clone)]
 pub struct GameMap {
@@ -206,18 +180,18 @@ impl GameMap {
                     MatrixQueryResult::OutOfBounds => print!(" * "),
                 }
             }
-            println!()
+            println!("\n                ")
         }
     }
 
-    pub fn generate(width: usize, height: usize) -> Self {
+    pub fn generate(width: usize, height: usize, paths: usize) -> Self {
         let mut game_map = Self::new(height, width);
         // create paths
         let mut start_positions = vec![];
 
         // create start positions
-        for _ in 0..=1 {
-            let start = rand::thread_rng().gen_range(0..=width);
+        for _ in 0..paths {
+            let start = rand::thread_rng().gen_range(0..width);
             start_positions.push(start)
         }
 
@@ -227,18 +201,18 @@ impl GameMap {
             start_positions[1] = rand::thread_rng().gen_range(start_positions[0]..=width)
         }
 
-        for row in 0..height {
+        start_positions.sort();
+        for (path_index, col) in start_positions.iter().enumerate() {
             // logic
             println!("\n\n-------NEW PATH-------\n\n");
 
             // store the last encounters point
             let mut p0: Option<Point> = None;
 
-            start_positions.sort();
-            for (path_index, col) in start_positions.iter().enumerate() {
+            for row in 0..height {
                 // let conn = Self::create_connection(row, *col);
                 // let conn = game_map.find_closest_valid_point(row, *col);
-                let current = (row, *col);
+                // let current = (row, *col);
 
                 // let conn = Self::inspect_connect(current, conn, &game_map)
                 //     .expect("LAST ROW HANDLE THIS!!");
@@ -247,66 +221,21 @@ impl GameMap {
                 if let None = p0 {
                     let value = Encounter {
                         encounter_type: EncounterType::Monster,
-                        // connections: vec![conn],
                         visited: false,
                         starting_room: true,
                         connected: false,
-                        marker: (row + 1).to_string(),
+                        marker: (path_index + 1).to_string(),
                     };
                     game_map.set_value(row, *col, Some(value));
                     let p1 = Point { row, col: *col };
                     p0 = Some(p1);
-                    //
-                    // let value = Encounter {
-                    //     encounter_type: EncounterType::Monster,
-                    //     // connections: vec![current],
-                    //     visited: false,
-                    //     starting_room: false,
-                    //     connected: false,
-                    //     marker: (path_index + 1).to_string(),
-                    // };
-                    //
-                    // let p1 = Point { row, col: *col };
-                    //
-                    // let mut valid_points = game_map.find_all_valid_points(p1);
-                    //
-                    // println!("VALID POINTS: {:?}", valid_points);
-                    //
-                    // let mut rng = rand::thread_rng();
-                    //
-                    // valid_points.shuffle(&mut rng);
-                    //
-                    // for p2 in valid_points {
-                    //     match game_map.add_connection(p1, p2) {
-                    //         Ok(_) => {
-                    //             game_map.set_value(p2.row, p2.col, Some(value));
-                    //             p0 = Some(p2);
-                    //             break;
-                    //         }
-                    //         Err(e) => {
-                    //             eprintln!("Failed to add connection: {}, trying agin.", e);
-                    //         }
-                    //     }
-                    // }
-                    // if let Some(p2) = valid_points.choose(&mut rng) {
-                    //     game_map.add_connection(p1, *p2).unwrap();
-                    //     game_map.set_value(p2.row, p2.col, Some(value));
-                    // };
-                    // let p2 = game_map
-                    //     .find_all_valid_point(p1)
-                    //     .expect(format!("Could not find closest valid point {:?}", p1).as_str());
-                    // let p2 = Point {
-                    //     row: conn.0,
-                    //     col: conn.1,
-                    // };
                 } else {
-                    let value = Encounter {
+                    let mut value = Encounter {
                         encounter_type: EncounterType::Monster,
-                        // connections: vec![current],
                         visited: false,
                         starting_room: false,
                         connected: false,
-                        marker: (row + 1).to_string(),
+                        marker: (path_index + 1).to_string(),
                     };
 
                     let mut valid_points = game_map.find_all_valid_points(p0.unwrap());
@@ -318,36 +247,25 @@ impl GameMap {
 
                     for p2 in valid_points {
                         match game_map.add_connection(p0.unwrap(), p2) {
-                            Ok(_) => {
-                                game_map.set_value(p2.row, p2.col, Some(value));
-                                p0 = Some(p2);
-                                break;
-                            }
+                            Ok(_) => match game_map.get_value(p2.row, p2.col) {
+                                MatrixQueryResult::Value(_) => {
+                                    value.marker = "@".to_string();
+                                    game_map.set_value(p2.row, p2.col, Some(value));
+                                    p0 = Some(p2);
+                                    break;
+                                }
+                                _ => {
+                                    game_map.set_value(p2.row, p2.col, Some(value));
+                                    p0 = Some(p2);
+                                    break;
+                                }
+                            },
                             Err(e) => {
                                 eprintln!("Failed to add connection: {}, trying agin.", e);
                             }
                         }
                     }
-
-                    // let p2 = game_map
-                    //     .find_closest_valid_point(p0.unwrap())
-                    //     .expect(format!("Could not find closest valid point {:?}", p0).as_str());
-                    // let p2 = Point {
-                    //     row: conn.0,
-                    //     col: conn.1,
-                    // };
-
-                    // game_map.set_value(p2.row, p2.col, Some(value));
-                    //
-                    // game_map
-                    //     .add_connection(p0.expect("No value for p0"), p2)
-                    //     .unwrap();
-                    // p0 = Some(p2)
                 }
-                // if let Some(encounter) = game_map.get_value(conn.0, conn.1) {
-                //     encounter.connections.push()
-                // }
-                // game_map.add_value(conn.0, conn.1, value);
             }
             p0 = None
         }
@@ -596,41 +514,10 @@ mod tests {
     use super::{Encounter, EncounterType, GameMap, MatrixQueryResult};
     #[test]
     fn test_map_generation() {
-        let height = 4;
+        let height = 6;
         let width = 6;
-        let mut map = GameMap::generate(width, height);
+        let mut map = GameMap::generate(width, height, 5);
         map.print();
-
-        // let mut value = Encounter {
-        //     encounter_type: EncounterType::Monster,
-        //     visited: false,
-        //     starting_room: true,
-        //     connected: false,
-        //     marker: "x".to_string(),
-        // };
-        //
-        // map.set_value(0, 0, Some(value.clone()));
-        //
-        // value.marker = "@".to_string();
-        //
-        // map.set_value(0, 0, Some(value));
-        //
-        // let p1 = Point { row: 0, col: 0 };
-        // let p2 = Point { row: 1, col: 1 };
-        //
-        // map.add_connection(p1, p2).unwrap();
-        // match map.get_value(5, 5) {
-        //     MatrixQueryResult::OutOfBounds => {
-        //         println!("Out of bounds! Searching for closest valid point...");
-        //         if let Some(closest_point) = map.find_closest_valid_point(Point { row: 5, col: 5 })
-        //         {
-        //             println!("Closest valid point: {:?}", closest_point);
-        //         } else {
-        //             println!("No valid point found.");
-        //         }
-        //     }
-        //     _ => println!("Not out of bounds."),
-        // }
 
         assert_eq!(1, 2)
     }
