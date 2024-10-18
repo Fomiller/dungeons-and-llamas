@@ -4,9 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ansi_term = "0.12.1"
 anyhow = "1.0.89"
 aws-config = "1.5.8"
 aws-sdk-dynamodb = "1.49.0"
+cfonts = "1.2.0"
+cichlid = "0.2.1"
 lambda_http = "0.13.0"
 lazy_static = "1.5.0"
 rand = "0.8.5"
@@ -14,3 +17,4 @@ serde = { version = "1.0.210", features = ["derive"] }
 serde_dynamo = { version = "4.2.14", features = ["aws-sdk-dynamodb+1"] }
 sqids = "0.4.1"
 strum = { version = "0.26.3", features = ["derive"] }
+uuid = { version = "1.11.0", features = ["v4"] }

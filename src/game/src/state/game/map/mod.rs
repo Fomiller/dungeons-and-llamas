@@ -1,10 +1,18 @@
+pub mod color;
 pub mod connection;
 pub mod encounter;
 
-use anyhow::anyhow;
+use ansi_term::Color;
+// use ansi_term::Color::Fixed;
+// use ansi_term::Color::RGB;
+// use cfonts::Colors;
+// use cfonts::Rgb;
+// use cichlid::{ColorRGB, HSV};
+use color::Rgb;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use std::usize;
+use uuid::Uuid;
 
 use self::connection::{Connection, Point};
 use self::encounter::{Encounter, EncounterType};
@@ -103,7 +111,11 @@ impl GameMap {
     }
 
     fn add_connection(&mut self, p1: Point, p2: Point) -> anyhow::Result<()> {
-        let new_connection = Connection { p1, p2 };
+        let new_connection = Connection {
+            p1,
+            p2,
+            id: Uuid::new_v4(),
+        };
 
         for existing_connection in &self.connections {
             if new_connection.intersects(existing_connection) {
@@ -209,6 +221,8 @@ impl GameMap {
                 // logic
                 // store the last encounters point
                 let mut p0: Option<Point> = None;
+                let min_brightness = Some(0);
+                let color = Rgb::generate_random_rgb(min_brightness);
 
                 for row in 0..height {
                     // if first row
@@ -216,12 +230,15 @@ impl GameMap {
                         let p1 = Point { row, col: *col };
 
                         let mut value = Encounter {
-                            encounter_type: EncounterType::None,
-                            visited: false,
-                            starting_room: true,
+                            color,
                             connected: false,
-                            symbol: (path_index + 1).to_string(),
+                            encounter_type: EncounterType::None,
+                            location: p1,
                             parent: None,
+                            starting_room: true,
+                            symbol: (path_index + 1).to_string(),
+                            visited: false,
+                            id: Uuid::new_v4(),
                         };
 
                         // if a path has already started from this point change the symbol
@@ -238,15 +255,6 @@ impl GameMap {
                         // set the previous point value
                         p0 = Some(p1);
                     } else {
-                        let mut encounter = Encounter {
-                            encounter_type: EncounterType::None,
-                            visited: false,
-                            starting_room: false,
-                            connected: false,
-                            symbol: (path_index + 1).to_string(),
-                            parent: p0,
-                        };
-
                         let mut valid_points =
                             game_map.find_all_valid_points(p0.expect("Could not unwrap p0"));
 
@@ -255,6 +263,17 @@ impl GameMap {
                         valid_points.shuffle(&mut rng);
 
                         for p1 in valid_points {
+                            let mut encounter = Encounter {
+                                color,
+                                connected: false,
+                                encounter_type: EncounterType::None,
+                                location: p1,
+                                parent: p0,
+                                starting_room: false,
+                                symbol: (path_index + 1).to_string(),
+                                visited: false,
+                                id: Uuid::new_v4(),
+                            };
                             match game_map.add_connection(p0.expect("Could not unwrap p0"), p1) {
                                 Ok(_) => match game_map.get_value(p1.row, p1.col) {
                                     GameMapQueryResult::Value(_) => {
@@ -343,7 +362,6 @@ impl GameMap {
                             println!("Assignment rule 3 broken");
                         };
 
-                        println!("\nNEW: {:}", encounter_type);
                         self.values[i].encounter_type = encounter_type;
                         break;
                     }
@@ -391,11 +409,6 @@ impl GameMap {
         let children: Vec<&Connection> =
             self.connections.iter().filter(|c| c.p1 == parent).collect();
 
-        println!("\nEncounter Type {:?}\n", encounter_type);
-        println!("Parent {:?}", parent);
-        println!("Children Count {:?}", children.len());
-        println!("Children {:?}", children);
-
         // create a list of the encounter types for the connections that share the same parent
         let mut exclude: Vec<EncounterType> = children
             .iter()
@@ -409,8 +422,6 @@ impl GameMap {
             })
             .collect();
 
-        println!("Children Exclude {:?}", exclude);
-
         exclude.sort();
         exclude.dedup();
 
@@ -423,7 +434,6 @@ impl GameMap {
 
     pub fn try_assign_encounters(&mut self) -> anyhow::Result<()> {
         for row in 0..self.rows {
-            println!("ASSIGNING ROWS");
             match row {
                 // start must be a monster
                 0 => self.try_assign_encounters_in_row(row, Some(EncounterType::Monster))?,
@@ -478,7 +488,55 @@ impl GameMap {
         for row in (0..self.rows).rev() {
             for col in 0..self.cols {
                 match self.get_value(row, col) {
-                    GameMapQueryResult::Value(e) => print!(" {} ", e.encounter_type),
+                    GameMapQueryResult::Value(e) => {
+                        let mut color = e.color;
+
+                        let connections: Vec<&Connection> = self
+                            .connections
+                            .iter()
+                            .filter(|c| c.p2 == e.location)
+                            .collect();
+
+                        if connections.len() > 1 {
+                            // println!("Current: {:?}\n", e);
+                            // println!("Connections: {:?}\n", connections);
+                            // let overlapping: Vec<&Encounter> = connections
+                            //     .iter()
+                            //     .map(|c| self.get_value(c.p2.row, c.p2.col))
+                            //     .filter_map(|v| {
+                            //         if let GameMapQueryResult::Value(value) = v {
+                            //             Some(value) // Change *value to value if it's already an Encounter
+                            //         } else {
+                            //             None
+                            //         }
+                            //     })
+                            //     .filter(|v| v.id == e.id)
+                            //     .collect();
+                            //
+                            // println!("OVERLAPPING {:?}", overlapping);
+                            // let overlapping_filtered: Vec<&&Encounter> =
+                            //     overlapping.iter().filter(|o| o.id == e.id).collect();
+                            //
+                            // println!("OVERLAPPING Filtered{:?}", overlapping_filtered);
+
+                            for conn in connections.iter() {
+                                // println!("Shared: {:?}\n", conn);
+                                if let GameMapQueryResult::Value(value) =
+                                    self.get_value(conn.p2.row, conn.p2.col)
+                                {
+                                    // println!("Enc: {:?}\n", value);
+                                    // println!("Combining colors");
+                                    color = Rgb::new(255, 0, 0)
+                                }
+                            }
+                        }
+
+                        print!(
+                            " {} ",
+                            Color::RGB(color.r, color.g, color.b)
+                                .paint(e.encounter_type.to_string())
+                        );
+                    }
                     GameMapQueryResult::NotPresent => print!(" * "),
                     GameMapQueryResult::OutOfBounds => print!(" * "),
                 }
@@ -496,7 +554,7 @@ mod tests {
     fn test_map_generation() -> anyhow::Result<()> {
         let height = 16;
         let width = 8;
-        let paths = 6;
+        let paths = 3;
         let map = GameMap::generate(width, height, paths)?;
 
         map.print();

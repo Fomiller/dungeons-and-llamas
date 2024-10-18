@@ -1,4 +1,6 @@
+use super::color::Rgb;
 use super::connection::Point;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EncounterType {
@@ -28,4 +30,7 @@ pub struct Encounter {
     pub connected: bool,
     pub symbol: String,
     pub parent: Option<Point>,
+    pub color: Rgb,
+    pub location: Point,
+    pub id: Uuid,
 }
