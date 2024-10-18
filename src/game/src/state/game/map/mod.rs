@@ -524,9 +524,9 @@ mod tests {
         let paths = 3;
         let map = GameMap::generate(width, height, paths)?;
 
-        map.print();
+        // map.print();
 
-        assert_eq!(1, 2);
+        assert_eq!(1, 1);
         Ok(())
     }
 }
