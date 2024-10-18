@@ -3,11 +3,6 @@ pub mod connection;
 pub mod encounter;
 
 use ansi_term::Color;
-// use ansi_term::Color::Fixed;
-// use ansi_term::Color::RGB;
-// use cfonts::Colors;
-// use cfonts::Rgb;
-// use cichlid::{ColorRGB, HSV};
 use color::Rgb;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -111,11 +106,7 @@ impl GameMap {
     }
 
     fn add_connection(&mut self, p1: Point, p2: Point) -> anyhow::Result<()> {
-        let new_connection = Connection {
-            p1,
-            p2,
-            id: Uuid::new_v4(),
-        };
+        let new_connection = Connection { p1, p2 };
 
         for existing_connection in &self.connections {
             if new_connection.intersects(existing_connection) {
@@ -498,34 +489,10 @@ impl GameMap {
                             .collect();
 
                         if connections.len() > 1 {
-                            // println!("Current: {:?}\n", e);
-                            // println!("Connections: {:?}\n", connections);
-                            // let overlapping: Vec<&Encounter> = connections
-                            //     .iter()
-                            //     .map(|c| self.get_value(c.p2.row, c.p2.col))
-                            //     .filter_map(|v| {
-                            //         if let GameMapQueryResult::Value(value) = v {
-                            //             Some(value) // Change *value to value if it's already an Encounter
-                            //         } else {
-                            //             None
-                            //         }
-                            //     })
-                            //     .filter(|v| v.id == e.id)
-                            //     .collect();
-                            //
-                            // println!("OVERLAPPING {:?}", overlapping);
-                            // let overlapping_filtered: Vec<&&Encounter> =
-                            //     overlapping.iter().filter(|o| o.id == e.id).collect();
-                            //
-                            // println!("OVERLAPPING Filtered{:?}", overlapping_filtered);
-
                             for conn in connections.iter() {
-                                // println!("Shared: {:?}\n", conn);
                                 if let GameMapQueryResult::Value(value) =
                                     self.get_value(conn.p2.row, conn.p2.col)
                                 {
-                                    // println!("Enc: {:?}\n", value);
-                                    // println!("Combining colors");
                                     color = Rgb::new(255, 0, 0)
                                 }
                             }

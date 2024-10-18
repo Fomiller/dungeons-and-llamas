@@ -10,7 +10,6 @@ pub struct Point {
 pub struct Connection {
     pub p1: Point,
     pub p2: Point,
-    pub id: Uuid,
 }
 
 impl Connection {
