@@ -125,7 +125,7 @@ cargo-run app:
 cargo-add app crate:
     cargo add --manifest-path src/{{app}}/Cargo.toml {{crate}}
 
-cargo-test args: 
+cargo-test args="": 
     doppler run -- \
     cargo test --manifest-path src/Cargo.toml {{args}}
 
