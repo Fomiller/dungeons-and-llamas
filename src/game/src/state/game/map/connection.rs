@@ -17,17 +17,17 @@ impl Connection {
         let dy = p2.row as i32 - p1.row as i32;
         let dx = p2.col as i32 - p1.col as i32;
 
+        // p2 is above p1
         if dy > 0 {
-            // q is above p
             if dx < 0 {
-                1 // q is above and to the left of p
+                1 // p2 is above and to the left of p1
             } else if dx > 0 {
-                2 // q is above and to the right of p
+                2 // p2 is above and to the right of p1
             } else {
-                3 // q is above and in the same column as p
+                3 // p2 is above and in the same column as p1
             }
         } else {
-            0 // q is not above p
+            0 // p2 is not above p1
         }
     }
 
@@ -41,18 +41,24 @@ impl Connection {
     pub fn intersects(&self, other: &Connection) -> bool {
         let o1 = Self::orientation(&self.p1, &self.p2);
         let o2 = Self::orientation(&other.p1, &other.p2);
-        println!("O1: {}", o1);
-        println!("O2: {}", o2);
+        println!("self orientation: {}", o1);
+        println!("other orientation: {}", o2);
 
         // Check for general perpendicular intersection
         if (o1 == 1 && o2 == 2) || (o1 == 2 && o2 == 1) {
-            if (self.p1.row == other.p2.row) && (self.p1.col.abs_diff(other.p2.col) == 1) {
+            let col_diff = self.p1.col.abs_diff(other.p1.col);
+
+            println!("\nCOL DIFF: {:?}", col_diff);
+            println!("self: {:?}", self.p1.col);
+            println!("other {:?}\n", other.p2.col);
+
+            if (self.p1.row == other.p1.row) && (col_diff == 1) {
+                println!("HEREjlk");
                 true
             } else {
                 false
             }
         } else {
-            // No perpendicular intersection in the middle of the lines
             false
         }
     }
@@ -84,38 +90,38 @@ mod tests {
         let result = Connection::orientation(&p2, &p1);
         assert_eq!(0, result, "point is not below");
     }
+
     #[test]
     fn test_connection_intersects() {
-        let connection1 = Connection {
+        let mut connection1 = Connection {
             p1: Point { row: 1, col: 1 },
             p2: Point { row: 2, col: 2 },
         };
 
-        let connection2 = Connection {
+        let mut connection2 = Connection {
             p1: Point { row: 1, col: 2 },
             p2: Point { row: 2, col: 1 },
         };
 
-        // Test for a general intersection
         assert!(
-            !connection2.intersects(&connection1),
-            "Connections do not intersect 1"
+            connection2.intersects(&connection1),
+            "Connections do not right to left"
         );
 
-        let mut connection1 = Connection {
+        connection1 = Connection {
             p1: Point { row: 2, col: 2 },
             p2: Point { row: 3, col: 1 },
         };
 
-        let mut connection2 = Connection {
+        connection2 = Connection {
             p1: Point { row: 2, col: 1 },
             p2: Point { row: 3, col: 2 },
         };
 
         // Test for a general intersection
         assert!(
-            !connection2.intersects(&connection1),
-            "Connections do not intersect 2"
+            connection2.intersects(&connection1),
+            "Connections do not intersect left to right"
         );
 
         connection1 = Connection {
@@ -130,7 +136,7 @@ mod tests {
 
         assert!(
             !connection2.intersects(&connection1),
-            "Connections do not intersect vertically"
+            "Connections Should be vertical"
         );
 
         connection1 = Connection {

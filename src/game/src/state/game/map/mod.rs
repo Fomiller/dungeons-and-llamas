@@ -108,6 +108,9 @@ impl GameMap {
     fn add_connection(&mut self, p1: Point, p2: Point) -> anyhow::Result<()> {
         let new_connection = Connection { p1, p2 };
 
+        println!("Existing: {:?}", self.connections);
+        println!("New: {:?}", new_connection);
+
         for existing_connection in &self.connections {
             if new_connection.intersects(existing_connection) {
                 return Err(anyhow::anyhow!(format!(
@@ -212,7 +215,7 @@ impl GameMap {
                 // logic
                 // store the last encounters point
                 let mut p0: Option<Point> = None;
-                let min_brightness = Some(0);
+                let min_brightness = Some(60);
                 let color = Rgb::generate_random_rgb(min_brightness);
 
                 for row in 0..height {
@@ -480,20 +483,23 @@ impl GameMap {
             for col in 0..self.cols {
                 match self.get_value(row, col) {
                     GameMapQueryResult::Value(e) => {
+                        // set color to current encounters color
                         let mut color = e.color;
 
+                        // find all connections that have the same p2 as the current encounter
                         let connections: Vec<&Connection> = self
                             .connections
                             .iter()
                             .filter(|c| c.p2 == e.location)
                             .collect();
-
+                        let red = Rgb::new(255, 0, 0);
+                        // if more that one connection
                         if connections.len() > 1 {
                             for conn in connections.iter() {
                                 if let GameMapQueryResult::Value(value) =
                                     self.get_value(conn.p2.row, conn.p2.col)
                                 {
-                                    color = Rgb::new(255, 0, 0)
+                                    color = red;
                                 }
                             }
                         }
@@ -515,18 +521,82 @@ impl GameMap {
 
 #[cfg(test)]
 mod tests {
+    use super::connection::*;
     use super::GameMap;
 
     #[test]
-    fn test_map_generation() -> anyhow::Result<()> {
+    fn test_map_generation() {
         let height = 16;
         let width = 8;
-        let paths = 3;
-        let map = GameMap::generate(width, height, paths)?;
+        let paths = 6;
 
-        // map.print();
+        match GameMap::generate(width, height, paths) {
+            Ok(map) => {
+                map.print();
+            }
+            Err(_) => {
+                panic!("Map failed to generate.")
+            }
+        };
+    }
 
-        assert_eq!(1, 1);
-        Ok(())
+    #[test]
+    fn test_add_connection() {
+        let mut map = GameMap::new(5, 5);
+
+        let mut connection1 = Connection {
+            p1: Point { row: 1, col: 1 },
+            p2: Point { row: 2, col: 2 },
+        };
+
+        let mut connection2 = Connection {
+            p1: Point { row: 2, col: 2 },
+            p2: Point { row: 3, col: 3 },
+        };
+
+        let mut connection3 = Connection {
+            p1: Point { row: 3, col: 3 },
+            p2: Point { row: 4, col: 4 },
+        };
+
+        map.connections.push(connection1);
+        map.connections.push(connection2);
+        map.connections.push(connection3);
+
+        let p1 = Point { row: 2, col: 3 };
+        let p2 = Point { row: 3, col: 2 };
+
+        match map.add_connection(p1, p2) {
+            Ok(_) => panic!("Connection did not fail right to left."),
+            Err(_) => {}
+        }
+
+        connection1 = Connection {
+            p1: Point { row: 1, col: 4 },
+            p2: Point { row: 2, col: 3 },
+        };
+
+        connection2 = Connection {
+            p1: Point { row: 2, col: 3 },
+            p2: Point { row: 3, col: 2 },
+        };
+
+        connection3 = Connection {
+            p1: Point { row: 3, col: 2 },
+            p2: Point { row: 4, col: 1 },
+        };
+
+        map.connections.push(connection1);
+        map.connections.push(connection2);
+        map.connections.push(connection3);
+
+        let p1 = Point { row: 1, col: 3 };
+        let p2 = Point { row: 2, col: 4 };
+
+        match map.add_connection(p1, p2) {
+            Ok(_) => panic!("Connection did not fail left to right."),
+
+            Err(_) => {}
+        }
     }
 }
