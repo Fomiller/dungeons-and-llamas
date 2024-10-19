@@ -295,42 +295,7 @@ impl GameMap {
                 p0 = None
             }
 
-            // Shouldnt this be Height????
-            let p = Point {
-                row: height - 1,
-                col: 4,
-            };
-
-            let boss = Encounter {
-                color: Rgb::generate_random_rgb(None),
-                connected: false,
-                encounter_type: EncounterType::None,
-                location: p,
-                parent: None,
-                starting_room: false,
-                symbol: "X".to_string(),
-                visited: false,
-                id: Uuid::new_v4(),
-            };
-
-            game_map.set_value(p.row, p.col, Some(boss));
-            let _conns = game_map.connections.clone();
-            let last: Vec<&Connection> = _conns.iter().filter(|c| c.p2.row == height - 1).collect();
-            let boss = game_map.get_value(p.row, p.col);
-
-            println!("Rows {:?}", game_map.rows);
-            println!("height {:?}", height);
-            println!("BOSSSSS {:?}", boss);
-            for conn in last {
-                match game_map.add_connection(conn.p2, p) {
-                    Ok(_) => {
-                        println!("Boss connection")
-                    }
-                    Err(e) => {
-                        eprintln!("Oops {}", e);
-                    }
-                }
-            }
+            game_map.add_boss()?;
 
             // if creating game map fails start loop again,
             // otherwise exit and return result
@@ -339,11 +304,44 @@ impl GameMap {
                     result = game_map;
                     break;
                 }
-                Err(e) => eprintln!("Invalid map, trying again "),
+                Err(_) => eprintln!("Invalid map, trying again"),
             }
         }
 
         Ok(result)
+    }
+
+    pub fn add_boss(&mut self) -> anyhow::Result<()> {
+        // Shouldnt this be Height????
+        let p = Point {
+            row: self.rows - 1,
+            col: 4,
+        };
+
+        let boss = Encounter {
+            color: Rgb::generate_random_rgb(None),
+            connected: false,
+            encounter_type: EncounterType::None,
+            location: p,
+            parent: None,
+            starting_room: false,
+            symbol: "X".to_string(),
+            visited: false,
+            id: Uuid::new_v4(),
+        };
+
+        self.set_value(p.row, p.col, Some(boss));
+        let _conns = self.connections.clone();
+        let connections: Vec<&Connection> = _conns
+            .iter()
+            .filter(|c| c.p2.row == self.rows - 1)
+            .collect();
+
+        for conn in connections {
+            self.add_connection(conn.p2, p)?
+        }
+
+        Ok(())
     }
 
     pub fn try_create_map(&mut self) -> anyhow::Result<()> {
