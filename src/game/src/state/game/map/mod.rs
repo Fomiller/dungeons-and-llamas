@@ -494,12 +494,31 @@ impl GameMap {
                             .collect();
                         let red = Rgb::new(255, 0, 0);
                         // if more that one connection
-                        if connections.len() > 1 {
-                            for conn in connections.iter() {
-                                if let GameMapQueryResult::Value(value) =
-                                    self.get_value(conn.p2.row, conn.p2.col)
-                                {
-                                    color = red;
+
+                        let origins: Vec<&Connection> = self
+                            .connections
+                            .iter()
+                            .filter(|c| c.p1 == e.location && e.location.row == 0)
+                            .collect();
+
+                        if row > 0 {
+                            if connections.len() > 1 {
+                                for conn in connections.iter() {
+                                    if let GameMapQueryResult::Value(_) =
+                                        self.get_value(conn.p2.row, conn.p2.col)
+                                    {
+                                        color = red;
+                                    }
+                                }
+                            }
+                        } else {
+                            if origins.len() > 1 {
+                                for conn in origins.iter() {
+                                    if let GameMapQueryResult::Value(_) =
+                                        self.get_value(conn.p1.row, conn.p1.col)
+                                    {
+                                        color = red;
+                                    }
                                 }
                             }
                         }

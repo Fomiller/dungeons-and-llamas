@@ -31,4 +31,3 @@ impl Rgb {
         Self { r, g, b } // Return the RGB tuple
     }
 }
-

@@ -1,12 +1,10 @@
-use uuid::Uuid;
-
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {
     pub row: usize,
     pub col: usize,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Connection {
     pub p1: Point,
     pub p2: Point,
@@ -30,13 +28,6 @@ impl Connection {
             0 // p2 is not above p1
         }
     }
-
-    // fn is_point_between(p: &Point, q: &Point, r: &Point) -> bool {
-    //     q.col < p.col.max(r.col)
-    //         && q.col > p.col.min(r.col)
-    //         && q.row < p.row.max(r.row)
-    //         && q.row > p.row.min(r.row)
-    // }
 
     pub fn intersects(&self, other: &Connection) -> bool {
         let o1 = Self::orientation(&self.p1, &self.p2);
