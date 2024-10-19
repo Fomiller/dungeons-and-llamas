@@ -77,9 +77,9 @@ impl GameMap {
     }
 
     fn get_value(&self, row: usize, col: usize) -> GameMapQueryResult<Encounter> {
-        if row > self.rows || col >= self.cols {
-            println!("ROWWW {}/{}", row, self.rows);
-            println!("COLL {}/{}", col, self.cols);
+        // remember that when selecting we are using 0 indexing
+        // so rows/cols cannot be equal to self.rows
+        if row >= self.rows || col >= self.cols {
             return GameMapQueryResult::OutOfBounds;
         }
 
@@ -217,6 +217,7 @@ impl GameMap {
                 let min_brightness = Some(60);
                 let color = Rgb::generate_random_rgb(min_brightness);
 
+                // subtract 1 because last row is for boss
                 for row in 0..height - 1 {
                     // if first row
                     if let None = p0 {
@@ -294,6 +295,7 @@ impl GameMap {
                 p0 = None
             }
 
+            // Shouldnt this be Height????
             let p = Point {
                 row: height - 1,
                 col: 4,
