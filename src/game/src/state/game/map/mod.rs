@@ -77,7 +77,9 @@ impl GameMap {
     }
 
     fn get_value(&self, row: usize, col: usize) -> GameMapQueryResult<Encounter> {
-        if row >= self.rows || col >= self.cols {
+        if row > self.rows || col >= self.cols {
+            println!("ROWWW {}/{}", row, self.rows);
+            println!("COLL {}/{}", col, self.cols);
             return GameMapQueryResult::OutOfBounds;
         }
 
@@ -107,9 +109,6 @@ impl GameMap {
 
     fn add_connection(&mut self, p1: Point, p2: Point) -> anyhow::Result<()> {
         let new_connection = Connection { p1, p2 };
-
-        println!("Existing: {:?}", self.connections);
-        println!("New: {:?}", new_connection);
 
         for existing_connection in &self.connections {
             if new_connection.intersects(existing_connection) {
@@ -218,7 +217,7 @@ impl GameMap {
                 let min_brightness = Some(60);
                 let color = Rgb::generate_random_rgb(min_brightness);
 
-                for row in 0..height {
+                for row in 0..height - 1 {
                     // if first row
                     if let None = p0 {
                         let p1 = Point { row, col: *col };
@@ -235,6 +234,8 @@ impl GameMap {
                             id: Uuid::new_v4(),
                         };
 
+                        // TODO this might need to be looked at since we dont
+                        // really care about the symbol because we use enums
                         // if a path has already started from this point change the symbol
                         match game_map.get_value(p1.row, p1.col) {
                             GameMapQueryResult::Value(_) => {
@@ -291,6 +292,42 @@ impl GameMap {
                 }
                 // reset the starting point for starting a new path
                 p0 = None
+            }
+
+            let p = Point {
+                row: height - 1,
+                col: 4,
+            };
+
+            let boss = Encounter {
+                color: Rgb::generate_random_rgb(None),
+                connected: false,
+                encounter_type: EncounterType::None,
+                location: p,
+                parent: None,
+                starting_room: false,
+                symbol: "X".to_string(),
+                visited: false,
+                id: Uuid::new_v4(),
+            };
+
+            game_map.set_value(p.row, p.col, Some(boss));
+            let _conns = game_map.connections.clone();
+            let last: Vec<&Connection> = _conns.iter().filter(|c| c.p2.row == height - 1).collect();
+            let boss = game_map.get_value(p.row, p.col);
+
+            println!("Rows {:?}", game_map.rows);
+            println!("height {:?}", height);
+            println!("BOSSSSS {:?}", boss);
+            for conn in last {
+                match game_map.add_connection(conn.p2, p) {
+                    Ok(_) => {
+                        println!("Boss connection")
+                    }
+                    Err(e) => {
+                        eprintln!("Oops {}", e);
+                    }
+                }
             }
 
             // if creating game map fails start loop again,
@@ -438,8 +475,12 @@ impl GameMap {
                 }
 
                 // last round must be a rest
-                r if r == (self.rows - 1) => {
+                r if r == (self.rows - 2) => {
                     self.try_assign_encounters_in_row(row, Some(EncounterType::Rest))?
+                }
+
+                r if r == (self.rows - 1) => {
+                    self.try_assign_encounters_in_row(row, Some(EncounterType::Boss))?
                 }
 
                 // all other rounds are random
@@ -481,27 +522,24 @@ impl GameMap {
     fn print(&self) {
         for row in (0..self.rows).rev() {
             for col in 0..self.cols {
+                if row == self.rows {
+                    // println!("Boss Row");
+                }
                 match self.get_value(row, col) {
                     GameMapQueryResult::Value(e) => {
-                        // set color to current encounters color
+                        if e.encounter_type == EncounterType::Boss {};
                         let mut color = e.color;
 
-                        // find all connections that have the same p2 as the current encounter
-                        let connections: Vec<&Connection> = self
-                            .connections
-                            .iter()
-                            .filter(|c| c.p2 == e.location)
-                            .collect();
                         let red = Rgb::new(255, 0, 0);
-                        // if more that one connection
-
-                        let origins: Vec<&Connection> = self
-                            .connections
-                            .iter()
-                            .filter(|c| c.p1 == e.location && e.location.row == 0)
-                            .collect();
 
                         if row > 0 {
+                            // find all connections that have the same p2 as the current encounter
+                            let connections: Vec<&Connection> = self
+                                .connections
+                                .iter()
+                                .filter(|c| c.p2 == e.location)
+                                .collect();
+
                             if connections.len() > 1 {
                                 for conn in connections.iter() {
                                     if let GameMapQueryResult::Value(_) =
@@ -512,6 +550,12 @@ impl GameMap {
                                 }
                             }
                         } else {
+                            let origins: Vec<&Connection> = self
+                                .connections
+                                .iter()
+                                .filter(|c| c.p1 == e.location && e.location.row == 0)
+                                .collect();
+
                             if origins.len() > 1 {
                                 for conn in origins.iter() {
                                     if let GameMapQueryResult::Value(_) =
@@ -545,7 +589,8 @@ mod tests {
 
     #[test]
     fn test_map_generation() {
-        let height = 16;
+        // add one extra row for boss
+        let height = 17;
         let width = 8;
         let paths = 6;
 

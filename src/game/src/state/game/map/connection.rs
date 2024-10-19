@@ -32,19 +32,12 @@ impl Connection {
     pub fn intersects(&self, other: &Connection) -> bool {
         let o1 = Self::orientation(&self.p1, &self.p2);
         let o2 = Self::orientation(&other.p1, &other.p2);
-        println!("self orientation: {}", o1);
-        println!("other orientation: {}", o2);
 
         // Check for general perpendicular intersection
         if (o1 == 1 && o2 == 2) || (o1 == 2 && o2 == 1) {
             let col_diff = self.p1.col.abs_diff(other.p1.col);
 
-            println!("\nCOL DIFF: {:?}", col_diff);
-            println!("self: {:?}", self.p1.col);
-            println!("other {:?}\n", other.p2.col);
-
             if (self.p1.row == other.p1.row) && (col_diff == 1) {
-                println!("HEREjlk");
                 true
             } else {
                 false
