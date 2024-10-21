@@ -51,7 +51,7 @@ resource "aws_lambda_function" "dnl_api" {
   role             = var.iam_role_arn_lambda_dnl_api
   handler          = "bootstrap"
   filename         = "${path.module}/bin/dnl-api/bootstrap.zip"
-  source_code_hash = local.source_code_hash["api"]
+  source_code_hash = local.source_code_hash["dnl_api"]
   runtime          = "provided.al2"
   architectures    = ["arm64"]
   memory_size      = 128
