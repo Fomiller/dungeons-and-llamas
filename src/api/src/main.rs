@@ -6,6 +6,8 @@ use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Re
 /// - https://github.com/awslabs/aws-lambda-rust-runtime/tree/main/examples
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     // Extract some useful information from the request
+    println!("{:?}", event);
+
     let who = event
         .query_string_parameters_ref()
         .and_then(|params| params.first("name"))
@@ -17,6 +19,9 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     let resp = Response::builder()
         .status(200)
         .header("content-type", "text/html")
+        .header("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Methods", "OPTIONS,POST,GET")
         .body(message.into())
         .map_err(Box::new)?;
     Ok(resp)
