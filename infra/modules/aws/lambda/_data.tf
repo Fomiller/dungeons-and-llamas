@@ -12,6 +12,6 @@ data "aws_lambda_function" "discord_command_manager_exists" {
 }
 
 data "aws_lambda_function" "dnl_api_exists" {
-  count         = fileexists("${path.module}/bin/api/bootstrap.zip") ? 0 : 1
+  count         = fileexists("${path.module}/bin/dnl-api/bootstrap.zip") ? 0 : 1
   function_name = "${var.namespace}-${var.app_prefix}-api"
 }
