@@ -56,7 +56,6 @@ resource "aws_api_gateway_deployment" "dnl_api" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.dnl_api.id
-  stage_name  = "$default"
 }
 
 resource "aws_lambda_permission" "dnl_api" {
