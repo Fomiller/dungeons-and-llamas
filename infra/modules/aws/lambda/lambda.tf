@@ -48,7 +48,7 @@ resource "aws_lambda_function" "discord_command_manager" {
 
 resource "aws_lambda_function" "dnl_api" {
   function_name    = "${var.namespace}-${var.app_prefix}-api"
-  role             = var.iam_role_arn_lambda_api
+  role             = var.iam_role_arn_lambda_dnl_api
   handler          = "bootstrap"
   filename         = "${path.module}/bin/dnl-api/bootstrap.zip"
   source_code_hash = local.source_code_hash["api"]
