@@ -1,5 +1,6 @@
 pub mod enemy;
 pub mod level;
+pub mod map;
 pub mod npc;
 pub mod player;
 pub mod round;
