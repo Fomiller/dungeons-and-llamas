@@ -2,8 +2,8 @@ resource "aws_lambda_function" "discord_bot" {
   function_name    = "${var.namespace}-${var.app_prefix}-discord-bot"
   role             = var.iam_role_arn_lambda_discord_bot
   handler          = "bootstrap"
-  filename         = "${path.module}/bin/discord-bot/bootstrap.zip"
-  source_code_hash = local.source_code_hash["discord_bot"]
+  filename         = local.lambda["discord_bot"].filename
+  source_code_hash = local.lambda["discord_bot"].source_code_hash
   runtime          = "provided.al2"
   architectures    = ["arm64"]
   memory_size      = 128
@@ -27,8 +27,8 @@ resource "aws_lambda_function" "discord_command_manager" {
   function_name    = "${var.namespace}-${var.app_prefix}-discord-command-manager"
   role             = var.iam_role_arn_lambda_discord_command_manager
   handler          = "bootstrap"
-  filename         = "${path.module}/bin/discord-command-manager/bootstrap.zip"
-  source_code_hash = local.source_code_hash["discord_command_manager"]
+  filename         = local.lambda["discord_command_manager"].filename
+  source_code_hash = local.lambda["discord_command_manager"].source_code_hash
   runtime          = "provided.al2"
   architectures    = ["arm64"]
   memory_size      = 128
@@ -50,8 +50,8 @@ resource "aws_lambda_function" "dnl_api" {
   function_name    = "${var.namespace}-${var.app_prefix}-api"
   role             = var.iam_role_arn_lambda_dnl_api
   handler          = "bootstrap"
-  filename         = "${path.module}/bin/dnl-api/bootstrap.zip"
-  source_code_hash = local.source_code_hash["dnl_api"]
+  filename         = local.lambda["dnl_api"].filename
+  source_code_hash = local.lambda["dnl_api"].source_code_hash
   runtime          = "provided.al2"
   architectures    = ["arm64"]
   memory_size      = 128
