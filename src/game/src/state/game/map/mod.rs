@@ -192,6 +192,8 @@ impl GameMap {
 
     pub fn generate(width: usize, height: usize, paths: usize) -> anyhow::Result<Self> {
         let result;
+
+        // create_game_map can fail so we loop until we have a success
         loop {
             let mut game_map = Self::new(height, width);
 
@@ -210,85 +212,21 @@ impl GameMap {
             }
 
             start_positions.sort();
-            for (path_index, col) in start_positions.iter().enumerate() {
+            for (_, col) in start_positions.iter().enumerate() {
                 // logic
+
                 // store the last encounters point
                 let mut p0: Option<Point> = None;
-                let min_brightness = Some(60);
-                let color = Rgb::generate_random_rgb(min_brightness);
+
+                let color = Rgb::generate_random_rgb(Some(60));
 
                 // subtract 1 because last row is for boss
                 for row in 0..height - 1 {
                     // if first row
                     if let None = p0 {
-                        let p1 = Point { row, col: *col };
-
-                        let mut value = Encounter {
-                            color,
-                            connected: false,
-                            encounter_type: EncounterType::None,
-                            location: p1,
-                            parent: None,
-                            starting_room: true,
-                            symbol: (path_index + 1).to_string(),
-                            visited: false,
-                            id: Uuid::new_v4(),
-                        };
-
-                        // TODO this might need to be looked at since we dont
-                        // really care about the symbol because we use enums
-                        // if a path has already started from this point change the symbol
-                        match game_map.get_value(p1.row, p1.col) {
-                            GameMapQueryResult::Value(_) => {
-                                value.symbol = "@".to_string();
-                                game_map.set_value(p1.row, p1.col, Some(value));
-                            }
-                            _ => {
-                                game_map.set_value(p1.row, p1.col, Some(value));
-                            }
-                        };
-
-                        // set the previous point value
-                        p0 = Some(p1);
+                        let _ = game_map.add_start(&mut p0, row, *col, color);
                     } else {
-                        let mut valid_points =
-                            game_map.find_all_valid_points(p0.expect("Could not unwrap p0"));
-
-                        let mut rng = rand::thread_rng();
-
-                        valid_points.shuffle(&mut rng);
-
-                        for p1 in valid_points {
-                            let mut encounter = Encounter {
-                                color,
-                                connected: false,
-                                encounter_type: EncounterType::None,
-                                location: p1,
-                                parent: p0,
-                                starting_room: false,
-                                symbol: (path_index + 1).to_string(),
-                                visited: false,
-                                id: Uuid::new_v4(),
-                            };
-                            match game_map.add_connection(p0.expect("Could not unwrap p0"), p1) {
-                                Ok(_) => match game_map.get_value(p1.row, p1.col) {
-                                    GameMapQueryResult::Value(_) => {
-                                        encounter.symbol = "@".to_string();
-                                        game_map.set_value(p1.row, p1.col, Some(encounter));
-                                        p0 = Some(p1);
-                                        break;
-                                    }
-                                    _ => {
-                                        game_map.set_value(p1.row, p1.col, Some(encounter));
-                                        p0 = Some(p1);
-                                        break;
-                                    }
-                                },
-                                Err(e) => {
-                                    eprintln!("Failed to add connection: {}, trying agin.", e);
-                                }
-                            }
-                        }
+                        let _ = game_map.add_encounter(&mut p0, color);
                     }
                 }
                 // reset the starting point for starting a new path
@@ -311,6 +249,79 @@ impl GameMap {
         Ok(result)
     }
 
+    pub fn add_encounter(&mut self, p0: &mut Option<Point>, color: Rgb) -> anyhow::Result<()> {
+        let mut valid_points = self.find_all_valid_points(p0.expect("Could not unwrap p0"));
+
+        let mut rng = rand::thread_rng();
+
+        valid_points.shuffle(&mut rng);
+
+        for p1 in valid_points {
+            let encounter = Encounter {
+                color,
+                encounter_type: EncounterType::None,
+                location: p1,
+                parent: *p0,
+                visited: false,
+                id: Uuid::new_v4(),
+            };
+
+            match self.add_connection(p0.expect("Could not unwrap p0"), p1) {
+                Ok(_) => match self.get_value(p1.row, p1.col) {
+                    GameMapQueryResult::Value(_) => {
+                        self.set_value(p1.row, p1.col, Some(encounter));
+                        *p0 = Some(p1);
+                        break;
+                    }
+                    _ => {
+                        self.set_value(p1.row, p1.col, Some(encounter));
+                        *p0 = Some(p1);
+                        break;
+                    }
+                },
+                Err(e) => {
+                    eprintln!("Failed to add connection: {}, trying agin.", e);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn add_start(
+        &mut self,
+        p0: &mut Option<Point>,
+        row: usize,
+        col: usize,
+        color: Rgb,
+    ) -> anyhow::Result<()> {
+        let p1 = Point { row, col };
+
+        let value = Encounter {
+            color,
+            encounter_type: EncounterType::None,
+            location: p1,
+            parent: None,
+            visited: false,
+            id: Uuid::new_v4(),
+        };
+
+        // TODO this might need to be looked at since we dont
+        // really care about the symbol because we use enums
+        // if a path has already started from this point change the symbol
+        match self.get_value(p1.row, p1.col) {
+            GameMapQueryResult::Value(_) => {
+                self.set_value(p1.row, p1.col, Some(value));
+            }
+            _ => {
+                self.set_value(p1.row, p1.col, Some(value));
+            }
+        };
+
+        // set the previous point value
+        *p0 = Some(p1);
+        Ok(())
+    }
+
     pub fn add_boss(&mut self) -> anyhow::Result<()> {
         // Shouldnt this be Height????
         let p = Point {
@@ -320,12 +331,9 @@ impl GameMap {
 
         let boss = Encounter {
             color: Rgb::generate_random_rgb(None),
-            connected: false,
             encounter_type: EncounterType::None,
             location: p,
             parent: None,
-            starting_room: false,
-            symbol: "X".to_string(),
             visited: false,
             id: Uuid::new_v4(),
         };
@@ -356,7 +364,7 @@ impl GameMap {
         row: usize,
         encounter: Option<EncounterType>,
     ) -> anyhow::Result<()> {
-        for (i, (&r, col)) in self
+        for (i, (&r, _)) in self
             .row_indices
             .iter()
             .zip(self.col_indices.iter())

@@ -26,9 +26,6 @@ pub enum EncounterType {
 pub struct Encounter {
     pub encounter_type: EncounterType,
     pub visited: bool,
-    pub starting_room: bool,
-    pub connected: bool,
-    pub symbol: String,
     pub parent: Option<Point>,
     pub color: Rgb,
     pub location: Point,
