@@ -34,3 +34,20 @@ resource "aws_iam_role" "lambda_discord_command_manager" {
 EOF
 }
 
+resource "aws_iam_role" "lambda_dnl_api" {
+  name               = "${title(var.namespace)}LambdaDungeonsAndLlamasApi"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}

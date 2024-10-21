@@ -13,3 +13,11 @@ output "iam_role_arn_lambda_discord_command_manager" {
 output "iam_role_name_lambda_discord_command_manager" {
   value = aws_iam_role.lambda_discord_command_manager.name
 }
+
+output "iam_role_arn_lambda_dnl_api" {
+  value = aws_iam_role.lambda_dnl_api.arn
+}
+
+output "iam_role_name_lambda_dnl_api" {
+  value = aws_iam_role.lambda_dnl_api.name
+}

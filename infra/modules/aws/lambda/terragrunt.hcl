@@ -9,10 +9,12 @@ dependency "roles" {
     mock_outputs = {
         iam_role_arn_lambda_discord_bot = "arn:aws:iam::123456789012:role/MOCK-FomillerLambda"
         iam_role_arn_lambda_discord_command_manager = "arn:aws:iam::123456789012:role/MOCK-FomillerLambda"
+        iam_role_arn_lambda_dnl_api = "arn:aws:iam::123456789012:role/MOCK-FomillerLambdaApi"
     }
 }
 inputs = {
     iam_role_arn_lambda_discord_bot = dependency.roles.outputs.iam_role_arn_lambda_discord_bot
     iam_role_arn_lambda_discord_command_manager = dependency.roles.outputs.iam_role_arn_lambda_discord_command_manager
+    iam_role_arn_lambda_dnl_api = dependency.roles.outputs.iam_role_arn_lambda_dnl_api
 }
 

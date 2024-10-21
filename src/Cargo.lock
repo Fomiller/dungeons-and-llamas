@@ -1006,6 +1006,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dnl-api"
+version = "0.1.0"
+dependencies = [
+ "game",
+ "lambda_http",
+ "tokio",
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
