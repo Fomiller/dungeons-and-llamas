@@ -6,7 +6,7 @@ resource "aws_apigatewayv2_api" "discord_bot" {
 
 # Create a Custom Domain Name for API Gateway
 resource "aws_apigatewayv2_domain_name" "discord_bot" {
-  domain_name = "discord-bot.dev.aws.fomillercloud.com" # Your custom domain
+  domain_name = "dnl-discord-bot.dev.aws.fomillercloud.com" # Your custom domain
   domain_name_configuration {
     certificate_arn = data.aws_acm_certificate.fomiller_cloud.arn # ACM certificate for HTTPS
     endpoint_type   = "REGIONAL"                                  # Use REGIONAL for API Gateway
