@@ -7,8 +7,14 @@ use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Re
 async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     // Extract some useful information from the request
     println!("{:?}", event);
+    println!("{:?}", &event.uri());
+    let (parts, body) = event.clone().into_parts();
+    println!("Path: {:?}", parts.uri.path());
+    println!("Host: {:?}", parts.uri.host());
+    println!("Scheme: {:?}", parts.uri.scheme_str());
+    println!("Path and Query: {:?}", parts.uri.path_and_query());
 
-    let who = event
+    let who = &event
         .query_string_parameters_ref()
         .and_then(|params| params.first("name"))
         .unwrap_or("world");
