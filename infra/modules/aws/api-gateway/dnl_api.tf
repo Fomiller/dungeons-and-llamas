@@ -32,6 +32,44 @@ resource "aws_apigatewayv2_integration" "dnl_api" {
   payload_format_version = "2.0"
 }
 
+# API Gateway S3 Integration for favicon.ico
+resource "aws_apigatewayv2_integration" "dnl_api_favicon_s3_integration" {
+  api_id             = aws_apigatewayv2_api.dnl_api.id
+  integration_type   = "HTTP_PROXY"
+  integration_uri    = "https://${var.s3_bucket_name_dnl}.s3.amazonaws.com/${var.s3_bucket_object_key_dnl_api_favicon}"
+  integration_method = "GET"
+
+  # Attach the IAM role for accessing S3
+  credentials_arn = aws_iam_role.apigateway_s3_role.arn
+}
+# Create an IAM role for API Gateway to access S3
+resource "aws_iam_role" "apigateway_s3_role" {
+  name = "apigateway-s3-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "apigateway.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_discord_bot" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+  role       = aws_iam_role.apigateway_s3_role.name
+}
+
+# Route for favicon.ico
+resource "aws_apigatewayv2_route" "dnl_api_favicon_route" {
+  api_id    = aws_apigatewayv2_api.dnl_api.id
+  route_key = "GET /favicon.ico"
+  target    = "integrations/${aws_apigatewayv2_integration.dnl_api_favicon_s3_integration.id}"
+}
+
 # Default route ($default) - Catch-all
 resource "aws_apigatewayv2_route" "dnl_api" {
   api_id    = aws_apigatewayv2_api.dnl_api.id
