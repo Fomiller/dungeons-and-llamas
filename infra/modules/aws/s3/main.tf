@@ -21,13 +21,6 @@ resource "aws_s3_bucket_ownership_controls" "example" {
   }
 }
 
-# resource "aws_s3_bucket_acl" "example" {
-#   depends_on = [aws_s3_bucket_ownership_controls.example]
-#
-#   bucket = aws_s3_bucket.dnl.id
-#   acl    = "private"
-# }
-
 resource "aws_s3_bucket_object" "commands" {
   bucket = aws_s3_bucket.dnl.id
   key    = "data/commands.json"
@@ -40,9 +33,8 @@ resource "aws_s3_bucket_object" "dnl_api_favicon" {
   bucket = aws_s3_bucket.dnl.id
   key    = "data/api/favicon.ico"
   source = local.favicon_path
-  # acl    = "authenticated-read"
 
-  etag = filemd5(local.commands_path)
+  etag = filemd5(local.favicon_path)
 }
 
 resource "aws_s3_bucket_policy" "dnl_api_gateway" {
@@ -58,23 +50,4 @@ resource "aws_s3_bucket_policy" "dnl_api_gateway" {
       }
     ]
   })
-}
-
-data "aws_iam_policy_document" "dnl" {
-  statement {
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/apigateway-s3-role"]
-    }
-
-    actions = [
-      "s3:Get*",
-      "s3:List*",
-    ]
-
-    resources = [
-      aws_s3_bucket.dnl.arn,
-      "${aws_s3_bucket.dnl.arn}/${aws_s3_bucket_object.dnl_api_favicon.key}",
-    ]
-  }
 }

@@ -14,6 +14,13 @@ resource "aws_apigatewayv2_domain_name" "dnl_api" {
   }
 }
 
+# Deploy API Gateway
+resource "aws_apigatewayv2_stage" "dnl_api" {
+  api_id      = aws_apigatewayv2_api.dnl_api.id
+  name        = "$default"
+  auto_deploy = true
+}
+
 # API Gateway Custom Domain Mapping to Stage
 resource "aws_apigatewayv2_api_mapping" "dnl_api" {
   api_id      = aws_apigatewayv2_api.dnl_api.id
@@ -39,28 +46,8 @@ resource "aws_apigatewayv2_integration" "dnl_api_favicon_s3_integration" {
   integration_uri    = "https://${var.s3_bucket_name_dnl}.s3.amazonaws.com/${var.s3_bucket_object_key_dnl_api_favicon}"
   integration_method = "GET"
 
-  # Attach the IAM role for accessing S3
-  credentials_arn = aws_iam_role.apigateway_s3_role.arn
-}
-# Create an IAM role for API Gateway to access S3
-resource "aws_iam_role" "apigateway_s3_role" {
-  name = "apigateway-s3-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "apigateway.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_discord_bot" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-  role       = aws_iam_role.apigateway_s3_role.name
+  # Keeping this here to come back to
+  # credentials_arn = aws_iam_role.apigateway_s3_role.arn
 }
 
 # Route for favicon.ico
@@ -78,13 +65,6 @@ resource "aws_apigatewayv2_route" "dnl_api" {
   target = "integrations/${aws_apigatewayv2_integration.dnl_api.id}"
 }
 
-# Deploy API Gateway
-resource "aws_apigatewayv2_stage" "dnl_api" {
-  api_id      = aws_apigatewayv2_api.dnl_api.id
-  name        = "$default"
-  auto_deploy = true
-}
-
 # Permission for API Gateway to invoke Lambda
 resource "aws_lambda_permission" "dnl_api" {
   statement_id  = "AllowAPIGatewayInvokeDnlApi"
@@ -93,3 +73,25 @@ resource "aws_lambda_permission" "dnl_api" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.dnl_api.execution_arn}/*"
 }
+
+# Keeping this here to come back to
+# # Create an IAM role for API Gateway to access S3
+# resource "aws_iam_role" "apigateway_s3_role" {
+#   name = "apigateway-s3-role"
+#
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [{
+#       Action = "sts:AssumeRole"
+#       Effect = "Allow"
+#       Principal = {
+#         Service = "apigateway.amazonaws.com"
+#       }
+#     }]
+#   })
+# }
+#
+# resource "aws_iam_role_policy_attachment" "dnl_api_s3_full_access" {
+#   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+#   role       = aws_iam_role.apigateway_s3_role.name
+# }
