@@ -19,6 +19,22 @@ resource "aws_apigatewayv2_stage" "dnl_api" {
   api_id      = aws_apigatewayv2_api.dnl_api.id
   name        = "$default"
   auto_deploy = true
+
+  # access_log_settings {
+  #   destination_arn = aws_cloudwatch_log_group.api_gw_logs.arn
+  #   format = jsonencode({
+  #     requestId      = "$context.requestId",
+  #     ip             = "$context.identity.sourceIp",
+  #     caller         = "$context.identity.caller",
+  #     user           = "$context.identity.user",
+  #     requestTime    = "$context.requestTime",
+  #     httpMethod     = "$context.httpMethod",
+  #     resourcePath   = "$context.resourcePath",
+  #     status         = "$context.status",
+  #     protocol       = "$context.protocol",
+  #     responseLength = "$context.responseLength"
+  #   })
+  # }
 }
 
 # API Gateway Custom Domain Mapping to Stage
@@ -95,3 +111,67 @@ resource "aws_lambda_permission" "dnl_api" {
 #   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 #   role       = aws_iam_role.apigateway_s3_role.name
 # }
+
+# LOGGING
+# Create CloudWatch Log Group
+# resource "aws_cloudwatch_log_group" "api_gw_logs" {
+#   name              = "/aws/apigateway/dnl_api_logs"
+#   retention_in_days = 7
+# }
+#
+# # Create an IAM Role for API Gateway logging
+# resource "aws_iam_role" "api_gateway_logging_role" {
+#   name = "api-gateway-logging-role"
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17",
+#     Statement = [{
+#       Action = "sts:AssumeRole",
+#       Effect = "Allow",
+#       Principal = {
+#         Service = "apigateway.amazonaws.com"
+#       }
+#     }]
+#   })
+# }
+#
+# # Attach IAM policy to the role
+# resource "aws_iam_role_policy" "api_gateway_logging_policy" {
+#   role = aws_iam_role.api_gateway_logging_role.id
+#
+#   policy = jsonencode({
+#     Version = "2012-10-17",
+#     Statement = [{
+#       Effect = "Allow",
+#       Action = [
+#         "logs:CreateLogGroup",
+#         "logs:CreateLogStream",
+#         "logs:PutLogEvents"
+#       ],
+#       Resource = "*"
+#     }]
+#   })
+# }
+
+# Enable Access Logs for HTTP API Gateway
+# resource "aws_apigatewayv2_stage" "dnl_api_stage" {
+#   api_id      = aws_apigatewayv2_api.dnl_api.id
+#   name        = "$default"
+#   auto_deploy = true
+#
+#   access_log_settings {
+#     destination_arn = aws_cloudwatch_log_group.api_gw_logs.arn
+#     format = jsonencode({
+#       requestId      = "$context.requestId",
+#       ip             = "$context.identity.sourceIp",
+#       caller         = "$context.identity.caller",
+#       user           = "$context.identity.user",
+#       requestTime    = "$context.requestTime",
+#       httpMethod     = "$context.httpMethod",
+#       resourcePath   = "$context.resourcePath",
+#       status         = "$context.status",
+#       protocol       = "$context.protocol",
+#       responseLength = "$context.responseLength"
+#     })
+#   }
+# }
+
