@@ -23,18 +23,18 @@ resource "aws_s3_bucket_ownership_controls" "example" {
 
 resource "aws_s3_bucket_object" "commands" {
   bucket = aws_s3_bucket.dnl.id
-  key    = "data/commands.json"
-  source = local.commands_path
+  key    = local.commands.key
+  source = local.commands.local_path
 
-  etag = filemd5(local.commands_path)
+  etag = filemd5(local.commands.local_path)
 }
 
 resource "aws_s3_bucket_object" "dnl_api_favicon" {
   bucket = aws_s3_bucket.dnl.id
-  key    = "data/api/favicon.ico"
-  source = local.favicon_path
+  key    = local.favicon.key
+  source = local.favicon.local_path
 
-  etag = filemd5(local.favicon_path)
+  etag = filemd5(local.favicon.local_path)
 }
 
 resource "aws_s3_bucket_policy" "dnl_api_gateway" {

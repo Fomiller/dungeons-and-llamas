@@ -1,4 +1,10 @@
 locals {
-  commands_path = "../../../../src/data/commands.json"
-  favicon_path  = "../../../../src/data/dnl_api_favicon.ico"
+  commands = {
+    local_path = "../../../../src/data/commands.json",
+    key        = "data/commands.json"
+  }
+  favicon = {
+    local_path = "../../../../src/data/dnl_api_favicon.ico"
+    key        = "data/api/favicon.ico"
+  }
 }
