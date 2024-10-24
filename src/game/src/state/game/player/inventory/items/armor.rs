@@ -1,6 +1,8 @@
 use super::equipped::EquippedStateSortKey;
+use crate::state::SortKeyBuildable;
+use std::any::Any;
 
-#[derive(strum::Display, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
 pub enum ArmorSortKey {
     #[strum(to_string = "Light")]
     Light,
@@ -12,10 +14,32 @@ pub enum ArmorSortKey {
     Shield,
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ArmorSortKeyBuilder {
     armor: Option<ArmorSortKey>,
     equipped: EquippedStateSortKey,
+}
+
+impl SortKeyBuildable for ArmorSortKeyBuilder {
+    fn build(&self) -> String {
+        let mut result = String::from(format!("Armor#{}", self.equipped.to_string()));
+        if let Some(weapon) = self.armor {
+            result.push_str(&format!("{}", weapon.to_string()));
+        }
+        result
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl From<Box<dyn SortKeyBuildable>> for ArmorSortKeyBuilder {
+    fn from(skb: Box<dyn SortKeyBuildable>) -> Self {
+        if let Some(armor) = skb.as_any().downcast_ref::<ArmorSortKeyBuilder>() {
+            return *armor;
+        }
+        Self::default()
+    }
 }
 
 impl ArmorSortKeyBuilder {
@@ -31,121 +55,4 @@ impl ArmorSortKeyBuilder {
         self.equipped = equipped;
         self
     }
-
-    pub fn build(self) -> String {
-        let mut result = String::from(format!("GameState#{}#", self.equipped.to_string()));
-        if let Some(weapon) = self.armor {
-            result.push_str(&format!("#{}", weapon.to_string()));
-        }
-        result
-    }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::super::super::super::super::super::RootSortKey;
-//     use super::super::super::super::super::{GameSortKey, PlayerSortKey};
-//     use super::super::super::{InventorySortKey, ItemSortKey};
-//     use super::super::ArmorEquippedStateSortKey;
-//     use super::ArmorSortKey;
-//
-//     #[test]
-//     fn test_armor_sort_key() {
-//         // maybe use EnumIter here, initial exploration did not work b/c of
-//         // having to use a default
-//         let game_id = "12345";
-//         let variants = vec![
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#UnEquipped#Light",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::UnEquipped(
-//                             ArmorSortKey::Light,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#UnEquipped#Medium",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::UnEquipped(
-//                             ArmorSortKey::Medium,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#UnEquipped#Heavy",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::UnEquipped(
-//                             ArmorSortKey::Heavy,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#UnEquipped#Shield",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::UnEquipped(
-//                             ArmorSortKey::Shield,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#Equipped#Light",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::Equipped(
-//                             ArmorSortKey::Light,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#Equipped#Medium",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::Equipped(
-//                             ArmorSortKey::Medium,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#Equipped#Heavy",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::Equipped(
-//                             ArmorSortKey::Heavy,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//             (
-//                 "12345#Game#Player#Inventory#Item#Armor#Equipped#Shield",
-//                 RootSortKey::Game(
-//                     game_id,
-//                     GameSortKey::Player(PlayerSortKey::Inventory(InventorySortKey::Item(
-//                         ItemSortKey::Armor(ArmorEquippedStateSortKey::Equipped(
-//                             ArmorSortKey::Shield,
-//                         )),
-//                     ))),
-//                 ),
-//             ),
-//         ];
-//         for variant in variants.iter() {
-//             assert_eq!(variant.0, variant.1.to_string())
-//         }
-//     }
-// }

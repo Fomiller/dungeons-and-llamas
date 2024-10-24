@@ -527,6 +527,7 @@ impl GameMap {
         encounter
     }
 
+    #[allow(dead_code)]
     fn print(&self) {
         for row in (0..self.rows).rev() {
             for col in 0..self.cols {

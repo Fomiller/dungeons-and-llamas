@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(strum::Display, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
 pub enum MessageSortKey {
     #[strum(to_string = "LastMessageToken")]
     LastMessageToken,

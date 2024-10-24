@@ -26,7 +26,7 @@ pub enum StatsSortKey {
     Defenses,
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct StatsSortKeyBuilder {
     skills: Option<SkillsSortKey>,
     saving_throws: Option<SavingThrowsSortKey>,

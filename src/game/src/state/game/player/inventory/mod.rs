@@ -1,5 +1,6 @@
 pub mod items;
 
+use crate::state::SortKeyBuildable;
 use items::ItemSortKeyBuilder;
 
 #[derive(strum::Display, strum::EnumIter)]
@@ -8,9 +9,9 @@ pub enum InventorySortKey {
     Item,
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct InventorySortKeyBuilder {
-    item: Option<ItemSortKeyBuilder>,
+    pub item: Option<ItemSortKeyBuilder>,
 }
 
 impl InventorySortKeyBuilder {
@@ -29,5 +30,14 @@ impl InventorySortKeyBuilder {
             result.push_str(&format!("{}", item.build().to_string()));
         }
         result
+    }
+}
+
+impl From<Box<dyn SortKeyBuildable>> for InventorySortKeyBuilder {
+    fn from(skb: Box<dyn SortKeyBuildable>) -> Self {
+        if let Some(inventory) = skb.as_any().downcast_ref::<Self>() {
+            return *inventory;
+        }
+        Self::default()
     }
 }

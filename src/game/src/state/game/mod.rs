@@ -21,7 +21,7 @@ pub enum GameSortKey {
     Round,
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct GameSortKeyBuilder {
     player: Option<PlayerSortKeyBuilder>,
     enemy: Option<bool>,

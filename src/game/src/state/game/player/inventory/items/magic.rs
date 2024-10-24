@@ -1,4 +1,4 @@
-#[derive(strum::Display, strum::EnumIter)]
+#[derive(strum::Display, Debug, Clone, Copy, strum::EnumIter)]
 pub enum MagicItemSortKey {
     #[strum(to_string = "Potion")]
     Potion,

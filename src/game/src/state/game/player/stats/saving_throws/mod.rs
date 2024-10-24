@@ -1,4 +1,4 @@
-#[derive(strum::Display, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
 pub enum SavingThrowsSortKey {
     #[strum(to_string = "Strength")]
     Strength,

@@ -15,7 +15,7 @@ pub use crate::state::{
     },
     message::MessageSortKey,
     user::{User, UserSortKey},
-    GameState, RootSortKey, SortKeyBuilder, StateComponent,
+    GameState, RootSortKey, RootSortKeyBuilder, SortKeyBuildable, StateComponent,
 };
 
 use aws_config::BehaviorVersion;
@@ -112,7 +112,7 @@ impl Client {
         let user = serde_dynamo::to_item(User {
             user_id: user_id.to_string(),
             name: name.to_string(),
-            state_component: SortKeyBuilder::new()
+            state_component: RootSortKeyBuilder::new()
                 .id(user_id.to_string())
                 .user(UserSortKey::ActiveGameId)
                 .build(),
@@ -128,7 +128,10 @@ impl Client {
         let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
         let game_sk = GameSortKeyBuilder::new().player(player_sk);
 
-        let sort_key = SortKeyBuilder::new().id(new_game_id).game(game_sk).build();
+        let sort_key = RootSortKeyBuilder::new()
+            .id(new_game_id)
+            .game(game_sk)
+            .build();
 
         let state_comp_wep = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
@@ -174,7 +177,7 @@ impl Client {
     pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
         let last_message_token = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: SortKeyBuilder::new()
+            state_component: RootSortKeyBuilder::new()
                 .id(user_id.to_string())
                 .message(MessageSortKey::LastMessageToken)
                 .build(),
@@ -187,7 +190,7 @@ impl Client {
     }
 
     pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
-        let sort_key = SortKeyBuilder::new()
+        let sort_key = RootSortKeyBuilder::new()
             .id(user_id.to_string())
             .message(MessageSortKey::LastMessageToken)
             .build();
@@ -198,7 +201,51 @@ impl Client {
 
         Ok(res)
     }
+
+    pub async fn try_new_game(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
+        let new_game_id = try_create_sqid(None)?;
+
+        let user = serde_dynamo::to_item(User {
+            user_id: user_id.to_string(),
+            name: name.to_string(),
+            state_component: RootSortKeyBuilder::new()
+                .id(user_id.to_string())
+                .user(UserSortKey::ActiveGameId)
+                .build(),
+            active_game_id: Some(new_game_id.to_string()),
+            games: Some(vec![new_game_id.to_string()]),
+        })?;
+
+        let weapon_sk = WeaponSortKeyBuilder::new()
+            .weapon(WeaponSortKey::Melee)
+            .equipped(EquippedStateSortKey::Equipped);
+        let item_sk = ItemSortKeyBuilder::new().weapons(weapon_sk);
+        let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
+        let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
+        let game_sk = GameSortKeyBuilder::new().player(player_sk);
+
+        let sort_key = RootSortKeyBuilder::new()
+            .id(new_game_id)
+            .game(game_sk)
+            .build();
+
+        let state_comp_wep = serde_dynamo::to_item(StateComponent {
+            user_id: user_id.to_string(),
+            state_component: sort_key,
+            state: Some(vec![StateComponentWeapon {
+                name: "great-sword".to_string(),
+                price: 100,
+                damage: 69,
+            }]),
+        })?;
+
+        self.try_generic_put(user).await?;
+        self.try_generic_put(state_comp_wep).await?;
+
+        Ok(())
+    }
 }
+
 pub fn try_create_sqid(min_length: Option<u8>) -> anyhow::Result<String> {
     let sqids = sqids::Sqids::builder()
         .min_length(min_length.unwrap_or(10))

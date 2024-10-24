@@ -19,7 +19,7 @@ pub enum PlayerSortKey {
     Actions,
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct PlayerSortKeyBuilder {
     actions: Option<ActionsSortKeyBuilder>,
     character: Option<bool>,

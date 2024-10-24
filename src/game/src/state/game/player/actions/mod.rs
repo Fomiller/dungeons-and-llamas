@@ -14,7 +14,7 @@ pub enum ActionsSortKey {
     Reaction,
 }
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ActionsSortKeyBuilder {
     spells: Option<SpellSortKey>,
     action: Option<bool>,

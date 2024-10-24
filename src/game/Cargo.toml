@@ -14,5 +14,5 @@ rand = "0.8.5"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_dynamo = { version = "4.2.14", features = ["aws-sdk-dynamodb+1"] }
 sqids = "0.4.1"
-strum = { version = "0.26.3", features = ["derive"] }
+strum = { version = "0.26.3", features = ["derive", "strum_macros"] }
 uuid = { version = "1.11.0", features = ["v4"] }
