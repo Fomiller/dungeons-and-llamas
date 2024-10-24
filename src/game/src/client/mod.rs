@@ -18,13 +18,18 @@ pub use crate::state::{
     GameState, RootSortKey, RootSortKeyBuilder, SortKeyBuildable, StateComponent,
 };
 
+use anyhow::anyhow;
 use aws_config::BehaviorVersion;
-use aws_sdk_dynamodb::operation::get_item::GetItemOutput;
-use aws_sdk_dynamodb::operation::put_item::PutItemOutput;
 use aws_sdk_dynamodb::operation::query::QueryOutput;
 use aws_sdk_dynamodb::types::AttributeValue;
+use aws_sdk_dynamodb::{operation::put_item::PutItemOutput, types::PutRequest};
+use aws_sdk_dynamodb::{
+    operation::{batch_write_item::BatchWriteItemInput, get_item::GetItemOutput},
+    types::WriteRequest,
+};
 use lambda_http::tracing::info;
 use rand::Rng;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 
@@ -113,7 +118,7 @@ impl Client {
             user_id: user_id.to_string(),
             name: name.to_string(),
             state_component: RootSortKeyBuilder::new()
-                .id(user_id.to_string())
+                .id(user_id)
                 .user(UserSortKey::ActiveGameId)
                 .build(),
             active_game_id: Some(new_game_id.to_string()),
@@ -129,7 +134,7 @@ impl Client {
         let game_sk = GameSortKeyBuilder::new().player(player_sk);
 
         let sort_key = RootSortKeyBuilder::new()
-            .id(new_game_id)
+            .id(&new_game_id)
             .game(game_sk)
             .build();
 
@@ -178,7 +183,7 @@ impl Client {
         let last_message_token = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
             state_component: RootSortKeyBuilder::new()
-                .id(user_id.to_string())
+                .id(user_id)
                 .message(MessageSortKey::LastMessageToken)
                 .build(),
             state: Some(token),
@@ -191,7 +196,7 @@ impl Client {
 
     pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
         let sort_key = RootSortKeyBuilder::new()
-            .id(user_id.to_string())
+            .id(user_id)
             .message(MessageSortKey::LastMessageToken)
             .build();
 
@@ -202,45 +207,71 @@ impl Client {
         Ok(res)
     }
 
-    pub async fn try_new_game(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
+    pub async fn try_new_game(&self, user_id: &str) -> anyhow::Result<()> {
+        let sort_keys = GameState::new(user_id).create_inventory_sks();
         let new_game_id = try_create_sqid(None)?;
 
-        let user = serde_dynamo::to_item(User {
-            user_id: user_id.to_string(),
-            name: name.to_string(),
-            state_component: RootSortKeyBuilder::new()
-                .id(user_id.to_string())
-                .user(UserSortKey::ActiveGameId)
-                .build(),
-            active_game_id: Some(new_game_id.to_string()),
-            games: Some(vec![new_game_id.to_string()]),
-        })?;
+        let sks: Vec<RootSortKeyBuilder> = sort_keys
+            .iter()
+            .map(|sk| {
+                let player_sk = PlayerSortKeyBuilder::new().inventory(*sk);
+                let game_sk = GameSortKeyBuilder::new().player(player_sk);
+                RootSortKeyBuilder::new().id(&new_game_id).game(game_sk)
+            })
+            .collect();
 
-        let weapon_sk = WeaponSortKeyBuilder::new()
-            .weapon(WeaponSortKey::Melee)
-            .equipped(EquippedStateSortKey::Equipped);
-        let item_sk = ItemSortKeyBuilder::new().weapons(weapon_sk);
-        let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
-        let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
-        let game_sk = GameSortKeyBuilder::new().player(player_sk);
+        let mut items: Vec<HashMap<String, AttributeValue>> = Vec::new();
 
-        let sort_key = RootSortKeyBuilder::new()
-            .id(new_game_id)
-            .game(game_sk)
-            .build();
+        let components: Vec<StateComponent<HashMap<String, Value>>> = sks
+            .iter()
+            .map(|sk| StateComponent {
+                user_id: user_id.to_string(),
+                state_component: sk.build(),
+                state: None,
+            })
+            .collect();
 
-        let state_comp_wep = serde_dynamo::to_item(StateComponent {
-            user_id: user_id.to_string(),
-            state_component: sort_key,
-            state: Some(vec![StateComponentWeapon {
-                name: "great-sword".to_string(),
-                price: 100,
-                damage: 69,
-            }]),
-        })?;
+        for i in components {
+            match serde_dynamo::to_item(i) {
+                Ok(item) => items.push(item),
+                Err(e) => return Err(anyhow!(e)),
+            }
+        }
 
-        self.try_generic_put(user).await?;
-        self.try_generic_put(state_comp_wep).await?;
+        while !items.is_empty() {
+            println!("Items: {:?}", items);
+            println!("Items Count: {:?}", items.len());
+            let batch: Vec<_> = items.drain(..25.min(items.len())).collect();
+            println!("New Items: {:?}", items);
+            println!("Batch: {:?}", batch);
+            let mut write_requests = Vec::new();
+
+            for item in batch {
+                let put_request = PutRequest::builder().set_item(Some(item)).build()?;
+                let write_request = WriteRequest::builder().put_request(put_request).build();
+                write_requests.push(write_request);
+            }
+
+            println!("Write Requests: {:?}", write_requests);
+
+            // Prepare the batch write input
+            let request = BatchWriteItemInput::builder()
+                .request_items(GAME_STATE_TABLE.to_string(), write_requests)
+                .build()?;
+
+            // Send the request
+            println!("Request: {:?}", request);
+            match self
+                .client
+                .batch_write_item()
+                .set_request_items(request.request_items)
+                .send()
+                .await
+            {
+                Ok(_) => println!("Batch write successful!"),
+                Err(e) => eprintln!("Error during batch write: {:?}", e),
+            }
+        }
 
         Ok(())
     }

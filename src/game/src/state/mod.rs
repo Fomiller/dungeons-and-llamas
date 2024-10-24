@@ -212,14 +212,14 @@ impl RootSortKeyBuilder {
         self
     }
 
-    pub fn id(mut self, id: String) -> Self {
-        self.id = id;
+    pub fn id(mut self, id: &str) -> Self {
+        self.id = id.to_string();
         self
     }
 
     pub fn create_player_sk(id: String, player: PlayerSortKeyBuilder) -> RootSortKeyBuilder {
         RootSortKeyBuilder::new()
-            .id(id)
+            .id(&id)
             .game(GameSortKeyBuilder::new().player(player))
     }
 
@@ -229,14 +229,14 @@ impl RootSortKeyBuilder {
     ) -> RootSortKeyBuilder {
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_item_sk(id: String, item: ItemSortKeyBuilder) -> RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_weapon_sk(
@@ -251,7 +251,7 @@ impl RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_armor_sk(
@@ -264,7 +264,7 @@ impl RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_books_and_scrolls_sk(
@@ -275,7 +275,7 @@ impl RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_magic_sk(id: String, magic: MagicItemSortKey) -> RootSortKeyBuilder {
@@ -283,7 +283,7 @@ impl RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_tool_sk(id: String, tool: ToolSortKey) -> RootSortKeyBuilder {
@@ -291,7 +291,7 @@ impl RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_clothing_sk(id: String, clothing: ClothingSortKey) -> RootSortKeyBuilder {
@@ -299,28 +299,28 @@ impl RootSortKeyBuilder {
         let inventory = InventorySortKeyBuilder::new().item(item);
         let player = PlayerSortKeyBuilder::new().inventory(inventory);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_skills_sk(id: String, skills: SkillsSortKey) -> RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().skills(skills);
         let player = PlayerSortKeyBuilder::new().stats(stats);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_abilities_sk(id: String, abilities: AbilitiesSortKey) -> RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().abilities(abilities);
         let player = PlayerSortKeyBuilder::new().stats(stats);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_conditions_sk(id: String, conditions: ConditionsSortKey) -> RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().conditions(conditions);
         let player = PlayerSortKeyBuilder::new().stats(stats);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_core_attributes_sk(
@@ -330,7 +330,7 @@ impl RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().core_attributes(core_attributes);
         let player = PlayerSortKeyBuilder::new().stats(stats);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 
     pub fn create_savings_throw_sk(
@@ -340,7 +340,7 @@ impl RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().saving_throws(saving_throws);
         let player = PlayerSortKeyBuilder::new().stats(stats);
         let game = GameSortKeyBuilder::new().player(player);
-        RootSortKeyBuilder::new().id(id).game(game)
+        RootSortKeyBuilder::new().id(&id).game(game)
     }
 }
 
@@ -388,10 +388,7 @@ mod tests {
             let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
             let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
             let game_sk = GameSortKeyBuilder::new().player(player_sk);
-            let sk = RootSortKeyBuilder::new()
-                .id(game_id.to_string())
-                .game(game_sk)
-                .build();
+            let sk = RootSortKeyBuilder::new().id(game_id).game(game_sk).build();
             assert_eq!(weapon.1, sk)
         }
     }
@@ -434,10 +431,7 @@ mod tests {
         ] {
             let player_sk = PlayerSortKeyBuilder::new().stats(stat.0);
             let game_sk = GameSortKeyBuilder::new().player(player_sk);
-            let sk = RootSortKeyBuilder::new()
-                .id(game_id.to_string())
-                .game(game_sk)
-                .build();
+            let sk = RootSortKeyBuilder::new().id(game_id).game(game_sk).build();
 
             assert_eq!(stat.1, sk);
         }

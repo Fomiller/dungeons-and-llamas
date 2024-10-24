@@ -395,7 +395,7 @@ impl EditCmd {
             format!(
                 "Could not find {}",
                 RootSortKeyBuilder::new()
-                    .id(user_id)
+                    .id(&user_id)
                     .message(MessageSortKey::LastMessageToken)
                     .build()
             )
