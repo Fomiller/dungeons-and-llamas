@@ -20,7 +20,7 @@ To add the Dungeons-and-Llamas bot to your discord follow this [link](https://di
 
 ## Commands
 Working Commands are currently 
-- /new-game 
+- `/new-game`
     - creates a new game, currently writes all records to dynamodb for player inventory,
     example:
     ```json
@@ -38,7 +38,7 @@ Working Commands are currently
     ```
 
 ## Progress
-- [x] create bot lambda
+- [x] create discord bot lambda
 - [x] create command manager lambda
 - [x] create dungeons and llamas api (api to handle all interactions with game logic)
 - [x] dynamodb data modeling for player inventory
@@ -47,6 +47,7 @@ Working Commands are currently
 - [ ] add additional records for GAME, ENEMY, ROUNDS, LEVELS, NPC components to dynamodb on `/new-game`
 - [ ] integrate with Bedrock
 - [ ] start releasing to production
+- [ ] turn serverless discord bot infrastructure into a terraform module
 
 
 ## Developer Docs
