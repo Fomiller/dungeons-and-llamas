@@ -238,13 +238,19 @@ impl Client {
             }
         }
 
+        let mut write_requests = Vec::new();
         while !items.is_empty() {
             println!("Items: {:?}", items);
             println!("Items Count: {:?}", items.len());
-            let batch: Vec<_> = items.drain(..25.min(items.len())).collect();
+
+            // if there are previous unprocessed_items then write_requests will
+            // not be empty so we will subtract that maximum value from the maximum batch value
+            let batch: Vec<_> = items
+                .drain(..(25 - write_requests.len()).min(items.len()))
+                .collect();
+
             println!("New Items: {:?}", items);
             println!("Batch: {:?}", batch);
-            let mut write_requests = Vec::new();
 
             for item in batch {
                 let put_request = PutRequest::builder().set_item(Some(item)).build()?;
@@ -252,15 +258,11 @@ impl Client {
                 write_requests.push(write_request);
             }
 
-            println!("Write Requests: {:?}", write_requests);
-
             // Prepare the batch write input
             let request = BatchWriteItemInput::builder()
-                .request_items(GAME_STATE_TABLE.to_string(), write_requests)
+                .request_items(GAME_STATE_TABLE.to_string(), write_requests.clone())
                 .build()?;
 
-            // Send the request
-            println!("Request: {:?}", request);
             match self
                 .client
                 .batch_write_item()
@@ -268,7 +270,25 @@ impl Client {
                 .send()
                 .await
             {
-                Ok(_) => println!("Batch write successful!"),
+                Ok(request) => {
+                    if let Some(unprocessed) = request.unprocessed_items {
+                        println!("Unprocessed Batch Items");
+
+                        let key = GAME_STATE_TABLE.as_str();
+
+                        let expected = &format!(
+                            "{} key not found in unprocessed requests.",
+                            GAME_STATE_TABLE.to_string()
+                        );
+
+                        let requests = unprocessed.get(key).expect(expected).to_owned();
+
+                        write_requests = requests
+                    } else {
+                        write_requests.clear();
+                        println!("Batch write successful!");
+                    }
+                }
                 Err(e) => eprintln!("Error during batch write: {:?}", e),
             }
         }
