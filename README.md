@@ -5,7 +5,7 @@
 
 <!-- [![crates.io](https://img.shields.io/crates/v/my_crate.svg)](https://crates.io/crates/my_crate) -->
 <!-- [![docs.rs](https://docs.rs/my_crate/badge.svg)](https://docs.rs/my_crate) -->
-[![Build Status](https://github.com/Fomiller/dungesons-and-llamas/actions/workflows/deploy.yml/badge.svg)](https://github.com/Fomiller/dungeons-and-llamas/actions)
+<!-- [![Build Status](https://github.com/Fomiller/dungesons-and-llamas/actions/workflows/deploy.yml/badge.svg)](https://github.com/Fomiller/dungeons-and-llamas/actions) -->
 <!-- [![codecov](https://codecov.io/gh/myusername/myrepo/branch/main/graph/badge.svg)](https://codecov.io/gh/myusername/myrepo) -->
 ![Rust Version](https://img.shields.io/badge/rustc-1.82+-orange.svg)
 <!-- [![License](https://img.shields.io/crates/l/my_crate.svg)](https://crates.io/crates/my_crate) -->
