@@ -27,7 +27,7 @@ async fn main() -> Result<(), Error> {
 
 #[debug_handler]
 async fn root() -> impl IntoResponse {
-    StatusCode::NOT_FOUND
+    StatusCode::NO_CONTENT
 }
 
 #[debug_handler]
