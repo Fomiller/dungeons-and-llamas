@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use dice::Dice;
 use game::client::Client;
 use game::state::message::MessageSortKey;
@@ -9,6 +10,10 @@ use serenity::model::application::*;
 use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
+
+lazy_static::lazy_static! {
+    static ref DNL_API_URL: String = format!("https://dnl-api.{}.aws.fomillercloud.com", std::env::var("ENVIRONMENT").unwrap());
+}
 
 pub async fn try_handle_command_interaction(
     interaction: CommandInteraction,
@@ -174,13 +179,21 @@ impl NewGameCmd {
         &self,
         cmd: CommandInteraction,
     ) -> anyhow::Result<CreateInteractionResponse> {
-        let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
-        let name = cmd.user.name.to_string();
-        client.try_new_game_state(&user_id, &name).await?;
+        let client = reqwest::Client::new();
 
-        let content = format!("New game created.");
-        Ok(format_interaction_response(content))
+        let mut json = HashMap::new();
+        json.insert("id", user_id);
+
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/game/new");
+
+        match client.post(url).json(&json).send().await {
+            Ok(_) => {
+                let content = format!("New game created.");
+                Ok(format_interaction_response(content))
+            }
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 }
 
