@@ -50,10 +50,14 @@ struct User {
 async fn post_new_game_handler(Json(payload): Json<User>) -> impl IntoResponse {
     let client = Client::new().await;
     match client.try_new_game(&payload.user_id).await {
-        Ok(_) => (StatusCode::OK, Json(json!({"detail": "new game created"}))).into_response(),
-        Err(_) => (
+        Ok(_) => (
+            StatusCode::CREATED,
+            Json(json!({"detail": "new game created"})),
+        )
+            .into_response(),
+        Err(e) => (
             StatusCode::BAD_REQUEST,
-            Json(json!({"error": "error creating new game"})),
+            Json(json!({"error": format!("error creating new game: {}",e)})),
         )
             .into_response(),
     }
