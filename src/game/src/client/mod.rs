@@ -27,7 +27,7 @@ use aws_sdk_dynamodb::{
     operation::{batch_write_item::BatchWriteItemInput, get_item::GetItemOutput},
     types::WriteRequest,
 };
-use lambda_http::tracing::info;
+use lambda_http::tracing::{debug, info};
 use rand::Rng;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -111,48 +111,48 @@ impl Client {
         Ok(state)
     }
 
-    pub async fn try_new_game_state(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
-        let new_game_id = try_create_sqid(None)?;
-
-        let user = serde_dynamo::to_item(User {
-            user_id: user_id.to_string(),
-            name: name.to_string(),
-            state_component: RootSortKeyBuilder::new()
-                .id(user_id)
-                .user(UserSortKey::ActiveGameId)
-                .build(),
-            active_game_id: Some(new_game_id.to_string()),
-            games: Some(vec![new_game_id.to_string()]),
-        })?;
-
-        let weapon_sk = WeaponSortKeyBuilder::new()
-            .weapon(WeaponSortKey::Melee)
-            .equipped(EquippedStateSortKey::Equipped);
-        let item_sk = ItemSortKeyBuilder::new().weapons(weapon_sk);
-        let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
-        let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
-        let game_sk = GameSortKeyBuilder::new().player(player_sk);
-
-        let sort_key = RootSortKeyBuilder::new()
-            .id(&new_game_id)
-            .game(game_sk)
-            .build();
-
-        let state_comp_wep = serde_dynamo::to_item(StateComponent {
-            user_id: user_id.to_string(),
-            state_component: sort_key,
-            state: Some(vec![StateComponentWeapon {
-                name: "great-sword".to_string(),
-                price: 100,
-                damage: 69,
-            }]),
-        })?;
-
-        self.try_generic_put(user).await?;
-        self.try_generic_put(state_comp_wep).await?;
-
-        Ok(())
-    }
+    // pub async fn try_new_game_state(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
+    //     let new_game_id = try_create_sqid(None)?;
+    //
+    //     let user = serde_dynamo::to_item(User {
+    //         user_id: user_id.to_string(),
+    //         name: name.to_string(),
+    //         state_component: RootSortKeyBuilder::new()
+    //             .id(user_id)
+    //             .user(UserSortKey::ActiveGameId)
+    //             .build(),
+    //         active_game_id: Some(new_game_id.to_string()),
+    //         games: Some(vec![new_game_id.to_string()]),
+    //     })?;
+    //
+    //     let weapon_sk = WeaponSortKeyBuilder::new()
+    //         .weapon(WeaponSortKey::Melee)
+    //         .equipped(EquippedStateSortKey::Equipped);
+    //     let item_sk = ItemSortKeyBuilder::new().weapons(weapon_sk);
+    //     let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
+    //     let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
+    //     let game_sk = GameSortKeyBuilder::new().player(player_sk);
+    //
+    //     let sort_key = RootSortKeyBuilder::new()
+    //         .id(&new_game_id)
+    //         .game(game_sk)
+    //         .build();
+    //
+    //     let state_comp_wep = serde_dynamo::to_item(StateComponent {
+    //         user_id: user_id.to_string(),
+    //         state_component: sort_key,
+    //         state: Some(vec![StateComponentWeapon {
+    //             name: "great-sword".to_string(),
+    //             price: 100,
+    //             damage: 69,
+    //         }]),
+    //     })?;
+    //
+    //     self.try_generic_put(user).await?;
+    //     self.try_generic_put(state_comp_wep).await?;
+    //
+    //     Ok(())
+    // }
 
     pub async fn try_find_user(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
         let res = self.try_generic_get(user_id.to_string()).await?;
@@ -208,21 +208,27 @@ impl Client {
     }
 
     pub async fn try_new_game(&self, user_id: &str) -> anyhow::Result<()> {
-        let sort_keys = GameState::new(user_id).create_inventory_sks();
-        let new_game_id = try_create_sqid(None)?;
+        let game_id = try_create_sqid(None)?;
+        let mut sort_keys = Vec::new();
+        let player_inv_sks = GameState::new(user_id).create_player_inventory_sks(&game_id);
+        let enemy_inv_sks = GameState::new(user_id).create_enemy_inventory_sks(&game_id);
+        sort_keys.extend(player_inv_sks);
+        sort_keys.extend(enemy_inv_sks);
 
-        let sks: Vec<RootSortKeyBuilder> = sort_keys
-            .iter()
-            .map(|sk| {
-                let player_sk = PlayerSortKeyBuilder::new().inventory(*sk);
-                let game_sk = GameSortKeyBuilder::new().player(player_sk);
-                RootSortKeyBuilder::new().id(&new_game_id).game(game_sk)
-            })
-            .collect();
+        self.try_generic_batch_write_root_sks(user_id, sort_keys)
+            .await?;
 
+        Ok(())
+    }
+
+    pub async fn try_generic_batch_write_root_sks(
+        &self,
+        user_id: &str,
+        sort_keys: Vec<RootSortKeyBuilder>,
+    ) -> anyhow::Result<()> {
         let mut items: Vec<HashMap<String, AttributeValue>> = Vec::new();
 
-        let components: Vec<StateComponent<HashMap<String, Value>>> = sks
+        let components: Vec<StateComponent<HashMap<String, Value>>> = sort_keys
             .iter()
             .map(|sk| StateComponent {
                 user_id: user_id.to_string(),
@@ -240,17 +246,14 @@ impl Client {
 
         let mut write_requests = Vec::new();
         while !items.is_empty() {
-            println!("Items: {:?}", items);
-            println!("Items Count: {:?}", items.len());
+            debug!("Items: {:?}", items);
+            debug!("Items Count: {:?}", items.len());
 
             // if there are previous unprocessed_items then write_requests will
             // not be empty so we will subtract that maximum value from the maximum batch value
             let batch: Vec<_> = items
                 .drain(..(25 - write_requests.len()).min(items.len()))
                 .collect();
-
-            println!("New Items: {:?}", items);
-            println!("Batch: {:?}", batch);
 
             for item in batch {
                 let put_request = PutRequest::builder().set_item(Some(item)).build()?;
@@ -272,7 +275,7 @@ impl Client {
             {
                 Ok(request) => {
                     if let Some(unprocessed) = request.unprocessed_items {
-                        println!("Unprocessed Batch Items");
+                        info!("Unprocessed Batch Items");
 
                         let key = GAME_STATE_TABLE.as_str();
 
@@ -286,13 +289,12 @@ impl Client {
                         write_requests = requests
                     } else {
                         write_requests.clear();
-                        println!("Batch write successful!");
+                        info!("Batch write successful!");
                     }
                 }
                 Err(e) => eprintln!("Error during batch write: {:?}", e),
             }
         }
-
         Ok(())
     }
 }

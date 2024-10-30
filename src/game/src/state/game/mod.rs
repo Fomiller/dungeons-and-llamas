@@ -24,7 +24,7 @@ pub enum GameSortKey {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GameSortKeyBuilder {
     player: Option<PlayerSortKeyBuilder>,
-    enemy: Option<bool>,
+    enemy: Option<PlayerSortKeyBuilder>,
     npc: Option<bool>,
     level: Option<bool>,
     round: Option<bool>,
@@ -39,7 +39,7 @@ impl GameSortKeyBuilder {
         self.player = Some(player);
         self
     }
-    pub fn enemy(mut self, enemy: bool) -> Self {
+    pub fn enemy(mut self, enemy: PlayerSortKeyBuilder) -> Self {
         self.enemy = Some(enemy);
         self
     }
@@ -61,7 +61,7 @@ impl GameSortKeyBuilder {
         if let Some(player) = self.player {
             result.push_str(&format!("{}", player.build().to_string()));
         } else if let Some(enemy) = self.enemy {
-            result.push_str(&format!("{}", enemy.to_string()));
+            result.push_str(&format!("{}", enemy.build().to_string()));
         } else if let Some(npc) = self.npc {
             result.push_str(&format!("{}", npc.to_string()));
         } else if let Some(level) = self.level {

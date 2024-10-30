@@ -18,8 +18,8 @@ use user::UserSortKey;
 
 use crate::{
     client::{
-        EquippedStateSortKey, InventorySortKeyBuilder, ItemSortKeyBuilder, PlayerSortKeyBuilder,
-        WeaponSortKey, WeaponSortKeyBuilder,
+        EquippedStateSortKey, InventorySortKey, InventorySortKeyBuilder, ItemSortKeyBuilder,
+        PlayerSortKeyBuilder, WeaponSortKey, WeaponSortKeyBuilder,
     },
     state::game::player::{
         inventory::items::{
@@ -141,6 +141,30 @@ impl GameState {
         sort_keys.push(miscellaneous_skb);
 
         sort_keys
+    }
+
+    pub fn create_player_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let inventory_keys = self.create_inventory_sks();
+        inventory_keys
+            .iter()
+            .map(|sk| {
+                let player_sk = PlayerSortKeyBuilder::new().inventory(*sk);
+                let game_sk = GameSortKeyBuilder::new().player(player_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
+    }
+
+    pub fn create_enemy_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let inventory_keys = self.create_inventory_sks();
+        inventory_keys
+            .iter()
+            .map(|sk| {
+                let player_sk = PlayerSortKeyBuilder::new().inventory(*sk);
+                let game_sk = GameSortKeyBuilder::new().enemy(player_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
     }
 
     pub fn create_inventory_sks(&self) -> Vec<InventorySortKeyBuilder> {
