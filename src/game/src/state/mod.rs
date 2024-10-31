@@ -246,4 +246,30 @@ mod tests {
 
         assert_eq!(expected_sks, sort_keys)
     }
+
+    #[test]
+    fn test_create_actions_sks() {
+        let user_id = "12345";
+        let factory = SortKeyFactory::new(user_id);
+
+        let mut sks = factory
+            .create_actions_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        let mut expected = vec![
+            "Actions#Action",
+            "Actions#BonusAction",
+            "Actions#Reaction",
+            "Actions#Spells#Cantrip",
+            "Actions#Spells#Spell#Concentration",
+            "Actions#Spells#Spell#Instant",
+        ];
+
+        sks.sort();
+        expected.sort();
+
+        assert_eq!(expected, sks)
+    }
 }

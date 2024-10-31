@@ -5,6 +5,7 @@ pub mod inventory;
 pub mod npc;
 pub mod stats;
 
+use super::super::buildable::SortKeyBuildable;
 use actions::ActionsSortKeyBuilder;
 use inventory::InventorySortKeyBuilder;
 use stats::StatsSortKeyBuilder;

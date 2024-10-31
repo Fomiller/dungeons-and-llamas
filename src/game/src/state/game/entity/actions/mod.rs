@@ -1,6 +1,9 @@
 pub mod spells;
 
+use crate::client::SortKeyBuildable;
 use spells::SpellSortKey;
+
+use std::any::Any;
 
 #[derive(strum::Display, strum::EnumIter)]
 pub enum ActionsSortKey {
@@ -31,30 +34,47 @@ impl ActionsSortKeyBuilder {
         self.spells = Some(spells);
         self
     }
-    pub fn bonus_action(mut self, bonus_action: bool) -> Self {
-        self.bonus_action = Some(bonus_action);
-        self
-    }
-    pub fn action(mut self, action: bool) -> Self {
-        self.action = Some(action);
-        self
-    }
-    pub fn reaction(mut self, reaction: bool) -> Self {
-        self.reaction = Some(reaction);
+
+    pub fn bonus_action(mut self) -> Self {
+        self.bonus_action = Some(true);
         self
     }
 
-    pub fn build(self) -> String {
-        let mut result = String::from("GameState#");
+    pub fn action(mut self) -> Self {
+        self.action = Some(true);
+        self
+    }
+
+    pub fn reaction(mut self) -> Self {
+        self.reaction = Some(true);
+        self
+    }
+}
+
+impl SortKeyBuildable for ActionsSortKeyBuilder {
+    fn build(&self) -> String {
+        let mut result = String::from("Actions#");
         if let Some(spells) = self.spells {
-            result.push_str(&format!("#{}", spells.to_string()));
-        } else if let Some(action) = self.action {
-            result.push_str(&format!("#{}", action));
-        } else if let Some(reaction) = self.reaction {
-            result.push_str(&format!("#{}", reaction));
-        } else if let Some(bonus_action) = self.bonus_action {
-            result.push_str(&format!("#{}", bonus_action));
+            result.push_str(&format!("Spells#{}", spells.to_string()));
+        } else if let Some(_) = self.action {
+            result.push_str(&format!("{}", ActionsSortKey::Action.to_string()));
+        } else if let Some(_) = self.reaction {
+            result.push_str(&format!("{}", ActionsSortKey::Reaction.to_string()));
+        } else if let Some(_) = self.bonus_action {
+            result.push_str(&format!("{}", ActionsSortKey::BonusAction.to_string()));
         }
         result
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl From<Box<dyn SortKeyBuildable>> for ActionsSortKeyBuilder {
+    fn from(skb: Box<dyn SortKeyBuildable>) -> Self {
+        if let Some(skb) = skb.as_any().downcast_ref::<ActionsSortKeyBuilder>() {
+            return *skb;
+        }
+        Self::default()
     }
 }
