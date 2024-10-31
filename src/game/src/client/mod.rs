@@ -235,6 +235,7 @@ impl Client {
                 .await
             {
                 Ok(request) => {
+                    debug!("Batch Write Request: {:?}", request);
                     if let Some(unprocessed) = request.unprocessed_items {
                         info!("Unprocessed Batch Items");
                         debug!("Unprocessed Batch Items: {:?}", unprocessed);
