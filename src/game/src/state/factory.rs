@@ -39,6 +39,17 @@ impl SortKeyFactory {
         }
     }
 
+    pub fn create_all_entity_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let mut sks = Vec::new();
+        let player = self.create_player_inventory_sks(game_id);
+        let enemy = self.create_enemy_inventory_sks(game_id);
+
+        sks.extend(player);
+        sks.extend(enemy);
+
+        sks
+    }
+
     pub fn create_player_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
         let inventory_keys = self.create_inventory_sks();
         inventory_keys

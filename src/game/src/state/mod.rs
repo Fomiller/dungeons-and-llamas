@@ -165,4 +165,85 @@ mod tests {
 
         assert_eq!(expected_sort_keys, sort_keys)
     }
+
+    #[test]
+    fn test_create_player_inventory_sks() {
+        let factory = SortKeyFactory::new("12345");
+        let game_id = "abcdef";
+
+        let inventory_sks: Vec<String> = factory
+            .create_inventory_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let player_sks: Vec<String> = factory
+            .create_player_inventory_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_sks = inventory_sks
+            .iter()
+            .map(|sk| format!("{}#Game#Player#{}", game_id, sk))
+            .collect::<Vec<String>>();
+
+        assert_eq!(expected_sks, player_sks)
+    }
+
+    #[test]
+    fn test_create_enemy_inventory_sks() {
+        let factory = SortKeyFactory::new("12345");
+        let game_id = "abcdef";
+
+        let inventory_sks: Vec<String> = factory
+            .create_inventory_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let enemy_sks: Vec<String> = factory
+            .create_enemy_inventory_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_sks = inventory_sks
+            .iter()
+            .map(|sk| format!("{}#Game#Enemy#{}", game_id, sk))
+            .collect::<Vec<String>>();
+
+        assert_eq!(expected_sks, enemy_sks)
+    }
+
+    #[test]
+    fn test_create_all_entity_inventory_sks() {
+        let user_id = "12345";
+        let game_id = "abcdef";
+        let factory = SortKeyFactory::new(user_id);
+        let mut expected_sks: Vec<String> = Vec::new();
+
+        let sort_keys: Vec<String> = factory
+            .create_all_entity_inventory_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_player = factory
+            .create_player_inventory_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        let expected_enemy = factory
+            .create_enemy_inventory_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        expected_sks.extend(expected_player);
+        expected_sks.extend(expected_enemy);
+
+        assert_eq!(expected_sks, sort_keys)
+    }
 }

@@ -170,15 +170,9 @@ impl Client {
     pub async fn try_new_game(&self, user_id: &str) -> anyhow::Result<()> {
         let game_id = try_create_sqid(None)?;
 
-        let mut sort_keys = Vec::new();
-
         let factory = SortKeyFactory::new(user_id);
 
-        let player_inv_sks = factory.create_player_inventory_sks(&game_id);
-        let enemy_inv_sks = factory.create_enemy_inventory_sks(&game_id);
-
-        sort_keys.extend(player_inv_sks);
-        sort_keys.extend(enemy_inv_sks);
+        let sort_keys = factory.create_all_entity_inventory_sks(&game_id);
 
         self.try_generic_batch_write_root_sks(user_id, sort_keys)
             .await?;
@@ -191,6 +185,8 @@ impl Client {
         user_id: &str,
         sort_keys: Vec<RootSortKeyBuilder>,
     ) -> anyhow::Result<()> {
+        info!("Batch Write Item Count: {}", sort_keys.len());
+
         let mut items: Vec<HashMap<String, AttributeValue>> = Vec::new();
 
         let components: Vec<StateComponent<HashMap<String, Value>>> = sort_keys
