@@ -1,5 +1,5 @@
 use super::equipped::EquippedStateSortKey;
-use crate::state::SortKeyBuildable;
+use crate::state::buildable::SortKeyBuildable;
 use std::any::Any;
 
 #[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]

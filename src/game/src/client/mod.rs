@@ -1,4 +1,7 @@
 pub use crate::state::{
+    buildable::SortKeyBuildable,
+    builder::RootSortKeyBuilder,
+    factory::SortKeyFactory,
     game::{
         player::{
             inventory::{
@@ -11,11 +14,11 @@ pub use crate::state::{
             },
             PlayerSortKey, PlayerSortKeyBuilder,
         },
-        GameSortKeyBuilder,
+        GameSortKeyBuilder, GameState,
     },
     message::MessageSortKey,
     user::{User, UserSortKey},
-    GameState, RootSortKey, RootSortKeyBuilder, SortKeyBuildable, StateComponent,
+    RootSortKey, StateComponent,
 };
 
 use anyhow::anyhow;
@@ -111,49 +114,6 @@ impl Client {
         Ok(state)
     }
 
-    // pub async fn try_new_game_state(&self, user_id: &str, name: &str) -> anyhow::Result<()> {
-    //     let new_game_id = try_create_sqid(None)?;
-    //
-    //     let user = serde_dynamo::to_item(User {
-    //         user_id: user_id.to_string(),
-    //         name: name.to_string(),
-    //         state_component: RootSortKeyBuilder::new()
-    //             .id(user_id)
-    //             .user(UserSortKey::ActiveGameId)
-    //             .build(),
-    //         active_game_id: Some(new_game_id.to_string()),
-    //         games: Some(vec![new_game_id.to_string()]),
-    //     })?;
-    //
-    //     let weapon_sk = WeaponSortKeyBuilder::new()
-    //         .weapon(WeaponSortKey::Melee)
-    //         .equipped(EquippedStateSortKey::Equipped);
-    //     let item_sk = ItemSortKeyBuilder::new().weapons(weapon_sk);
-    //     let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
-    //     let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
-    //     let game_sk = GameSortKeyBuilder::new().player(player_sk);
-    //
-    //     let sort_key = RootSortKeyBuilder::new()
-    //         .id(&new_game_id)
-    //         .game(game_sk)
-    //         .build();
-    //
-    //     let state_comp_wep = serde_dynamo::to_item(StateComponent {
-    //         user_id: user_id.to_string(),
-    //         state_component: sort_key,
-    //         state: Some(vec![StateComponentWeapon {
-    //             name: "great-sword".to_string(),
-    //             price: 100,
-    //             damage: 69,
-    //         }]),
-    //     })?;
-    //
-    //     self.try_generic_put(user).await?;
-    //     self.try_generic_put(state_comp_wep).await?;
-    //
-    //     Ok(())
-    // }
-
     pub async fn try_find_user(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
         let res = self.try_generic_get(user_id.to_string()).await?;
 
@@ -209,9 +169,14 @@ impl Client {
 
     pub async fn try_new_game(&self, user_id: &str) -> anyhow::Result<()> {
         let game_id = try_create_sqid(None)?;
+
         let mut sort_keys = Vec::new();
-        let player_inv_sks = GameState::new(user_id).create_player_inventory_sks(&game_id);
-        let enemy_inv_sks = GameState::new(user_id).create_enemy_inventory_sks(&game_id);
+
+        let factory = SortKeyFactory::new(user_id);
+
+        let player_inv_sks = factory.create_player_inventory_sks(&game_id);
+        let enemy_inv_sks = factory.create_enemy_inventory_sks(&game_id);
+
         sort_keys.extend(player_inv_sks);
         sort_keys.extend(enemy_inv_sks);
 

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::any::Any;
 
 use super::equipped::EquippedStateSortKey;
-use crate::state::SortKeyBuildable;
+use crate::state::buildable::SortKeyBuildable;
 
 #[derive(strum::Display, Debug, Clone, Copy, strum::EnumIter)]
 pub enum WeaponSortKey {

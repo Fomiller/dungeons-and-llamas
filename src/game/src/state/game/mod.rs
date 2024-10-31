@@ -7,6 +7,22 @@ pub mod round;
 
 use player::PlayerSortKeyBuilder;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GameState {
+    #[serde(rename = "UserId")]
+    pub user_id: String,
+}
+
+impl GameState {
+    pub fn new(user_id: &str) -> Self {
+        Self {
+            user_id: user_id.to_string(),
+        }
+    }
+}
+
 #[derive(strum::Display, strum::EnumIter)]
 pub enum GameSortKey {
     #[strum(to_string = "Player#")]

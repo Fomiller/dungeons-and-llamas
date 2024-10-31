@@ -6,7 +6,7 @@ pub mod magic;
 pub mod tools;
 pub mod weapons;
 
-use crate::state::SortKeyBuildable;
+use crate::state::buildable::SortKeyBuildable;
 
 use armor::ArmorSortKeyBuilder;
 use books_and_scrolls::BookAndScrollSortKey;
