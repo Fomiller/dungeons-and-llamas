@@ -15,5 +15,9 @@ resource "aws_dynamodb_table" "dnl_game_state" {
     name = "StateComponent"
     type = "S"
   }
+  attribute {
+    name = "SchemaVersion"
+    type = "S"
+  }
 }
 

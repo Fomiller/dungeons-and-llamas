@@ -147,6 +147,7 @@ impl Client {
                 .message(MessageSortKey::LastMessageToken)
                 .build(),
             state: Some(token),
+            ..Default::default()
         })?;
 
         self.try_generic_put(last_message_token).await?;
@@ -199,6 +200,7 @@ impl Client {
                 user_id: user_id.to_string(),
                 state_component: sk.build(),
                 state: None,
+                ..Default::default()
             })
             .collect();
 

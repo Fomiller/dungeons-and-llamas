@@ -1,6 +1,5 @@
 pub mod buildable;
 pub mod builder;
-pub mod component;
 pub mod factory;
 pub mod game;
 pub mod message;
@@ -9,7 +8,14 @@ pub mod user;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, strum::Display)]
+pub enum SchemaVersion {
+    #[strum(to_string = "v1")]
+    #[default]
+    V1,
+}
+
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct StateComponent<T> {
     #[serde(rename = "UserId")]
     pub user_id: String,
@@ -17,6 +23,8 @@ pub struct StateComponent<T> {
     pub state_component: String,
     #[serde(rename = "State")]
     pub state: Option<T>,
+    #[serde(rename = "SchemaVersion")]
+    pub schema_version: SchemaVersion,
 }
 
 #[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
