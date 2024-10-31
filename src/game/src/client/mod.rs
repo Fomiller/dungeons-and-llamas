@@ -243,12 +243,10 @@ impl Client {
 
                             let key = GAME_STATE_TABLE.as_str();
 
-                            let expected = &format!(
-                                "{} key not found in unprocessed requests.",
-                                GAME_STATE_TABLE.to_string()
-                            );
-
-                            let requests = unprocessed.get(key).expect(expected).to_owned();
+                            let requests = unprocessed
+                                .get(key)
+                                .expect(&format!("{} key not found in unprocessed requests.", key))
+                                .to_owned();
 
                             write_requests = requests
                         } else {
