@@ -237,6 +237,7 @@ impl Client {
                 Ok(request) => {
                     if let Some(unprocessed) = request.unprocessed_items {
                         info!("Unprocessed Batch Items");
+                        debug!("Unprocessed Batch Items: {:?}", unprocessed);
 
                         let key = GAME_STATE_TABLE.as_str();
 
