@@ -236,9 +236,15 @@ impl Client {
             {
                 Ok(request) => {
                     debug!("Batch Write Request: {:?}", request);
-                    if let Some(unprocessed) = request.unprocessed_items {
-                        info!("Unprocessed Batch Items");
-                        debug!("Unprocessed Batch Items: {:?}", unprocessed);
+                    if !request
+                        .unprocessed_items
+                        .as_ref()
+                        .expect("No unprocessed items found")
+                        .is_empty()
+                    {
+                        // if there are unprocessed_items
+                        let unprocessed = request.unprocessed_items.unwrap();
+                        info!("Unprocessed Batch Items: {:?}", unprocessed);
 
                         let key = GAME_STATE_TABLE.as_str();
 
@@ -251,6 +257,7 @@ impl Client {
 
                         write_requests = requests
                     } else {
+                        // if there are not unprocessed_items
                         write_requests.clear();
                         info!("Batch write successful!");
                     }
