@@ -1,11 +1,9 @@
-pub mod enemy;
+pub mod entity;
 pub mod level;
 pub mod map;
-pub mod npc;
-pub mod player;
 pub mod round;
 
-use player::PlayerSortKeyBuilder;
+use entity::EntitySortKeyBuilder;
 
 use serde::{Deserialize, Serialize};
 
@@ -25,12 +23,8 @@ impl GameState {
 
 #[derive(strum::Display, strum::EnumIter)]
 pub enum GameSortKey {
-    #[strum(to_string = "Player#")]
-    Player,
-    #[strum(to_string = "Enemy#")]
-    Enemy,
-    #[strum(to_string = "NPC#")]
-    NPC,
+    #[strum(to_string = "Entity#")]
+    Entity,
     #[strum(to_string = "Level")]
     Level,
     #[strum(to_string = "Round")]
@@ -39,9 +33,7 @@ pub enum GameSortKey {
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GameSortKeyBuilder {
-    player: Option<PlayerSortKeyBuilder>,
-    enemy: Option<PlayerSortKeyBuilder>,
-    npc: Option<bool>,
+    entity: Option<EntitySortKeyBuilder>,
     level: Option<bool>,
     round: Option<bool>,
 }
@@ -51,18 +43,11 @@ impl GameSortKeyBuilder {
         Self::default()
     }
 
-    pub fn player(mut self, player: PlayerSortKeyBuilder) -> Self {
-        self.player = Some(player);
+    pub fn entity(mut self, entity: EntitySortKeyBuilder) -> Self {
+        self.entity = Some(entity);
         self
     }
-    pub fn enemy(mut self, enemy: PlayerSortKeyBuilder) -> Self {
-        self.enemy = Some(enemy);
-        self
-    }
-    pub fn npc(mut self, npc: bool) -> Self {
-        self.npc = Some(npc);
-        self
-    }
+
     pub fn level(mut self, level: bool) -> Self {
         self.level = Some(level);
         self
@@ -74,12 +59,8 @@ impl GameSortKeyBuilder {
 
     pub fn build(self) -> String {
         let mut result = String::from("Game#");
-        if let Some(player) = self.player {
-            result.push_str(&format!("{}", player.build().to_string()));
-        } else if let Some(enemy) = self.enemy {
-            result.push_str(&format!("{}", enemy.build().to_string()));
-        } else if let Some(npc) = self.npc {
-            result.push_str(&format!("{}", npc.to_string()));
+        if let Some(entity) = self.entity {
+            result.push_str(&format!("{}", entity.build().to_string()));
         } else if let Some(level) = self.level {
             result.push_str(&format!("{}", level.to_string()));
         } else if let Some(round) = self.round {

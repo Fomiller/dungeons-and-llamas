@@ -2,9 +2,12 @@ use super::{
     buildable::SortKeyBuildable,
     builder::RootSortKeyBuilder,
     game::{
-        player::inventory::items::{
-            books_and_scrolls::BookAndScrollSortKeyIter, magic::MagicItemSortKeyIter,
-            tools::ToolSortKeyIter,
+        entity::{
+            inventory::items::{
+                books_and_scrolls::BookAndScrollSortKeyIter, magic::MagicItemSortKeyIter,
+                tools::ToolSortKeyIter,
+            },
+            Entity, EntitySortKeyBuilder,
         },
         GameSortKeyBuilder,
     },
@@ -14,10 +17,10 @@ use strum::IntoEnumIterator;
 
 use crate::{
     client::{
-        EquippedStateSortKey, InventorySortKeyBuilder, ItemSortKeyBuilder, PlayerSortKeyBuilder,
-        WeaponSortKey, WeaponSortKeyBuilder,
+        EquippedStateSortKey, InventorySortKeyBuilder, ItemSortKeyBuilder, WeaponSortKey,
+        WeaponSortKeyBuilder,
     },
-    state::game::player::inventory::items::{
+    state::game::entity::inventory::items::{
         armor::{ArmorSortKey, ArmorSortKeyBuilder},
         books_and_scrolls::BookAndScrollSortKey,
         magic::MagicItemSortKey,
@@ -41,8 +44,8 @@ impl SortKeyFactory {
         inventory_keys
             .iter()
             .map(|sk| {
-                let player_sk = PlayerSortKeyBuilder::new().inventory(*sk);
-                let game_sk = GameSortKeyBuilder::new().player(player_sk);
+                let entity_sk = EntitySortKeyBuilder::new(Entity::Player).inventory(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
                 RootSortKeyBuilder::new().id(&game_id).game(game_sk)
             })
             .collect::<Vec<RootSortKeyBuilder>>()
@@ -53,8 +56,8 @@ impl SortKeyFactory {
         inventory_keys
             .iter()
             .map(|sk| {
-                let player_sk = PlayerSortKeyBuilder::new().inventory(*sk);
-                let game_sk = GameSortKeyBuilder::new().enemy(player_sk);
+                let entity_sk = EntitySortKeyBuilder::new(Entity::Enemy).inventory(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
                 RootSortKeyBuilder::new().id(&game_id).game(game_sk)
             })
             .collect::<Vec<RootSortKeyBuilder>>()

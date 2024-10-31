@@ -3,7 +3,7 @@ pub use crate::state::{
     builder::RootSortKeyBuilder,
     factory::SortKeyFactory,
     game::{
-        player::{
+        entity::{
             inventory::{
                 items::{
                     equipped::EquippedStateSortKey,
@@ -12,7 +12,7 @@ pub use crate::state::{
                 },
                 InventorySortKey, InventorySortKeyBuilder,
             },
-            PlayerSortKey, PlayerSortKeyBuilder,
+            EntitySortKey, EntitySortKeyBuilder,
         },
         GameSortKeyBuilder, GameState,
     },

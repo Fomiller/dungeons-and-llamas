@@ -36,7 +36,7 @@ mod tests {
     use super::buildable::SortKeyBuildable;
     use super::builder::RootSortKeyBuilder;
     use super::game::{
-        player::{
+        entity::{
             inventory::items::equipped::EquippedStateSortKey,
             inventory::items::weapons::{WeaponSortKey, WeaponSortKeyBuilder},
             inventory::items::ItemSortKeyBuilder,
@@ -47,7 +47,7 @@ mod tests {
             stats::saving_throws::SavingThrowsSortKey,
             stats::skills::SkillsSortKey,
             stats::StatsSortKeyBuilder,
-            PlayerSortKeyBuilder,
+            Entity, EntitySortKeyBuilder,
         },
         GameSortKeyBuilder,
     };
@@ -72,8 +72,8 @@ mod tests {
         ] {
             let item_sk = ItemSortKeyBuilder::new().weapons(weapon.0);
             let inventory_sk = InventorySortKeyBuilder::new().item(item_sk);
-            let player_sk = PlayerSortKeyBuilder::new().inventory(inventory_sk);
-            let game_sk = GameSortKeyBuilder::new().player(player_sk);
+            let entity_sk = EntitySortKeyBuilder::new(Entity::Player).inventory(inventory_sk);
+            let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
             let sk = RootSortKeyBuilder::new().id(game_id).game(game_sk).build();
             assert_eq!(weapon.1, sk)
         }
@@ -115,8 +115,8 @@ mod tests {
             (stats_defenses_sk, stats_defenses_expected),
             (stats_skills_arc_sk, stats_skills_arc_expected),
         ] {
-            let player_sk = PlayerSortKeyBuilder::new().stats(stat.0);
-            let game_sk = GameSortKeyBuilder::new().player(player_sk);
+            let entity_sk = EntitySortKeyBuilder::new(Entity::Player).stats(stat.0);
+            let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
             let sk = RootSortKeyBuilder::new().id(game_id).game(game_sk).build();
 
             assert_eq!(stat.1, sk);

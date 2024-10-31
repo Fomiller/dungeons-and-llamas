@@ -1,6 +1,8 @@
 pub mod actions;
 pub mod character;
+pub mod enemy;
 pub mod inventory;
+pub mod npc;
 pub mod stats;
 
 use actions::ActionsSortKeyBuilder;
@@ -8,7 +10,7 @@ use inventory::InventorySortKeyBuilder;
 use stats::StatsSortKeyBuilder;
 
 #[derive(strum::Display, strum::EnumIter)]
-pub enum PlayerSortKey {
+pub enum EntitySortKey {
     #[strum(to_string = "Inventory#")]
     Inventory,
     #[strum(to_string = "Character#")]
@@ -19,17 +21,34 @@ pub enum PlayerSortKey {
     Actions,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct PlayerSortKeyBuilder {
+#[derive(Debug, Copy, Clone, strum::Display, strum::EnumIter)]
+pub enum Entity {
+    #[strum(to_string = "Player")]
+    Player,
+    #[strum(to_string = "Enemy")]
+    Enemy,
+    #[strum(to_string = "NPC")]
+    NPC,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct EntitySortKeyBuilder {
+    entity: Entity,
     actions: Option<ActionsSortKeyBuilder>,
     character: Option<bool>,
     inventory: Option<InventorySortKeyBuilder>,
     stats: Option<StatsSortKeyBuilder>,
 }
 
-impl PlayerSortKeyBuilder {
-    pub fn new() -> Self {
-        Self::default()
+impl EntitySortKeyBuilder {
+    pub fn new(entity: Entity) -> Self {
+        Self {
+            entity,
+            actions: None,
+            character: None,
+            inventory: None,
+            stats: None,
+        }
     }
 
     pub fn actions(mut self, actions: ActionsSortKeyBuilder) -> Self {
@@ -50,7 +69,7 @@ impl PlayerSortKeyBuilder {
     }
 
     pub fn build(self) -> String {
-        let mut result = String::from("Player#");
+        let mut result = format!("{}#", self.entity);
         if let Some(inventory) = self.inventory {
             result.push_str(&format!("{}", inventory.build().to_string()));
         } else if let Some(character) = self.character {
