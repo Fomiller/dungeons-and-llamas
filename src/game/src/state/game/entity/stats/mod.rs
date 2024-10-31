@@ -4,24 +4,27 @@ pub mod core_attributes;
 pub mod saving_throws;
 pub mod skills;
 
+use crate::state::buildable::SortKeyBuildable;
 use abilities::AbilitiesSortKey;
 use conditions::ConditionsSortKey;
 use core_attributes::CoreAttributesSortKey;
 use saving_throws::SavingThrowsSortKey;
 use skills::SkillsSortKey;
 
-#[derive(strum::Display)]
+use std::any::Any;
+
+#[derive(strum::Display, strum::EnumIter)]
 pub enum StatsSortKey {
-    #[strum(to_string = "Skills#{0}")]
-    Skills(SkillsSortKey),
-    #[strum(to_string = "SavingThrows#{0}")]
-    SavingThrows(SavingThrowsSortKey),
-    #[strum(to_string = "CoreAttributes#{0}")]
-    CoreAttributes(CoreAttributesSortKey),
-    #[strum(to_string = "Abilities#{0}")]
-    Abilities(AbilitiesSortKey),
-    #[strum(to_string = "Conditions#{0}")]
-    Conditions(ConditionsSortKey),
+    #[strum(to_string = "Skills#")]
+    Skills,
+    #[strum(to_string = "SavingThrows#")]
+    SavingThrows,
+    #[strum(to_string = "CoreAttributes#")]
+    CoreAttributes,
+    #[strum(to_string = "Abilities#")]
+    Abilities,
+    #[strum(to_string = "Conditions#")]
+    Conditions,
     #[strum(to_string = "Defenses")]
     Defenses,
 }
@@ -41,12 +44,12 @@ impl StatsSortKeyBuilder {
         Self::default()
     }
 
-    pub fn skills(mut self, skills: SkillsSortKey) -> Self {
-        self.skills = Some(skills);
+    pub fn defenses(mut self) -> Self {
+        self.defenses = Some(true);
         self
     }
-    pub fn defenses(mut self, defenses: bool) -> Self {
-        self.defenses = Some(defenses);
+    pub fn skills(mut self, skills: SkillsSortKey) -> Self {
+        self.skills = Some(skills);
         self
     }
     pub fn saving_throws(mut self, saving_throws: SavingThrowsSortKey) -> Self {
@@ -65,22 +68,40 @@ impl StatsSortKeyBuilder {
         self.conditions = Some(conditions);
         self
     }
+}
 
-    pub fn build(self) -> String {
+impl SortKeyBuildable for StatsSortKeyBuilder {
+    fn build(&self) -> String {
         let mut result = String::from("Stats#");
         if let Some(skills) = self.skills {
-            result.push_str(&format!("Skills#{}", skills.to_string()));
+            result.push_str(&format!("{}{}", StatsSortKey::Skills, skills));
         } else if let Some(conditions) = self.conditions {
-            result.push_str(&format!("Conditions#{}", conditions));
+            result.push_str(&format!("{}{}", StatsSortKey::Conditions, conditions));
         } else if let Some(saving_throws) = self.saving_throws {
-            result.push_str(&format!("SavingThrows#{}", saving_throws));
+            result.push_str(&format!("{}{}", StatsSortKey::SavingThrows, saving_throws));
         } else if let Some(core_attributes) = self.core_attributes {
-            result.push_str(&format!("CoreAttributes#{}", core_attributes));
+            result.push_str(&format!(
+                "{}{}",
+                StatsSortKey::CoreAttributes,
+                core_attributes
+            ));
         } else if let Some(abilities) = self.abilities {
-            result.push_str(&format!("Abilities#{}", abilities));
+            result.push_str(&format!("{}{}", StatsSortKey::Abilities, abilities));
         } else if let Some(_) = self.defenses {
-            result.push_str(&format!("{}", StatsSortKey::Defenses.to_string()));
+            result.push_str(&format!("{}", StatsSortKey::Defenses));
         }
         result
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl From<Box<dyn SortKeyBuildable>> for StatsSortKeyBuilder {
+    fn from(skb: Box<dyn SortKeyBuildable>) -> Self {
+        if let Some(skb) = skb.as_any().downcast_ref::<StatsSortKeyBuilder>() {
+            return *skb;
+        }
+        Self::default()
     }
 }

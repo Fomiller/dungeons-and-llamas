@@ -18,6 +18,14 @@ use crate::{
                     magic::{MagicItemSortKey, MagicItemSortKeyIter},
                     tools::{ToolSortKey, ToolSortKeyIter},
                 },
+                stats::{
+                    abilities::{AbilitiesSortKey, AbilitiesSortKeyIter},
+                    conditions::{ConditionsSortKey, ConditionsSortKeyIter},
+                    core_attributes::{CoreAttributesSortKey, CoreAttributesSortKeyIter},
+                    saving_throws::{SavingThrowsSortKey, SavingThrowsSortKeyIter},
+                    skills::{SkillsSortKey, SkillsSortKeyIter},
+                    StatsSortKey, StatsSortKeyBuilder, StatsSortKeyIter,
+                },
                 Entity, EntitySortKeyBuilder,
             },
             GameSortKeyBuilder,
@@ -49,10 +57,31 @@ impl SortKeyFactory {
         sks
     }
 
+    pub fn create_all_entity_actions_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let mut sks = Vec::new();
+        let player = self.create_player_actions_sks(game_id);
+        let enemy = self.create_enemy_actions_sks(game_id);
+
+        sks.extend(player);
+        sks.extend(enemy);
+
+        sks
+    }
+
+    pub fn create_all_entity_stats_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let mut sks = Vec::new();
+        let player = self.create_player_stats_sks(game_id);
+        let enemy = self.create_enemy_stats_sks(game_id);
+
+        sks.extend(player);
+        sks.extend(enemy);
+
+        sks
+    }
+
     pub fn create_player_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
-        let inventory_keys = self.create_inventory_sks();
-        inventory_keys
-            .iter()
+        let sks = self.create_inventory_sks();
+        sks.iter()
             .map(|sk| {
                 let entity_sk = EntitySortKeyBuilder::new(Entity::Player).inventory(*sk);
                 let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
@@ -61,12 +90,33 @@ impl SortKeyFactory {
             .collect::<Vec<RootSortKeyBuilder>>()
     }
 
-    pub fn create_player_action_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
-        let inventory_keys = self.create_inventory_sks();
-        inventory_keys
-            .iter()
+    pub fn create_player_actions_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let sks = self.create_actions_sks();
+        sks.iter()
             .map(|sk| {
-                let entity_sk = EntitySortKeyBuilder::new(Entity::Player).inventory(*sk);
+                let entity_sk = EntitySortKeyBuilder::new(Entity::Player).actions(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
+    }
+
+    pub fn create_player_stats_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let sks = self.create_stats_sks();
+        sks.iter()
+            .map(|sk| {
+                let entity_sk = EntitySortKeyBuilder::new(Entity::Player).stats(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
+    }
+
+    pub fn create_enemy_actions_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let sks = self.create_actions_sks();
+        sks.iter()
+            .map(|sk| {
+                let entity_sk = EntitySortKeyBuilder::new(Entity::Enemy).actions(*sk);
                 let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
                 RootSortKeyBuilder::new().id(&game_id).game(game_sk)
             })
@@ -74,9 +124,8 @@ impl SortKeyFactory {
     }
 
     pub fn create_enemy_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
-        let inventory_keys = self.create_inventory_sks();
-        inventory_keys
-            .iter()
+        let sks = self.create_inventory_sks();
+        sks.iter()
             .map(|sk| {
                 let entity_sk = EntitySortKeyBuilder::new(Entity::Enemy).inventory(*sk);
                 let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
@@ -85,14 +134,40 @@ impl SortKeyFactory {
             .collect::<Vec<RootSortKeyBuilder>>()
     }
 
+    pub fn create_enemy_stats_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
+        let sks = self.create_stats_sks();
+        sks.iter()
+            .map(|sk| {
+                let entity_sk = EntitySortKeyBuilder::new(Entity::Enemy).stats(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
+    }
+
     pub fn create_inventory_sks(&self) -> Vec<InventorySortKeyBuilder> {
-        let items = self.create_all_item_buildable();
+        let items = self.create_all_items_buildable();
         self.inventory_from_item_buildable(items)
     }
 
     pub fn create_actions_sks(&self) -> Vec<ActionsSortKeyBuilder> {
         let actions = self.create_all_actions_buildable();
         self.actions_from_buildable(actions)
+    }
+
+    pub fn create_stats_sks(&self) -> Vec<StatsSortKeyBuilder> {
+        let stats = self.create_all_stats_buildable();
+        self.stats_from_buildable(stats)
+    }
+
+    pub fn stats_from_buildable(
+        &self,
+        actions: Vec<Box<dyn SortKeyBuildable>>,
+    ) -> Vec<StatsSortKeyBuilder> {
+        actions
+            .into_iter()
+            .map(|i| StatsSortKeyBuilder::from(i))
+            .collect::<Vec<StatsSortKeyBuilder>>()
     }
 
     pub fn actions_from_buildable(
@@ -118,6 +193,50 @@ impl SortKeyFactory {
             .collect();
 
         sort_keys
+    }
+
+    pub fn create_all_stats_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
+        type BoxedSKBuildable = Box<dyn SortKeyBuildable>;
+
+        let stats_iter: StatsSortKeyIter = StatsSortKey::iter();
+
+        let skills_iter: SkillsSortKeyIter = SkillsSortKey::iter();
+        let savings_throws_iter: SavingThrowsSortKeyIter = SavingThrowsSortKey::iter();
+        let core_attributes_iter: CoreAttributesSortKeyIter = CoreAttributesSortKey::iter();
+        let abilities_iter: AbilitiesSortKeyIter = AbilitiesSortKey::iter();
+        let condtions_iter: ConditionsSortKeyIter = ConditionsSortKey::iter();
+
+        stats_iter
+            .flat_map(|s| match s {
+                StatsSortKey::Skills => skills_iter
+                    .clone()
+                    .map(|s| Box::new(StatsSortKeyBuilder::new().skills(s)) as BoxedSKBuildable)
+                    .collect(),
+                StatsSortKey::SavingThrows => savings_throws_iter
+                    .clone()
+                    .map(|s| {
+                        Box::new(StatsSortKeyBuilder::new().saving_throws(s)) as BoxedSKBuildable
+                    })
+                    .collect(),
+                StatsSortKey::CoreAttributes => core_attributes_iter
+                    .clone()
+                    .map(|s| {
+                        Box::new(StatsSortKeyBuilder::new().core_attributes(s)) as BoxedSKBuildable
+                    })
+                    .collect(),
+                StatsSortKey::Abilities => abilities_iter
+                    .clone()
+                    .map(|s| Box::new(StatsSortKeyBuilder::new().abilities(s)) as BoxedSKBuildable)
+                    .collect(),
+                StatsSortKey::Conditions => condtions_iter
+                    .clone()
+                    .map(|s| Box::new(StatsSortKeyBuilder::new().conditions(s)) as BoxedSKBuildable)
+                    .collect(),
+                StatsSortKey::Defenses => {
+                    vec![Box::new(StatsSortKeyBuilder::new().defenses()) as BoxedSKBuildable]
+                }
+            })
+            .collect()
     }
 
     pub fn create_all_actions_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
@@ -148,7 +267,7 @@ impl SortKeyFactory {
         actions_skb_vec
     }
 
-    pub fn create_all_item_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
+    pub fn create_all_items_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
         type BoxedSKBuildable = Box<dyn SortKeyBuildable>;
 
         let mut sort_keys: Vec<BoxedSKBuildable> = Vec::new();

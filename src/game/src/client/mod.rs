@@ -172,7 +172,11 @@ impl Client {
 
         let factory = SortKeyFactory::new(user_id);
 
-        let sort_keys = factory.create_all_entity_inventory_sks(&game_id);
+        let mut sort_keys: Vec<RootSortKeyBuilder> = Vec::new();
+
+        sort_keys.extend(factory.create_all_entity_inventory_sks(&game_id));
+        sort_keys.extend(factory.create_all_entity_actions_sks(&game_id));
+        sort_keys.extend(factory.create_all_entity_stats_sks(&game_id));
 
         self.try_generic_batch_write_root_sks(user_id, sort_keys)
             .await?;

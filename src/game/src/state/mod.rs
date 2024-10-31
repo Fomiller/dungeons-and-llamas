@@ -103,7 +103,7 @@ mod tests {
         let stats_conditions_debuff_sk =
             StatsSortKeyBuilder::new().conditions(ConditionsSortKey::Debuff);
 
-        let stats_defenses_sk = StatsSortKeyBuilder::new().defenses(true);
+        let stats_defenses_sk = StatsSortKeyBuilder::new().defenses();
 
         let stats_skills_arc_sk = StatsSortKeyBuilder::new().skills(SkillsSortKey::Arcana);
 
@@ -124,46 +124,53 @@ mod tests {
     }
 
     #[test]
-    fn test_create_inventory_sks() {
+    fn test_create_player_actions_sks() {
         let factory = SortKeyFactory::new("12345");
+        let game_id = "abcdef";
 
-        let sort_keys: Vec<String> = factory
-            .create_inventory_sks()
+        let sks: Vec<String> = factory
+            .create_actions_sks()
             .iter()
             .map(|sk| sk.build())
             .collect();
 
-        let expected_sort_keys = vec![
-            "Inventory#Item#Armor#Equipped#Light",
-            "Inventory#Item#Armor#Equipped#Medium",
-            "Inventory#Item#Armor#Equipped#Heavy",
-            "Inventory#Item#Armor#Equipped#Shield",
-            "Inventory#Item#Armor#UnEquipped#Light",
-            "Inventory#Item#Armor#UnEquipped#Medium",
-            "Inventory#Item#Armor#UnEquipped#Heavy",
-            "Inventory#Item#Armor#UnEquipped#Shield",
-            "Inventory#Item#BooksAndScrolls#Reading",
-            "Inventory#Item#BooksAndScrolls#Spellbook",
-            "Inventory#Item#BooksAndScrolls#Scrolls",
-            "Inventory#Item#Magic#Potion",
-            "Inventory#Item#Magic#Wondrous",
-            "Inventory#Item#Magic#Ring",
-            "Inventory#Item#Tools#Artisan",
-            "Inventory#Item#Tools#Thieves",
-            "Inventory#Item#Tools#Instrument",
-            "Inventory#Item#Weapons#Equipped#Melee",
-            "Inventory#Item#Weapons#Equipped#Ranged",
-            "Inventory#Item#Weapons#Equipped#Thrown",
-            "Inventory#Item#Weapons#UnEquipped#Melee",
-            "Inventory#Item#Weapons#UnEquipped#Ranged",
-            "Inventory#Item#Weapons#UnEquipped#Thrown",
-            "Inventory#Item#AdventuringGear",
-            "Inventory#Item#Consumables",
-            "Inventory#Item#Currency",
-            "Inventory#Item#Miscellaneous",
-        ];
+        let player_sks: Vec<String> = factory
+            .create_player_actions_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
 
-        assert_eq!(expected_sort_keys, sort_keys)
+        let expected_sks = sks
+            .iter()
+            .map(|sk| format!("{}#Game#Player#{}", game_id, sk))
+            .collect::<Vec<String>>();
+
+        assert_eq!(expected_sks, player_sks)
+    }
+
+    #[test]
+    fn test_create_player_stats_sks() {
+        let factory = SortKeyFactory::new("12345");
+        let game_id = "abcdef";
+
+        let sks: Vec<String> = factory
+            .create_stats_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let player_sks: Vec<String> = factory
+            .create_player_stats_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_sks = sks
+            .iter()
+            .map(|sk| format!("{}#Game#Player#{}", game_id, sk))
+            .collect::<Vec<String>>();
+
+        assert_eq!(expected_sks, player_sks)
     }
 
     #[test]
@@ -192,6 +199,56 @@ mod tests {
     }
 
     #[test]
+    fn test_create_enemy_actions_sks() {
+        let factory = SortKeyFactory::new("12345");
+        let game_id = "abcdef";
+
+        let sks: Vec<String> = factory
+            .create_actions_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let enemy_sks: Vec<String> = factory
+            .create_enemy_actions_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_sks = sks
+            .iter()
+            .map(|sk| format!("{}#Game#Enemy#{}", game_id, sk))
+            .collect::<Vec<String>>();
+
+        assert_eq!(expected_sks, enemy_sks)
+    }
+
+    #[test]
+    fn test_create_enemy_stats_sks() {
+        let factory = SortKeyFactory::new("12345");
+        let game_id = "abcdef";
+
+        let sks: Vec<String> = factory
+            .create_stats_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let enemy_sks: Vec<String> = factory
+            .create_enemy_stats_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_sks = sks
+            .iter()
+            .map(|sk| format!("{}#Game#Enemy#{}", game_id, sk))
+            .collect::<Vec<String>>();
+
+        assert_eq!(expected_sks, enemy_sks)
+    }
+
+    #[test]
     fn test_create_enemy_inventory_sks() {
         let factory = SortKeyFactory::new("12345");
         let game_id = "abcdef";
@@ -214,6 +271,68 @@ mod tests {
             .collect::<Vec<String>>();
 
         assert_eq!(expected_sks, enemy_sks)
+    }
+
+    #[test]
+    fn test_create_all_entity_actions_sks() {
+        let user_id = "12345";
+        let game_id = "abcdef";
+        let factory = SortKeyFactory::new(user_id);
+        let mut expected_sks: Vec<String> = Vec::new();
+
+        let sort_keys: Vec<String> = factory
+            .create_all_entity_actions_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_player = factory
+            .create_player_actions_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        let expected_enemy = factory
+            .create_enemy_actions_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        expected_sks.extend(expected_player);
+        expected_sks.extend(expected_enemy);
+
+        assert_eq!(expected_sks, sort_keys)
+    }
+
+    #[test]
+    fn test_create_all_entity_stats_sks() {
+        let user_id = "12345";
+        let game_id = "abcdef";
+        let factory = SortKeyFactory::new(user_id);
+        let mut expected_sks: Vec<String> = Vec::new();
+
+        let sort_keys: Vec<String> = factory
+            .create_all_entity_stats_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_player = factory
+            .create_player_stats_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        let expected_enemy = factory
+            .create_enemy_stats_sks(game_id)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        expected_sks.extend(expected_player);
+        expected_sks.extend(expected_enemy);
+
+        assert_eq!(expected_sks, sort_keys)
     }
 
     #[test]
@@ -271,5 +390,110 @@ mod tests {
         expected.sort();
 
         assert_eq!(expected, sks)
+    }
+
+    #[test]
+    fn test_create_stats_sks() {
+        let user_id = "12345";
+        let factory = SortKeyFactory::new(user_id);
+
+        let mut sks = factory
+            .create_stats_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        println!("{:?}", sks);
+
+        let mut expected = vec![
+            "Stats#Abilities#Charisma",
+            "Stats#Abilities#Constitution",
+            "Stats#Abilities#Dexterity",
+            "Stats#Abilities#Intelligence",
+            "Stats#Abilities#Strength",
+            "Stats#Abilities#Wisdom",
+            "Stats#Conditions#Buff",
+            "Stats#Conditions#Debuff",
+            "Stats#CoreAttributes#ArmorClass",
+            "Stats#CoreAttributes#Defenses",
+            "Stats#CoreAttributes#DifficultyClass",
+            "Stats#CoreAttributes#HitPoints",
+            "Stats#CoreAttributes#Initiative",
+            "Stats#CoreAttributes#Level",
+            "Stats#CoreAttributes#ProficiencyBonus",
+            "Stats#CoreAttributes#Speed",
+            "Stats#Defenses",
+            "Stats#SavingThrows#Charisma",
+            "Stats#SavingThrows#Constitution",
+            "Stats#SavingThrows#Dexterity",
+            "Stats#SavingThrows#Intelligence",
+            "Stats#SavingThrows#Strength",
+            "Stats#SavingThrows#Wisdom",
+            "Stats#Skills#Acrobatics",
+            "Stats#Skills#AnimalHandling",
+            "Stats#Skills#Arcana",
+            "Stats#Skills#Atheletics",
+            "Stats#Skills#Deception",
+            "Stats#Skills#History",
+            "Stats#Skills#Insight",
+            "Stats#Skills#Intimidatiaon",
+            "Stats#Skills#Investigation",
+            "Stats#Skills#Medicine",
+            "Stats#Skills#Nature",
+            "Stats#Skills#Perception",
+            "Stats#Skills#Persuasion",
+            "Stats#Skills#Religion",
+            "Stats#Skills#SleightOfHand",
+            "Stats#Skills#Stealth",
+            "Stats#Skills#Survival",
+        ];
+
+        sks.sort();
+        expected.sort();
+
+        assert_eq!(expected, sks)
+    }
+
+    #[test]
+    fn test_create_inventory_sks() {
+        let factory = SortKeyFactory::new("12345");
+
+        let sort_keys: Vec<String> = factory
+            .create_inventory_sks()
+            .iter()
+            .map(|sk| sk.build())
+            .collect();
+
+        let expected_sort_keys = vec![
+            "Inventory#Item#Armor#Equipped#Light",
+            "Inventory#Item#Armor#Equipped#Medium",
+            "Inventory#Item#Armor#Equipped#Heavy",
+            "Inventory#Item#Armor#Equipped#Shield",
+            "Inventory#Item#Armor#UnEquipped#Light",
+            "Inventory#Item#Armor#UnEquipped#Medium",
+            "Inventory#Item#Armor#UnEquipped#Heavy",
+            "Inventory#Item#Armor#UnEquipped#Shield",
+            "Inventory#Item#BooksAndScrolls#Reading",
+            "Inventory#Item#BooksAndScrolls#Spellbook",
+            "Inventory#Item#BooksAndScrolls#Scrolls",
+            "Inventory#Item#Magic#Potion",
+            "Inventory#Item#Magic#Wondrous",
+            "Inventory#Item#Magic#Ring",
+            "Inventory#Item#Tools#Artisan",
+            "Inventory#Item#Tools#Thieves",
+            "Inventory#Item#Tools#Instrument",
+            "Inventory#Item#Weapons#Equipped#Melee",
+            "Inventory#Item#Weapons#Equipped#Ranged",
+            "Inventory#Item#Weapons#Equipped#Thrown",
+            "Inventory#Item#Weapons#UnEquipped#Melee",
+            "Inventory#Item#Weapons#UnEquipped#Ranged",
+            "Inventory#Item#Weapons#UnEquipped#Thrown",
+            "Inventory#Item#AdventuringGear",
+            "Inventory#Item#Consumables",
+            "Inventory#Item#Currency",
+            "Inventory#Item#Miscellaneous",
+        ];
+
+        assert_eq!(expected_sort_keys, sort_keys)
     }
 }
