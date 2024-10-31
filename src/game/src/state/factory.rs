@@ -35,15 +35,33 @@ use crate::{
 
 use strum::IntoEnumIterator;
 
+use super::game::entity;
+
+#[derive(Clone, Debug)]
 pub struct SortKeyFactory {
     pub user_id: String,
 }
+
+// pub type BuilderOpt = for<'a> fn(Entity, &'a str) -> Vec<RootSortKeyBuilder>;
+pub type BuilderOpt = Box<dyn Fn(Entity, &str) -> Vec<RootSortKeyBuilder>>;
 
 impl SortKeyFactory {
     pub fn new(user_id: &str) -> Self {
         Self {
             user_id: user_id.to_string(),
         }
+    }
+
+    pub fn create_all_entity_sks_generic(
+        &self,
+        game_id: &str,
+        entities: Vec<Entity>,
+        opts: Vec<BuilderOpt>,
+    ) -> Vec<RootSortKeyBuilder> {
+        entities
+            .iter()
+            .flat_map(|e| opts.iter().flat_map(|f| f(*e, game_id)))
+            .collect::<Vec<RootSortKeyBuilder>>()
     }
 
     pub fn create_all_entity_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
@@ -148,6 +166,54 @@ impl SortKeyFactory {
     pub fn create_inventory_sks(&self) -> Vec<InventorySortKeyBuilder> {
         let items = self.create_all_items_buildable();
         self.inventory_from_item_buildable(items)
+    }
+
+    pub fn create_actions_sks_generic(
+        &self,
+        entity: Entity,
+        game_id: &str,
+    ) -> Vec<RootSortKeyBuilder> {
+        let actions = self.create_all_actions_buildable();
+        let sks = self.actions_from_buildable(actions);
+        sks.iter()
+            .map(|sk| {
+                let entity_sk = EntitySortKeyBuilder::new(entity).actions(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
+    }
+
+    pub fn create_stats_sks_generic(
+        &self,
+        entity: Entity,
+        game_id: &str,
+    ) -> Vec<RootSortKeyBuilder> {
+        let stats = self.create_all_stats_buildable();
+        let sks = self.stats_from_buildable(stats);
+        sks.iter()
+            .map(|sk| {
+                let entity_sk = EntitySortKeyBuilder::new(entity).stats(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
+    }
+
+    pub fn create_inventory_sks_generic(
+        &self,
+        entity: Entity,
+        game_id: &str,
+    ) -> Vec<RootSortKeyBuilder> {
+        let items = self.create_all_items_buildable();
+        let sks = self.inventory_from_item_buildable(items);
+        sks.iter()
+            .map(|sk| {
+                let entity_sk = EntitySortKeyBuilder::new(entity).inventory(*sk);
+                let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
+                RootSortKeyBuilder::new().id(&game_id).game(game_sk)
+            })
+            .collect::<Vec<RootSortKeyBuilder>>()
     }
 
     pub fn create_actions_sks(&self) -> Vec<ActionsSortKeyBuilder> {

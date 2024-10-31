@@ -7,6 +7,7 @@ pub mod sort_key;
 pub mod user;
 
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, strum::Display)]
 pub enum SchemaVersion {
@@ -40,7 +41,10 @@ pub enum RootSortKey {
 #[cfg(test)]
 mod tests {
     use crate::client::SortKeyFactory;
+    use crate::state::game::entity;
+    use std::sync::Arc;
 
+    use super::super::state::factory::BuilderOpt;
     use super::buildable::SortKeyBuildable;
     use super::builder::RootSortKeyBuilder;
     use super::game::{
@@ -129,6 +133,87 @@ mod tests {
 
             assert_eq!(stat.1, sk);
         }
+    }
+
+    #[test]
+    fn test_create_all_entity_sks_generic() {
+        let entities = vec![Entity::Player, Entity::Enemy];
+        let factory = Arc::new(SortKeyFactory::new("12345"));
+        let game_id = "abcdef";
+
+        let opts: Vec<BuilderOpt> = vec![
+            {
+                let factory = Arc::clone(&factory);
+                Box::new(move |entity, game_id| factory.create_actions_sks_generic(entity, game_id))
+            },
+            {
+                let factory = Arc::clone(&factory);
+                Box::new(move |entity, game_id| {
+                    factory.create_inventory_sks_generic(entity, game_id)
+                })
+            },
+            {
+                let factory = Arc::clone(&factory);
+                Box::new(move |entity, game_id| factory.create_stats_sks_generic(entity, game_id))
+            },
+        ];
+
+        let mut sks = factory
+            .create_all_entity_sks_generic(game_id, entities, opts)
+            .iter()
+            .map(|sk| sk.build())
+            .collect::<Vec<String>>();
+
+        let mut expected_sks: Vec<String> = Vec::new();
+
+        expected_sks.extend(
+            factory
+                .create_player_actions_sks(game_id)
+                .iter()
+                .map(|sk| sk.build())
+                .collect::<Vec<String>>(),
+        );
+        expected_sks.extend(
+            factory
+                .create_player_inventory_sks(game_id)
+                .iter()
+                .map(|sk| sk.build())
+                .collect::<Vec<String>>(),
+        );
+        expected_sks.extend(
+            factory
+                .create_player_stats_sks(game_id)
+                .iter()
+                .map(|sk| sk.build())
+                .collect::<Vec<String>>(),
+        );
+
+        expected_sks.extend(
+            factory
+                .create_enemy_actions_sks(game_id)
+                .iter()
+                .map(|sk| sk.build())
+                .collect::<Vec<String>>(),
+        );
+        expected_sks.extend(
+            factory
+                .create_enemy_inventory_sks(game_id)
+                .iter()
+                .map(|sk| sk.build())
+                .collect::<Vec<String>>(),
+        );
+        expected_sks.extend(
+            factory
+                .create_enemy_stats_sks(game_id)
+                .iter()
+                .map(|sk| sk.build())
+                .collect::<Vec<String>>(),
+        );
+
+        expected_sks.sort();
+        sks.sort();
+
+        assert_eq!(expected_sks, sks)
     }
 
     #[test]
