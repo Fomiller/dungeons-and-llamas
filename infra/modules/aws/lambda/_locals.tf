@@ -6,9 +6,9 @@ locals {
     dnl_api                 = "${path.module}/bin/${var.app_prefix}-api/bootstrap.zip"
   }
   source_code_hash = {
-    discord_bot             = fileexists(local.filename["discord_bot"]) ? filebase64sha256(local.filename["discord_bot"]) : data.aws_lambda_function.discord_bot_exists[0].source_code_hash
-    discord_command_manager = fileexists(local.filename["discord_command_manager"]) ? filebase64sha256(local.filename["discord_command_manager"]) : data.aws_lambda_function.discord_command_manager_exists[0].source_code_hash
-    dnl_api                 = fileexists(local.filename["dnl_api"]) ? filebase64sha256(local.filename["dnl_api"]) : data.aws_lambda_function.dnl_api_exists[0].source_code_hash
+    discord_bot             = fileexists(local.filename["discord_bot"]) ? filebase64sha256(local.filename["discord_bot"]) : data.aws_lambda_function.discord_bot_exists[0].code_sha256
+    discord_command_manager = fileexists(local.filename["discord_command_manager"]) ? filebase64sha256(local.filename["discord_command_manager"]) : data.aws_lambda_function.discord_command_manager_exists[0].code_sha256
+    dnl_api                 = fileexists(local.filename["dnl_api"]) ? filebase64sha256(local.filename["dnl_api"]) : data.aws_lambda_function.dnl_api_exists[0].code_sha256
   }
 
   # lambda = {
