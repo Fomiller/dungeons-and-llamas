@@ -4,7 +4,7 @@ resource "aws_lambda_function" "discord_bot" {
   handler          = "bootstrap"
   filename         = local.filename["discord_bot"]
   source_code_hash = local.source_code_hash["discord_bot"]
-  runtime          = "provided.al2"
+  runtime          = local.runtime
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 10
@@ -29,7 +29,7 @@ resource "aws_lambda_function" "discord_command_manager" {
   handler          = "bootstrap"
   filename         = local.filename["discord_command_manager"]
   source_code_hash = local.source_code_hash["discord_command_manager"]
-  runtime          = "provided.al2"
+  runtime          = local.runtime
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 10
@@ -52,7 +52,7 @@ resource "aws_lambda_function" "dnl_api" {
   handler          = "bootstrap"
   filename         = local.filename["dnl_api"]
   source_code_hash = local.source_code_hash["dnl_api"]
-  runtime          = "provided.al2"
+  runtime          = local.runtime
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 10

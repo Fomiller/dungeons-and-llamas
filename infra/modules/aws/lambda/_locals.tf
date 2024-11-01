@@ -1,4 +1,5 @@
 locals {
+  runtime = "provided.al2023"
   filename = {
     discord_bot             = "${path.module}/bin/discord-bot/bootstrap.zip"
     discord_command_manager = "${path.module}/bin/discord-command-manager/bootstrap.zip"
