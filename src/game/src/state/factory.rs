@@ -164,8 +164,8 @@ impl SortKeyFactory {
     }
 
     pub fn create_inventory_sks(&self) -> Vec<InventorySortKeyBuilder> {
-        let items = self.create_all_items_buildable();
-        self.inventory_from_item_buildable(items)
+        let items = self.create_all_items();
+        self.inventory_from_items(items)
     }
 
     pub fn create_actions_sks_generic(
@@ -173,9 +173,9 @@ impl SortKeyFactory {
         entity: Entity,
         game_id: &str,
     ) -> Vec<RootSortKeyBuilder> {
-        let actions = self.create_all_actions_buildable();
-        let sks = self.actions_from_buildable(actions);
-        sks.iter()
+        let actions = self.create_actions_sks();
+        actions
+            .iter()
             .map(|sk| {
                 let entity_sk = EntitySortKeyBuilder::new(entity).actions(*sk);
                 let game_sk = GameSortKeyBuilder::new().entity(entity_sk);
@@ -189,8 +189,7 @@ impl SortKeyFactory {
         entity: Entity,
         game_id: &str,
     ) -> Vec<RootSortKeyBuilder> {
-        let stats = self.create_all_stats_buildable();
-        let sks = self.stats_from_buildable(stats);
+        let sks = self.create_stats_sks();
         sks.iter()
             .map(|sk| {
                 let entity_sk = EntitySortKeyBuilder::new(entity).stats(*sk);
@@ -205,8 +204,8 @@ impl SortKeyFactory {
         entity: Entity,
         game_id: &str,
     ) -> Vec<RootSortKeyBuilder> {
-        let items = self.create_all_items_buildable();
-        let sks = self.inventory_from_item_buildable(items);
+        let items = self.create_all_items();
+        let sks = self.inventory_from_items(items);
         sks.iter()
             .map(|sk| {
                 let entity_sk = EntitySortKeyBuilder::new(entity).inventory(*sk);
@@ -216,54 +215,19 @@ impl SortKeyFactory {
             .collect::<Vec<RootSortKeyBuilder>>()
     }
 
-    pub fn create_actions_sks(&self) -> Vec<ActionsSortKeyBuilder> {
-        let actions = self.create_all_actions_buildable();
-        self.actions_from_buildable(actions)
-    }
-
-    pub fn create_stats_sks(&self) -> Vec<StatsSortKeyBuilder> {
-        let stats = self.create_all_stats_buildable();
-        self.stats_from_buildable(stats)
-    }
-
-    pub fn stats_from_buildable(
+    pub fn inventory_from_items(
         &self,
-        actions: Vec<Box<dyn SortKeyBuildable>>,
-    ) -> Vec<StatsSortKeyBuilder> {
-        actions
-            .into_iter()
-            .map(|i| StatsSortKeyBuilder::from(i))
-            .collect::<Vec<StatsSortKeyBuilder>>()
-    }
-
-    pub fn actions_from_buildable(
-        &self,
-        actions: Vec<Box<dyn SortKeyBuildable>>,
-    ) -> Vec<ActionsSortKeyBuilder> {
-        actions
-            .into_iter()
-            .map(|i| ActionsSortKeyBuilder::from(i))
-            .collect::<Vec<ActionsSortKeyBuilder>>()
-    }
-
-    pub fn inventory_from_item_buildable(
-        &self,
-        items: Vec<Box<dyn SortKeyBuildable>>,
+        items: Vec<ItemSortKeyBuilder>,
     ) -> Vec<InventorySortKeyBuilder> {
         let sort_keys = items
             .into_iter()
-            .map(|i| ItemSortKeyBuilder::from(i))
-            .collect::<Vec<ItemSortKeyBuilder>>()
-            .iter()
-            .map(|i| InventorySortKeyBuilder { item: Some(*i) })
+            .map(|i| InventorySortKeyBuilder { item: Some(i) })
             .collect();
 
         sort_keys
     }
 
-    pub fn create_all_stats_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
-        type BoxedSKBuildable = Box<dyn SortKeyBuildable>;
-
+    pub fn create_stats_sks(&self) -> Vec<StatsSortKeyBuilder> {
         let stats_iter: StatsSortKeyIter = StatsSortKey::iter();
 
         let skills_iter: SkillsSortKeyIter = SkillsSortKey::iter();
@@ -276,56 +240,49 @@ impl SortKeyFactory {
             .flat_map(|s| match s {
                 StatsSortKey::Skills => skills_iter
                     .clone()
-                    .map(|s| Box::new(StatsSortKeyBuilder::new().skills(s)) as BoxedSKBuildable)
+                    .map(|s| StatsSortKeyBuilder::new().skills(s))
                     .collect(),
                 StatsSortKey::SavingThrows => savings_throws_iter
                     .clone()
-                    .map(|s| {
-                        Box::new(StatsSortKeyBuilder::new().saving_throws(s)) as BoxedSKBuildable
-                    })
+                    .map(|s| StatsSortKeyBuilder::new().saving_throws(s))
                     .collect(),
                 StatsSortKey::CoreAttributes => core_attributes_iter
                     .clone()
-                    .map(|s| {
-                        Box::new(StatsSortKeyBuilder::new().core_attributes(s)) as BoxedSKBuildable
-                    })
+                    .map(|s| StatsSortKeyBuilder::new().core_attributes(s))
                     .collect(),
                 StatsSortKey::Abilities => abilities_iter
                     .clone()
-                    .map(|s| Box::new(StatsSortKeyBuilder::new().abilities(s)) as BoxedSKBuildable)
+                    .map(|s| StatsSortKeyBuilder::new().abilities(s))
                     .collect(),
                 StatsSortKey::Conditions => condtions_iter
                     .clone()
-                    .map(|s| Box::new(StatsSortKeyBuilder::new().conditions(s)) as BoxedSKBuildable)
+                    .map(|s| StatsSortKeyBuilder::new().conditions(s))
                     .collect(),
                 StatsSortKey::Defenses => {
-                    vec![Box::new(StatsSortKeyBuilder::new().defenses()) as BoxedSKBuildable]
+                    vec![StatsSortKeyBuilder::new().defenses()]
                 }
             })
             .collect()
     }
 
-    pub fn create_all_actions_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
-        type BoxedSKBuildable = Box<dyn SortKeyBuildable>;
-
+    pub fn create_actions_sks(&self) -> Vec<ActionsSortKeyBuilder> {
         let actions_iter: ActionsSortKeyIter = ActionsSortKey::iter();
-
         let spells_iter: SpellSortKeyIter = SpellSortKey::iter();
 
-        let actions_skb_vec: Vec<BoxedSKBuildable> = actions_iter
+        let actions_skb_vec: Vec<ActionsSortKeyBuilder> = actions_iter
             .flat_map(|a| match a {
                 ActionsSortKey::Spells => spells_iter
                     .clone()
-                    .map(|s| Box::new(ActionsSortKeyBuilder::new().spells(s)) as BoxedSKBuildable)
+                    .map(|s| ActionsSortKeyBuilder::new().spells(s))
                     .collect(),
                 ActionsSortKey::Action => {
-                    vec![Box::new(ActionsSortKeyBuilder::new().action()) as BoxedSKBuildable]
+                    vec![ActionsSortKeyBuilder::new().action()]
                 }
                 ActionsSortKey::Reaction => {
-                    vec![Box::new(ActionsSortKeyBuilder::new().reaction()) as BoxedSKBuildable]
+                    vec![ActionsSortKeyBuilder::new().reaction()]
                 }
                 ActionsSortKey::BonusAction => {
-                    vec![Box::new(ActionsSortKeyBuilder::new().bonus_action()) as BoxedSKBuildable]
+                    vec![ActionsSortKeyBuilder::new().bonus_action()]
                 }
             })
             .collect();
@@ -333,10 +290,8 @@ impl SortKeyFactory {
         actions_skb_vec
     }
 
-    pub fn create_all_items_buildable(&self) -> Vec<Box<dyn SortKeyBuildable>> {
-        type BoxedSKBuildable = Box<dyn SortKeyBuildable>;
-
-        let mut sort_keys: Vec<BoxedSKBuildable> = Vec::new();
+    pub fn create_all_items(&self) -> Vec<ItemSortKeyBuilder> {
+        let mut sort_keys: Vec<ItemSortKeyBuilder> = Vec::new();
 
         let weapons: Vec<WeaponSortKey> = WeaponSortKey::iter().collect();
         let armor: Vec<ArmorSortKey> = ArmorSortKey::iter().collect();
@@ -346,45 +301,41 @@ impl SortKeyFactory {
         let books_scrolls_iter: BookAndScrollSortKeyIter = BookAndScrollSortKey::iter();
         let equipped_state_iter = EquippedStateSortKey::iter();
 
-        let adventure_gear_skb = Box::new(ItemSortKeyBuilder::new().adventuring_gear());
-        let currency_skb = Box::new(ItemSortKeyBuilder::new().currency());
-        let consumables_skb = Box::new(ItemSortKeyBuilder::new().consumables());
-        let miscellaneous_skb = Box::new(ItemSortKeyBuilder::new().miscellaneous());
+        let adventure_gear_skb = ItemSortKeyBuilder::new().adventuring_gear();
+        let currency_skb = ItemSortKeyBuilder::new().currency();
+        let consumables_skb = ItemSortKeyBuilder::new().consumables();
+        let miscellaneous_skb = ItemSortKeyBuilder::new().miscellaneous();
 
-        let weapons_skb_vec: Vec<BoxedSKBuildable> = equipped_state_iter
+        let weapons_skb_vec: Vec<ItemSortKeyBuilder> = equipped_state_iter
             .clone()
             .flat_map(|e| {
                 weapons.iter().map(move |w| {
-                    Box::new(
-                        ItemSortKeyBuilder::new()
-                            .weapons(WeaponSortKeyBuilder::new().weapon(*w).equipped(e)),
-                    ) as BoxedSKBuildable
+                    ItemSortKeyBuilder::new()
+                        .weapons(WeaponSortKeyBuilder::new().weapon(*w).equipped(e))
                 })
             })
             .collect();
 
-        let armor_skb_vec: Vec<BoxedSKBuildable> = equipped_state_iter
+        let armor_skb_vec: Vec<ItemSortKeyBuilder> = equipped_state_iter
             .clone()
             .flat_map(|e| {
                 armor.iter().map(move |a| {
-                    Box::new(
-                        ItemSortKeyBuilder::new()
-                            .armor(ArmorSortKeyBuilder::new().armor(*a).equipped(e)),
-                    ) as BoxedSKBuildable
+                    ItemSortKeyBuilder::new()
+                        .armor(ArmorSortKeyBuilder::new().armor(*a).equipped(e))
                 })
             })
             .collect();
 
-        let magic_items_skb_vec: Vec<BoxedSKBuildable> = magic_items_iter
-            .map(|m| Box::new(ItemSortKeyBuilder::new().magical(m)) as BoxedSKBuildable)
+        let magic_items_skb_vec: Vec<ItemSortKeyBuilder> = magic_items_iter
+            .map(|m| ItemSortKeyBuilder::new().magical(m))
             .collect();
 
-        let tools_skb_vec: Vec<BoxedSKBuildable> = tools_iter
-            .map(|t| Box::new(ItemSortKeyBuilder::new().tools(t)) as BoxedSKBuildable)
+        let tools_skb_vec: Vec<ItemSortKeyBuilder> = tools_iter
+            .map(|t| ItemSortKeyBuilder::new().tools(t))
             .collect();
 
-        let books_scrolls_skb_vec: Vec<BoxedSKBuildable> = books_scrolls_iter
-            .map(|b| Box::new(ItemSortKeyBuilder::new().books_and_scrolls(b)) as BoxedSKBuildable)
+        let books_scrolls_skb_vec: Vec<ItemSortKeyBuilder> = books_scrolls_iter
+            .map(|b| ItemSortKeyBuilder::new().books_and_scrolls(b))
             .collect();
 
         sort_keys.extend(armor_skb_vec);
