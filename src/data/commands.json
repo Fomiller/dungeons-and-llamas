@@ -1,25 +1,5 @@
 [
     {
-        "name": "modal",
-        "type": 1,
-        "description": "create a modal response"
-    },
-    {
-        "name": "text",
-        "type": 1,
-        "description": "create a text input response"
-    },
-    {
-        "name": "menu",
-        "type": 1,
-        "description": "Create a menu response"
-    },
-    {
-        "name": "buttons",
-        "type": 1,
-        "description": "Create a button response"
-    },
-    {
         "name": "new-game",
         "type": 1,
         "description": "Start a new game"
@@ -90,68 +70,6 @@
                         "value": "ranger"
                     }
                 ]
-            }
-        ]
-    },
-    {
-        "name": "roll",
-        "type": 1,
-        "description": "Roll Dice",
-        "options": [
-            {
-                "name": "count",
-                "description": "Number of dice to roll",
-                "type": 4,
-                "required": true,
-                "min_value?": 1
-            },
-            {
-                "name": "sides",
-                "description": "Number of sides on the dice",
-                "type": 4,
-                "required": true,
-                "choices": [
-                    {
-                        "name": "D4",
-                        "value": "4"
-                    },
-                    {
-                        "name": "D6",
-                        "value": "6"
-                    },
-                    {
-                        "name": "D6",
-                        "value": "6"
-                    },
-                    {
-                        "name": "D8",
-                        "value": "8"
-                    },
-                    {
-                        "name": "D10",
-                        "value": "10"
-                    },
-                    {
-                        "name": "D12",
-                        "value": "20"
-                    },
-                    {
-                        "name": "D20",
-                        "value": "20"
-                    },
-                    {
-                        "name": "D100",
-                        "value": "100"
-                    }
-                ]
-            },
-            {
-                "name": "modifier",
-                "description": "modifier to dice roll",
-                "type": 4,
-                "required": false,
-                "min_value?": 0,
-                "max_value?": 2147483647
             }
         ]
     }
