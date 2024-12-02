@@ -51,3 +51,21 @@ resource "aws_iam_role" "lambda_dnl_api" {
 }
 EOF
 }
+
+resource "aws_iam_role" "lambda_llm_handler" {
+  name               = "${title(var.namespace)}LambdaDungeonsAndLlamasLlmHandler"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}

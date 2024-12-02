@@ -13,6 +13,7 @@ dependency "roles" {
         iam_role_name_lambda_dnl_api = "FomillerLambdaDungeonsAndLlamasApi"
         iam_role_name_lambda_discord_bot = "FomillerLambdaDungeonsAndLlamasDiscordBot"
         iam_role_name_lambda_discord_command_manager = "FomillerLambdaDungeonsAndLlamasDiscordBotCommandManager"
+        iam_role_name_lambda_llm_handler = "FomillerLambdaDungeonsAndLlamasLlmHandler"
     }
 }
 
@@ -23,5 +24,6 @@ inputs = {
     iam_role_name_lambda_discord_bot = dependency.roles.outputs.iam_role_name_lambda_discord_bot
     iam_role_name_lambda_discord_command_manager = dependency.roles.outputs.iam_role_name_lambda_discord_command_manager
     iam_role_name_lambda_dnl_api = dependency.roles.outputs.iam_role_name_lambda_dnl_api
+    iam_role_name_lambda_llm_handler = dependency.roles.outputs.iam_role_name_lambda_llm_handler
 }
 

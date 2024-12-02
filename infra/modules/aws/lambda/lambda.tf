@@ -68,3 +68,24 @@ resource "aws_lambda_function" "dnl_api" {
     }
   }
 }
+
+resource "aws_lambda_function" "llm_handler" {
+  function_name    = "${var.namespace}-${var.app_prefix}-llm-handler"
+  role             = var.iam_role_arn_lambda_llm_handler
+  handler          = "bootstrap"
+  filename         = local.filename["llm_handler"]
+  source_code_hash = local.source_code_hash["llm_handler"]
+  runtime          = local.runtime
+  architectures    = ["arm64"]
+  memory_size      = 128
+  timeout          = 10
+  environment {
+    variables = {
+      ACCOUNT               = data.aws_caller_identity.current.account_id
+      AWS_LAMBDA_LOG_LEVEL  = "INFO"
+      AWS_LAMBDA_LOG_FORMAT = "JSON"
+      ENVIRONMENT           = var.environment
+      REGION                = data.aws_region.current.name
+    }
+  }
+}

@@ -131,6 +131,11 @@ cargo-test args="":
 
 cargo-new path: 
     cargo new src/{{ path }}
+
+cargo-lambda-new lambda: 
+    cd src
+    cargo lambda new {{ lambda }}
+    cd ..
     
 build-lambdas:
     cargo lambda build \

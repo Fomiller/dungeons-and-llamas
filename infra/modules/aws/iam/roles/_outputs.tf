@@ -21,3 +21,11 @@ output "iam_role_arn_lambda_dnl_api" {
 output "iam_role_name_lambda_dnl_api" {
   value = aws_iam_role.lambda_dnl_api.name
 }
+
+output "iam_role_arn_lambda_llm_handler" {
+  value = aws_iam_role.lambda_llm_handler.arn
+}
+
+output "iam_role_name_lambda_llm_handler" {
+  value = aws_iam_role.lambda_llm_handler.name
+}

@@ -15,3 +15,8 @@ data "aws_lambda_function" "dnl_api_exists" {
   count         = fileexists(local.filename["dnl_api"]) ? 0 : 1
   function_name = "${var.namespace}-${var.app_prefix}-api"
 }
+
+data "aws_lambda_function" "llm_handler_exists" {
+  count         = fileexists(local.filename["llm_handler"]) ? 0 : 1
+  function_name = "${var.namespace}-${var.app_prefix}-llm_handler"
+}
