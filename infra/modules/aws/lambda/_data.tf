@@ -20,3 +20,8 @@ data "aws_lambda_function" "llm_handler_exists" {
   count         = fileexists(local.filename["llm_handler"]) ? 0 : 1
   function_name = "${var.namespace}-${var.app_prefix}-llm_handler"
 }
+
+data "aws_bedrock_foundation_models" "test" {
+  by_inference_type = "ON_DEMAND"
+  by_provider       = "Meta"
+}

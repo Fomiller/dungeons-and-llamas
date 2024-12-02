@@ -86,6 +86,7 @@ resource "aws_lambda_function" "llm_handler" {
       AWS_LAMBDA_LOG_FORMAT = "JSON"
       ENVIRONMENT           = var.environment
       REGION                = data.aws_region.current.name
+      MODEL_ID              = "meta.llama3-2-1b-instruct-v1:0"
     }
   }
 }

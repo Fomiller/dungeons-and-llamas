@@ -33,3 +33,7 @@ output "lambda_arn_dnl_api" {
 output "lambda_invoke_arn_dnl_api" {
   value = aws_lambda_function.dnl_api.invoke_arn
 }
+
+output "meta_models" {
+  value = data.aws_bedrock_foundation_models.test
+}
