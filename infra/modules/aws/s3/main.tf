@@ -14,6 +14,22 @@ resource "aws_s3_bucket" "dnl" {
   }
 }
 
+resource "aws_s3_bucket" "dnl_llm" {
+  bucket = "${var.namespace}-${var.environment}-${var.project_name}-llm"
+
+  object_lock_enabled = false
+
+  versioning {
+    enabled = true
+  }
+
+  tags = {
+    Owner       = "Forrest Miller"
+    Email       = "forrestmillerj@gmail.com"
+    Environment = var.environment
+  }
+}
+
 resource "aws_s3_bucket_ownership_controls" "example" {
   bucket = aws_s3_bucket.dnl.id
   rule {
