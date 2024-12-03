@@ -1,8 +1,15 @@
 use std::env;
 
-use aws_sdk_bedrockruntime::{Client as BedrockClient, Error as BedrockError};
+use aws_sdk_bedrockruntime::Client as BedrockClient;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+
+use anyhow;
+use aws_sdk_bedrockruntime::{
+    operation::converse::{ConverseError, ConverseOutput},
+    types::{ContentBlock, ConversationRole, Message},
+};
 
 #[derive(Deserialize)]
 struct Request {
@@ -14,37 +21,81 @@ struct Response {
     message: String,
     output: Option<String>,
 }
-
+#[derive(Debug)]
+struct BedrockConverseError(String);
+impl std::fmt::Display for BedrockConverseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Can't invoke. Reason: {}", self.0)
+    }
+}
+impl std::error::Error for BedrockConverseError {}
+impl From<&str> for BedrockConverseError {
+    fn from(value: &str) -> Self {
+        BedrockConverseError(value.to_string())
+    }
+}
+impl From<&ConverseError> for BedrockConverseError {
+    fn from(value: &ConverseError) -> Self {
+        BedrockConverseError::from(match value {
+            ConverseError::ModelTimeoutException(_) => "Model took too long",
+            ConverseError::ModelNotReadyException(_) => "Model is not ready",
+            _ => "Unknown",
+        })
+    }
+}
 async fn call_bedrock(
     client: &BedrockClient,
     model_id: &str,
     prompt: &str,
-) -> Result<String, BedrockError> {
+) -> anyhow::Result<String> {
     let response = client
-        .invoke_model()
+        .converse()
         .model_id(model_id)
-        .body(
-            format!(r#"{{"inputText":"{}"}}"#, prompt)
-                .into_bytes()
-                .into(),
+        .messages(
+            Message::builder()
+                .role(ConversationRole::User)
+                .content(ContentBlock::Text(prompt.to_string()))
+                .build()?,
         )
-        .content_type("application/json")
         .send()
-        .await?;
+        .await;
 
-    // Assume the response has a field "outputText"
-    let body = response.body();
-    if let Ok(output) = std::str::from_utf8(body.as_ref()) {
-        return Ok(output.to_string());
-    } else {
-        Ok("No output from model.".to_string())
+    match response {
+        Ok(output) => {
+            let text = get_converse_output_text(output)?;
+            Ok(text)
+        }
+        Err(e) => Err(anyhow::anyhow!("{:?}", e.as_service_error())),
     }
+
+    // // Assume the response has a field "outputText"
+    // let body = response.output.;
+    // if let Ok(output) = std::str::from_utf8(body.as_ref()) {
+    //     return Ok(output.to_string());
+    // } else {
+    //     Ok("No output from model.".to_string())
+    // }
     //
     // if let Some(payload) = {
     //     if let Ok(output) = std::str::from_utf8(payload.as_ref()) {
     //         return Ok(output.to_string());
     //     }
     // }
+}
+
+fn get_converse_output_text(output: ConverseOutput) -> anyhow::Result<String> {
+    let text = output
+        .output()
+        .ok_or_else(|| anyhow::anyhow!("no output"))?
+        .as_message()
+        .map_err(|_| anyhow::anyhow!("output not a message"))?
+        .content()
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("no content in message"))?
+        .as_text()
+        .map_err(|_| anyhow::anyhow!("content is not text"))?
+        .to_string();
+    Ok(text)
 }
 
 async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error> {

@@ -34,6 +34,6 @@ resource "aws_iam_role_policy_attachment" "lambda_llm_handler" {
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_llm_handler_bedrock" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonDataZoneBedrockModelConsumptionPolicy"
+  policy_arn = "arn:aws:iam::aws:policy/AmazonBedrockFullAccess"
   role       = var.iam_role_name_lambda_llm_handler
 }

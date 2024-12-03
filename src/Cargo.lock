@@ -1840,6 +1840,7 @@ checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 name = "llm-handler"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "aws-config",
  "aws-sdk-bedrock",
  "aws-sdk-bedrockruntime",
