@@ -1,6 +1,7 @@
 use std::env;
 
-use aws_sdk_bedrockruntime::Client as BedrockClient;
+use aws_sdk_bedrockruntime::{types::SystemContentBlock, Client as BedrockClient};
+use aws_smithy_types::Document;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -14,6 +15,8 @@ use aws_sdk_bedrockruntime::{
 #[derive(Deserialize)]
 struct Request {
     pub prompt: String,
+    pub instructions: String,
+    pub context: String,
 }
 
 #[derive(Serialize)]
@@ -47,14 +50,24 @@ async fn call_bedrock(
     client: &BedrockClient,
     model_id: &str,
     prompt: &str,
+    context: &str,
+    instructions: &str,
 ) -> anyhow::Result<String> {
+    let input = format!(
+        "{}\n<Context>\n{}\n</Context>\n<Prompt>\n{}\n</Prompt>",
+        instructions, context, prompt
+    );
+
     let response = client
         .converse()
         .model_id(model_id)
+        .system(SystemContentBlock::Text(
+            "You are a Dungeons and Dragons Dungeon Master.".to_string(),
+        ))
         .messages(
             Message::builder()
                 .role(ConversationRole::User)
-                .content(ContentBlock::Text(prompt.to_string()))
+                .content(ContentBlock::Text(input.to_string()))
                 .build()?,
         )
         .send()
@@ -104,9 +117,16 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     let bedrock_client = BedrockClient::new(&config);
 
     let model_id = env::var("MODEL_ID")?;
-    let prompt = &payload.prompt;
 
-    match call_bedrock(&bedrock_client, &model_id, prompt).await {
+    match call_bedrock(
+        &bedrock_client,
+        &model_id,
+        &payload.prompt,
+        &payload.context,
+        &payload.instructions,
+    )
+    .await
+    {
         Ok(output) => Ok(Response {
             message: "Success".to_string(),
             output: Some(output),

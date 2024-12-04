@@ -26,3 +26,4 @@ serde = { version = "1.0.215", features = ["derive"] }
 aws-sdk-bedrockruntime = { version = "1.61.0", features = [
     "behavior-version-latest",
 ] }
+aws-smithy-types = { version = "1.2.9", features = ["serde-deserialize", "serde-serialize"] }

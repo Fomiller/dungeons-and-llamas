@@ -1844,6 +1844,7 @@ dependencies = [
  "aws-config",
  "aws-sdk-bedrock",
  "aws-sdk-bedrockruntime",
+ "aws-smithy-types",
  "lambda_runtime",
  "serde",
  "serde_json",
