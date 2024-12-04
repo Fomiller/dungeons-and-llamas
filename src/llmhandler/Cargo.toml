@@ -40,5 +40,5 @@ rust-bert = { version = "0.23.0", default-features = false, features = [
     "remote",
 ] }
 aws-sdk-s3 = "1.65.0"
-rusqlite = "0.32.1"
+rusqlite = {version = "0.32.1", features = ["bundled"]}
 bincode = "1.3.3"
