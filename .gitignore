@@ -37,3 +37,6 @@ env.list
 
 # local files
 schema.csv
+
+# sqlite
+*.db
