@@ -139,7 +139,7 @@ cargo-lambda-new lambda:
     
 build-lambdas:
     cargo lambda build \
-    --arm64 \
+    --target aarch64-unknown-linux-gnu \
     --release \
     --output-format zip \
     --manifest-path  src/Cargo.toml \
