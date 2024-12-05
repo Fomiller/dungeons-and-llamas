@@ -1,19 +1,18 @@
 use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client as S3Client;
-use rusqlite::{params, Connection};
+use rusqlite::params;
+use rusqlite::{ffi::sqlite3_auto_extension, Connection, Result};
+use serde_json::Value;
+use sqlite_vec::sqlite3_vec_init;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use zerocopy::IntoBytes;
 
 use std::env;
 
 use aws_sdk_bedrockruntime::{types::SystemContentBlock, Client as BedrockClient};
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
-// use rust_bert::pipelines::sentence_embeddings::{
-//     SentenceEmbeddingsBuilder, SentenceEmbeddingsModelType,
-// };
-// use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use anyhow;
 use aws_sdk_bedrockruntime::{
@@ -80,6 +79,19 @@ async fn call_bedrock(
         .send()
         .await;
 
+    let embed_body_prompt = serde_json::json!({
+        "inputText": prompt
+    });
+
+    let embed_response_prompt = client
+        .invoke_model()
+        .model_id("amazon.titan-embed-text-v2:0")
+        .body(embed_body_prompt.to_string().into_bytes().into())
+        .accept("application/json")
+        .content_type("application/json")
+        .send()
+        .await;
+
     let s3_client = S3Client::new(&aws_config::load_from_env().await);
     let bucket = "fomiller-dev-dungeons-and-llamas-llm";
     let db_key = "embeddings/new.db";
@@ -90,14 +102,9 @@ async fn call_bedrock(
 
     // Write to database
     let embedding_id = "example-id";
-    let embedding_data = vec![0.1, 0.2, 0.3]; // Example embedding
+    // let embedding_data = vec![0.1, 0.2, 0.3]; // Example embedding
 
-    write_to_sqlite(local_path, embedding_id, &embedding_data)?;
-
-    // Upload updated database
-    upload_db_to_s3(&s3_client, &bucket, db_key, local_path).await?;
-
-    match embed_response {
+    let embedding = match embed_response {
         Ok(output) => {
             // Convert response bytes into a String
             let output_string = String::from_utf8(output.body.into_inner())
@@ -109,14 +116,42 @@ async fn call_bedrock(
                 serde_json::from_str(&output_string).expect("Response body is not valid JSON");
 
             // Extract relevant fields from the JSON response
-            if let Some(embedding) = json_response.get("embedding") {
-                println!("Embedding: {}", embedding);
-            } else {
-                println!("No embedding found in the response.");
-            }
+            let embedding = json_response.get("embedding").unwrap();
+            Ok(embedding.clone())
         }
-        Err(e) => println!("{:?}", e.as_service_error()),
-    }
+        Err(e) => {
+            println!("{:?}", e.as_service_error());
+            Err(anyhow::anyhow!("{:?}", e.as_service_error()))
+        }
+    }?;
+
+    let embedding_prompt = match embed_response_prompt {
+        Ok(output) => {
+            // Convert response bytes into a String
+            let output_string = String::from_utf8(output.body.into_inner())
+                .expect("Response body is not valid UTF-8");
+            println!("{}", output_string);
+
+            // Parse JSON string into a serde_json::Value
+            let json_response: serde_json::Value =
+                serde_json::from_str(&output_string).expect("Response body is not valid JSON");
+
+            // Extract relevant fields from the JSON response
+            let embedding = json_response.get("embedding").unwrap();
+            Ok(embedding.clone())
+        }
+        Err(e) => {
+            println!("{:?}", e.as_service_error());
+            Err(anyhow::anyhow!("{:?}", e.as_service_error()))
+        }
+    }?;
+
+    let embedding_data = value_to_f32_slice(&embedding)?;
+    let embedding_data_prompt = value_to_f32_slice(&embedding_prompt)?;
+    write_to_sqlite(local_path, context, embedding_data, embedding_data_prompt)?;
+
+    // Upload updated database
+    upload_db_to_s3(&s3_client, &bucket, db_key, local_path).await?;
 
     let response = client
         .converse()
@@ -140,20 +175,6 @@ async fn call_bedrock(
         }
         Err(e) => Err(anyhow::anyhow!("{:?}", e.as_service_error())),
     }
-
-    // // Assume the response has a field "outputText"
-    // let body = response.output.;
-    // if let Ok(output) = std::str::from_utf8(body.as_ref()) {
-    //     return Ok(output.to_string());
-    // } else {
-    //     Ok("No output from model.".to_string())
-    // }
-    //
-    // if let Some(payload) = {
-    //     if let Ok(output) = std::str::from_utf8(payload.as_ref()) {
-    //         return Ok(output.to_string());
-    //     }
-    // }
 }
 
 fn get_converse_output_text(output: ConverseOutput) -> anyhow::Result<String> {
@@ -230,22 +251,65 @@ async fn download_db_from_s3(
     file.write_all(&body.into_bytes()).await?;
     Ok(())
 }
+
 fn write_to_sqlite(
     db_path: &str,
     embedding_id: &str,
-    embedding_data: &[f32],
+    embedding_data: Vec<f32>,
+    query: Vec<f32>,
 ) -> anyhow::Result<()> {
+    unsafe {
+        sqlite3_auto_extension(Some(std::mem::transmute(sqlite3_vec_init as *const ())));
+    }
     let conn = Connection::open(db_path)?;
+
+    println!("{:?}", embedding_data);
+
+    let (sqlite_version, vec_version, x): (String, String, String) = conn.query_row(
+        "select sqlite_version(), vec_version(), vec_to_json(?)",
+        &[embedding_data.as_bytes()],
+        |x| Ok((x.get(0)?, x.get(1)?, x.get(2)?)),
+    )?;
+
+    println!("sqlite_version={sqlite_version}, vec_version={vec_version}");
+
+    let items: Vec<(usize, &str, Vec<f32>)> = vec![(6, embedding_id, embedding_data.clone())];
+    println!("LENGTH: {}", embedding_data.len());
+
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS embeddings (id TEXT PRIMARY KEY, data BLOB)",
+        "CREATE VIRTUAL TABLE IF NOT EXISTS vec_items USING vec0(context text, embedding float[1024])",
         [],
     )?;
 
-    let data_blob = bincode::serialize(embedding_data)?; // Serialize f32 slice into a binary blob
-    conn.execute(
-        "INSERT OR REPLACE INTO embeddings (id, data) VALUES (?1, ?2)",
-        params![embedding_id, data_blob],
-    )?;
+    let mut stmt =
+        conn.prepare("INSERT INTO vec_items(rowid, context, embedding) VALUES (?, ?, ?)")?;
+    for item in items {
+        stmt.execute(rusqlite::params![item.0, item.1, item.2.as_bytes()])?;
+    }
+
+    // let data_blob = bincode::serialize(embedding_data)?; // Serialize f32 slice into a binary blob
+    // conn.execute(
+    //     "INSERT OR REPLACE INTO embeddings (id, data) VALUES (?1, ?2)",
+    //     params![embedding_id, data_blob],
+    // )?;
+    let result: Vec<(i64, String, f64)> = conn
+        .prepare(
+            r"
+          SELECT
+            rowid,
+            context,
+            distance
+          FROM vec_items
+          WHERE embedding MATCH ?1
+          ORDER BY distance
+          LIMIT 3
+        ",
+        )?
+        .query_map([query.as_bytes()], |r| {
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+        })?
+        .collect::<Result<Vec<_>, _>>()?;
+    println!("{:?}", result);
 
     Ok(())
 }
@@ -264,4 +328,22 @@ async fn upload_db_to_s3(
         .send()
         .await?;
     Ok(())
+}
+
+fn value_to_f32_slice(value: &Value) -> anyhow::Result<Vec<f32>> {
+    if let Value::Array(array) = value {
+        // Try to parse each element as f32
+        let result: Result<Vec<f32>, _> = array
+            .iter()
+            .map(|v| {
+                v.as_f64()
+                    .ok_or_else(|| anyhow::anyhow!("Value is not a valid number"))
+            })
+            .map(|num| num.and_then(|n| Ok(n as f32)))
+            .collect();
+
+        result.map_err(|e| anyhow::anyhow!("Error parsing array: {}", e))
+    } else {
+        Err(anyhow::anyhow!("Value is not an array"))
+    }
 }
