@@ -21,6 +21,10 @@ resource "aws_efs_access_point" "dnl" {
     gid = 1000
     uid = 1000
   }
+
+  tags = {
+    Name = "${var.namespace}-${var.app_prefix}-efs-access-point"
+  }
 }
 
 resource "aws_efs_mount_target" "dnl" {
