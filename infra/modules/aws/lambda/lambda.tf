@@ -89,4 +89,16 @@ resource "aws_lambda_function" "llm_handler" {
       MODEL_ID              = "meta.llama3-8b-instruct-v1:0"
     }
   }
+
+  vpc_config {
+    subnet_ids         = data.aws_subnets.private.ids
+    security_group_ids = [var.aws_security_group_id_lambda_basic]
+  }
+
+  file_system_config {
+    arn = var.aws_efs_access_point_arn_dnl
+
+    local_mount_path = "/mnt/efs"
+  }
 }
+

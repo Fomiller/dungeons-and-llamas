@@ -1,6 +1,20 @@
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
+data "aws_vpc" "fomiller" {
+  filter {
+    name   = "tag:Name"
+    values = ["${var.namespace}-vpc"]
+  }
+}
+
+data "aws_subnets" "private" {
+  filter {
+    name   = "tag:Tier"
+    values = ["private"]
+  }
+}
+
 data "aws_lambda_function" "discord_bot_exists" {
   count         = fileexists(local.filename["discord_bot"]) ? 0 : 1
   function_name = "${var.namespace}-${var.app_prefix}-discord-bot"
