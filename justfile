@@ -8,6 +8,9 @@ clean:
     find . -name ".terraform" -type d | xargs -r rm -rv
     find . -name ".terragrunt-cache" -type d | xargs -r rm -rv
 
+doppler-switch env:
+    doppler setup -p dungeons-and-llamas -c {{env}}
+
 login env:
     doppler run \
     -- assume-role login -p {{env}}Terraform
@@ -16,6 +19,12 @@ login-docker env:
     doppler run \
     --preserve-env="AWS_ASSUME_CONFIG_DIR" \
     -- assume-role login -p {{env}}Terraform
+
+output-module-groups:
+    doppler run \
+    --name-transformer tf-var  \
+    -- terragrunt output-module-groups \
+    --terragrunt-working-dir {{infraDir}}
 
 init dir:
     doppler run \
@@ -132,10 +141,9 @@ cargo-test args="":
 cargo-new path: 
     cargo new src/{{ path }}
 
-cargo-lambda-new lambda: 
-    cd src
+[no-cd]
+@cargo-lambda-new lambda: 
     cargo lambda new {{ lambda }}
-    cd ..
     
 build-lambdas:
     cargo lambda build \
@@ -159,3 +167,13 @@ update-commands:
 bacon:
     bacon --path src
     
+[no-cd]
+diesel cmd:
+    doppler run --command='diesel --database-url postgres://$RDS_USERNAME:$RDS_PASSWORD@localhost:5432/$DATABASE_NAME {{cmd}}'
+
+ssh-tunnel:
+    doppler run --command='ssh -i $PRIVATE_KEY_PATH -L 5432:$DATABASE_ENDPOINT:5432 ec2-user@$BASTION_HOST -N -f'
+
+kill-ssh:
+    kill $(ps aux | grep ssh | grep -v grep | awk '{print $2}')
+

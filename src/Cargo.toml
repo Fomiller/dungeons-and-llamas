@@ -1,2 +1,10 @@
 [workspace]
-members = ["bot", "commandmanager", "dice", "game", "api", "llmhandler"]
+members = [
+    "bot",
+    "commandmanager",
+    "dice",
+    "game",
+    "api",
+    "llmhandler",
+    "dbmanager",
+]
