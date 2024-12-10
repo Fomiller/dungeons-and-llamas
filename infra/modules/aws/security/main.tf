@@ -1,5 +1,5 @@
 resource "aws_security_group" "lambda_basic_sg" {
-  name        = "${var.namespace}-${var.app_prefix}-lambda-basic-sg"
+  name        = "${var.namespace}-${var.environment}-${var.app_prefix}-lambda-basic-sg"
   description = "Basic security group for Lambda function"
   vpc_id      = data.aws_vpc.fomiller.id
 
@@ -10,10 +10,21 @@ resource "aws_security_group" "lambda_basic_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "${var.namespace}-${var.environment}-${var.app_prefix}-lambda-basic-sg"
+  }
+
+  lifecycle { create_before_destroy = true }
+
+  timeouts {
+    delete = "5m"
+  }
+
 }
 
 resource "aws_security_group" "efs_sg" {
-  name        = "${var.namespace}-${var.app_prefix}-efs-sg"
+  name        = "${var.namespace}-${var.environment}-${var.app_prefix}-efs-sg"
   description = "Allow access EFS"
   vpc_id      = data.aws_vpc.fomiller.id
 
@@ -32,4 +43,15 @@ resource "aws_security_group" "efs_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "${var.namespace}-${var.environment}-${var.app_prefix}-lambda-basic-sg"
+  }
+
+  lifecycle { create_before_destroy = true }
+
+  timeouts {
+    delete = "5m"
+  }
+
 }

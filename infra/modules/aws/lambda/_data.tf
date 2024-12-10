@@ -46,5 +46,5 @@ data "aws_bedrock_foundation_models" "test" {
 }
 
 data "aws_security_group" "rds" {
-  name = "db-sg"
+  name = "${var.namespace}-${var.environment}-rds-sg"
 }
