@@ -1,3 +1,4 @@
+pub mod schema;
 use anyhow::anyhow;
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
