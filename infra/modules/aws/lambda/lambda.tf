@@ -102,3 +102,33 @@ resource "aws_lambda_function" "llm_handler" {
   }
 }
 
+resource "aws_lambda_function" "db_manager" {
+  function_name    = "${var.namespace}-${var.app_prefix}-db-manager"
+  role             = var.iam_role_arn_lambda_db_manager
+  handler          = "bootstrap"
+  filename         = local.filename["db_manager"]
+  source_code_hash = local.source_code_hash["db_manager"]
+  runtime          = local.runtime
+  architectures    = ["arm64"]
+  memory_size      = 128
+  timeout          = 10
+  environment {
+    variables = {
+      ACCOUNT               = data.aws_caller_identity.current.account_id
+      AWS_LAMBDA_LOG_LEVEL  = "INFO"
+      AWS_LAMBDA_LOG_FORMAT = "JSON"
+      ENVIRONMENT           = var.environment
+      REGION                = data.aws_region.current.name
+      RDS_USERNAME          = var.rds_username
+      RDS_PASSWORD          = var.rds_password
+      DATABASE_ENDPOINT     = var.database_endpoint
+      DATABASE_NAME         = var.database_name
+    }
+  }
+
+  vpc_config {
+    subnet_ids         = data.aws_subnets.private.ids
+    security_group_ids = [var.aws_security_group_id_lambda_basic, data.aws_security_group.rds.id]
+  }
+}
+

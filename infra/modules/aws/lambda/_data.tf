@@ -32,10 +32,19 @@ data "aws_lambda_function" "dnl_api_exists" {
 
 data "aws_lambda_function" "llm_handler_exists" {
   count         = fileexists(local.filename["llm_handler"]) ? 0 : 1
-  function_name = "${var.namespace}-${var.app_prefix}-llm_handler"
+  function_name = "${var.namespace}-${var.app_prefix}-llm-handler"
+}
+
+data "aws_lambda_function" "db_manager_exists" {
+  count         = fileexists(local.filename["db_manager"]) ? 0 : 1
+  function_name = "${var.namespace}-${var.app_prefix}-db-manager"
 }
 
 data "aws_bedrock_foundation_models" "test" {
   by_inference_type = "ON_DEMAND"
   by_provider       = "Meta"
+}
+
+data "aws_security_group" "rds" {
+  name = "db-sg"
 }

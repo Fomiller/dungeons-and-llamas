@@ -1,42 +1,46 @@
-use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
-
+use anyhow::anyhow;
+use diesel::prelude::*;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use lambda_runtime::{
+    run, service_fn,
+    tracing::{self, subscriber::fmt::format},
+    Error, LambdaEvent,
+};
 use serde::{Deserialize, Serialize};
+use std::env;
 
-/// This is a made-up example. Requests come into the runtime as unicode
-/// strings in json format, which can map to any structure that implements `serde::Deserialize`
-/// The runtime pays no attention to the contents of the request payload.
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+
 #[derive(Deserialize)]
 struct Request {
     command: String,
 }
 
-/// This is a made-up example of what a response structure may look like.
-/// There is no restriction on what it can be. The runtime requires responses
-/// to be serialized into json. The runtime pays no attention
-/// to the contents of the response payload.
 #[derive(Serialize)]
 struct Response {
-    req_id: String,
     msg: String,
 }
 
-/// This is the main body for the function.
-/// Write your code inside it.
-/// There are some code example in the following URLs:
-/// - https://github.com/awslabs/aws-lambda-rust-runtime/tree/main/examples
-/// - https://github.com/aws-samples/serverless-rust-demo/
-async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error> {
-    // Extract some useful info from the request
-    let command = event.payload.command;
+async fn function_handler(event: LambdaEvent<Request>) -> anyhow::Result<Response> {
+    let port = 5432;
+    let rds_user = env::var("RDS_USERNAME").expect("RDS_USERNAME must be set");
+    let rds_pass = env::var("RDS_PASSWORD").expect("RDS_PASSWORD must be set");
+    let database_endpoint = env::var("DATABASE_ENDPOINT").expect("DATABASE_ENDPOINT must be set");
+    let database_name = env::var("DATABASE_NAME").expect("DATABASE_NAME must be set");
+    let database_url = format!(
+        "postgres://{}:{}@{}:{}/{}",
+        rds_user, rds_pass, database_endpoint, port, database_name
+    );
 
-    // Prepare the response
-    let resp = Response {
-        req_id: event.context.request_id,
-        msg: format!("Command {}.", command),
-    };
+    let mut connection = PgConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-    // Return `Response` (it will be serialized to JSON automatically by the runtime)
-    Ok(resp)
+    match connection.run_pending_migrations(MIGRATIONS) {
+        Ok(_) => Ok(Response {
+            msg: "Migrations applied successfully".to_string(),
+        }),
+        Err(_) => Err(anyhow!("Error applying Migrations")),
+    }
 }
 
 #[tokio::main]
