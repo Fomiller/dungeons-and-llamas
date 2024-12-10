@@ -66,8 +66,11 @@ async fn call_bedrock(
         instructions, context, prompt
     );
 
+    let embedding_dimension = 256;
     let embed_body = serde_json::json!({
-        "inputText": context
+        "inputText": context,
+        "dimensions": embedding_dimension,
+        "normalize": true
     });
 
     let embed_response = client
