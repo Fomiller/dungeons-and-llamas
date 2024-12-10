@@ -36,10 +36,17 @@ async fn function_handler(event: LambdaEvent<Request>) -> anyhow::Result<Respons
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
     match connection.run_pending_migrations(MIGRATIONS) {
-        Ok(_) => Ok(Response {
-            msg: "Migrations applied successfully".to_string(),
-        }),
-        Err(_) => Err(anyhow!("Error applying Migrations")),
+        Ok(_) => {
+            println!("Database migrations applied successfully");
+            Ok(Response {
+                msg: "Success".to_string(),
+            })
+        }
+        Err(e) => {
+            println!("Error applying database migrations");
+            println!("Error: {}", e);
+            Err(anyhow!("Error applying database Migrations"))
+        }
     }
 }
 
