@@ -6,6 +6,9 @@ diesel::table! {
 
     embeddings (id) {
         id -> Int4,
-        embedding -> Nullable<Vector>,
+        user_id -> Text,
+        game_id -> Text,
+        text -> Text,
+        embedding -> Vector,
     }
 }
