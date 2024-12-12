@@ -15,14 +15,14 @@ dependency "roles" {
     }
 }
 
-dependency "efs" {
-    config_path = "../efs"
-    mock_outputs_merge_strategy_with_state = "shallow"
-    mock_outputs_allowed_terraform_commands = ["validate", "plan", "apply", "destroy"]
-    mock_outputs = {
-        aws_efs_access_point_arn_dnl = "arn:aws:elasticfilesystem:us-east-1:123456789012:accesspoint/MOCK"
-    }
-}
+# dependency "efs" {
+#     config_path = "../efs"
+#     mock_outputs_merge_strategy_with_state = "shallow"
+#     mock_outputs_allowed_terraform_commands = ["validate", "plan", "apply", "destroy"]
+#     mock_outputs = {
+#         aws_efs_access_point_arn_dnl = "arn:aws:elasticfilesystem:us-east-1:123456789012:accesspoint/MOCK"
+#     }
+# }
 
 dependency "security" {
     config_path = "../security"
@@ -34,7 +34,7 @@ dependency "security" {
 }
 
 inputs = {
-    aws_efs_access_point_arn_dnl = dependency.efs.outputs.aws_efs_access_point_arn_dnl
+    # aws_efs_access_point_arn_dnl = dependency.efs.outputs.aws_efs_access_point_arn_dnl
     aws_security_group_id_lambda_basic = dependency.security.outputs.aws_security_group_id_lambda_basic
     iam_role_arn_lambda_db_manager = dependency.roles.outputs.iam_role_arn_lambda_db_manager
     iam_role_arn_lambda_discord_bot = dependency.roles.outputs.iam_role_arn_lambda_discord_bot
