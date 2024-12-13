@@ -1,11 +1,9 @@
-use aws_sdk_s3::Client as S3Client;
+use diesel::debug_query;
 use diesel::prelude::*;
 use diesel::Connection;
 use diesel::PgConnection;
-use pgvector::Vector;
+use pgvector::{Vector, VectorExpressionMethods};
 use serde_json::Value;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
 
 use std::env;
 
@@ -24,6 +22,8 @@ struct Request {
     pub prompt: String,
     pub instructions: String,
     pub context: String,
+    pub user_id: String,
+    pub game_id: String,
 }
 
 #[derive(Serialize)]
@@ -59,14 +59,11 @@ async fn call_bedrock(
     prompt: &str,
     context: &str,
     instructions: &str,
+    user: &str,
+    game: &str,
 ) -> anyhow::Result<String> {
     let mut conn = connect_to_database().await;
     let embedding_dimension = 256;
-
-    let input = format!(
-        "{}\n<Context>\n{}\n</Context>\n<Prompt>\n{}\n</Prompt>",
-        instructions, context, prompt
-    );
 
     let embed_body = serde_json::json!({
         "inputText": context,
@@ -103,7 +100,7 @@ async fn call_bedrock(
             // Convert response bytes into a String
             let output_string = String::from_utf8(output.body.into_inner())
                 .expect("Response body is not valid UTF-8");
-            println!("{}", output_string);
+            // println!("{}", output_string);
 
             // Parse JSON string into a serde_json::Value
             let json_response: serde_json::Value =
@@ -124,7 +121,7 @@ async fn call_bedrock(
             // Convert response bytes into a String
             let output_string = String::from_utf8(output.body.into_inner())
                 .expect("Response body is not valid UTF-8");
-            println!("{}", output_string);
+            // println!("{}", output_string);
 
             // Parse JSON string into a serde_json::Value
             let json_response: serde_json::Value =
@@ -143,8 +140,41 @@ async fn call_bedrock(
     let embedding_data = Vector::from(value_to_f32_slice(&embedding)?);
     let embedding_data_prompt = Vector::from(value_to_f32_slice(&embedding_prompt)?);
 
-    write_to_database(&mut conn, embedding_data).await?;
-    write_to_database(&mut conn, embedding_data_prompt).await?;
+    // write context to database
+    write_to_database(&mut conn, embedding_data, user, game, context, "output").await?;
+    // write prompt to database
+    write_to_database(
+        &mut conn,
+        embedding_data_prompt.clone(),
+        user,
+        game,
+        prompt,
+        "prompt",
+    )
+    .await?;
+
+    let neighbors =
+        similarity_search(&mut conn, 5, embedding_data_prompt.clone(), user, game).await?;
+
+    println!("Neighbors: {:?}", neighbors);
+
+    let embedding_contexts = neighbors
+        .into_iter()
+        .map(|e| format!("\n{}\n", e.text))
+        .collect::<Vec<String>>();
+
+    println!("Embedding Contexts: {:?}", embedding_contexts);
+
+    let mut input_context = String::new();
+    for context in embedding_contexts {
+        input_context.push_str(&context)
+    }
+
+    let input = format!(
+        "{}\n<Context>{}</Context>\n<Prompt>\n{}\n</Prompt>",
+        instructions, input_context, prompt
+    );
+    println!("INPUT: {}", input);
 
     let response = client
         .converse()
@@ -198,6 +228,8 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
         &payload.prompt,
         &payload.context,
         &payload.instructions,
+        &payload.user_id,
+        &payload.game_id,
     )
     .await
     {
@@ -217,25 +249,6 @@ async fn main() -> Result<(), Error> {
     tracing::init_default_subscriber();
 
     run(service_fn(function_handler)).await
-}
-
-async fn download_db_from_s3(
-    s3_client: &S3Client,
-    bucket: &str,
-    key: &str,
-    local_path: &str,
-) -> anyhow::Result<()> {
-    let response = s3_client
-        .get_object()
-        .bucket(bucket)
-        .key(key)
-        .send()
-        .await?;
-
-    let body = response.body.collect().await?;
-    let mut file = File::create(local_path).await?;
-    file.write_all(&body.into_bytes()).await?;
-    Ok(())
 }
 
 fn value_to_f32_slice(value: &Value) -> anyhow::Result<Vec<f32>> {
@@ -267,7 +280,7 @@ async fn connect_to_database() -> PgConnection {
         rds_user, rds_pass, database_endpoint, port, database_name
     );
 
-    let mut connection = PgConnection::establish(&database_url)
+    let connection = PgConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
     connection
@@ -276,9 +289,17 @@ async fn connect_to_database() -> PgConnection {
 async fn write_to_database(
     conn: &mut PgConnection,
     embedding: Vector,
+    user: &str,
+    game: &str,
+    text: &str,
+    r#type: &str,
 ) -> anyhow::Result<Embedding> {
     let new_embedding = NewEmbedding {
-        embedding: Some(embedding),
+        embedding,
+        user_id: user.to_string(),
+        game_id: game.to_string(),
+        text: text.to_string(),
+        r#type: r#type.to_string(),
     };
 
     match diesel::insert_into(embeddings::table)
@@ -289,18 +310,50 @@ async fn write_to_database(
         Err(_) => Err(anyhow::anyhow!("Error inserting Embedding")),
     }
 }
+async fn similarity_search(
+    conn: &mut PgConnection,
+    limit: i64,
+    embedding: Vector,
+    user_id: &str,
+    game_id: &str,
+) -> anyhow::Result<Vec<Embedding>> {
+    let query = embeddings::table
+        .filter(embeddings::user_id.eq(user_id))
+        .filter(embeddings::game_id.eq(game_id))
+        .filter(embeddings::r#type.eq("output"))
+        .order(embeddings::embedding.l2_distance(embedding))
+        .limit(limit);
 
-#[derive(Queryable)]
+    // let debug = debug_query::<diesel::pg::Pg, _>(&query);
+    // println!("QUERY: {:?}", debug);
+
+    let neighbors = query.load::<Embedding>(conn);
+
+    match neighbors {
+        Ok(e) => Ok(e),
+        Err(_) => Err(anyhow::anyhow!("Error finding neighbors")),
+    }
+}
+
+#[derive(Queryable, Selectable, Debug, Serialize, Deserialize)]
 #[diesel(table_name = embeddings)]
 pub struct Embedding {
     pub id: i32,
-    pub embedding: Option<Vector>,
+    pub embedding: Vector,
+    pub user_id: String,
+    pub game_id: String,
+    pub text: String,
+    pub r#type: String,
 }
 
 #[derive(Insertable)]
 #[diesel(table_name = embeddings)]
 pub struct NewEmbedding {
-    pub embedding: Option<Vector>,
+    pub embedding: Vector,
+    pub user_id: String,
+    pub game_id: String,
+    pub text: String,
+    pub r#type: String,
 }
 
 diesel::table! {
@@ -309,6 +362,10 @@ diesel::table! {
 
     embeddings (id) {
         id -> Int4,
-        embedding -> Nullable<Vector>,
+        embedding -> Vector,
+        user_id -> Text,
+        game_id -> Text,
+        text -> Text,
+        r#type -> Text,
     }
 }

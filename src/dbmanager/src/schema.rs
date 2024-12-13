@@ -10,5 +10,7 @@ diesel::table! {
         game_id -> Text,
         text -> Text,
         embedding -> Vector,
+        #[sql_name = "type"]
+        type_ -> Text,
     }
 }
