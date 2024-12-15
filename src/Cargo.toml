@@ -7,4 +7,5 @@ members = [
     "api",
     "llmhandler",
     "dbmanager",
+    "db",
 ]
