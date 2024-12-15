@@ -3,14 +3,13 @@ use db;
 use diesel::connection::Connection;
 use diesel::pg::PgConnection;
 use diesel_migrations::MigrationHarness;
-use serde::{Deserialize, Serialize};
-use std::env;
-
 use lambda_runtime::{
     run, service_fn,
     tracing::{self},
     Error, LambdaEvent,
 };
+use serde::{Deserialize, Serialize};
+use std::env;
 
 #[derive(Deserialize)]
 struct Request {}
