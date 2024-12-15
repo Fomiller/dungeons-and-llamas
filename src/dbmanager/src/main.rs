@@ -13,9 +13,7 @@ use lambda_runtime::{
 };
 
 #[derive(Deserialize)]
-struct Request {
-    command: String,
-}
+struct Request {}
 
 #[derive(Serialize)]
 struct Response {
@@ -28,7 +26,7 @@ async fn main() -> Result<(), Error> {
     run(service_fn(function_handler)).await
 }
 
-async fn function_handler(event: LambdaEvent<Request>) -> anyhow::Result<Response> {
+async fn function_handler(_event: LambdaEvent<Request>) -> anyhow::Result<Response> {
     let database_url = try_create_database_url()?;
 
     let mut connection = PgConnection::establish(&database_url)

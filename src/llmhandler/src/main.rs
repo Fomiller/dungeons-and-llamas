@@ -1,5 +1,7 @@
-use diesel::debug_query;
+use db::models::*;
+use db::schema::*;
 use diesel::prelude::*;
+use diesel::query_dsl::RunQueryDsl;
 use diesel::Connection;
 use diesel::PgConnection;
 use pgvector::{Vector, VectorExpressionMethods};
@@ -289,27 +291,29 @@ async fn connect_to_database() -> PgConnection {
 async fn write_to_database(
     conn: &mut PgConnection,
     embedding: Vector,
-    user: &str,
-    game: &str,
+    user_id: &str,
+    game_id: &str,
     text: &str,
     r#type: &str,
 ) -> anyhow::Result<Embedding> {
     let new_embedding = NewEmbedding {
         embedding,
-        user_id: user.to_string(),
-        game_id: game.to_string(),
+        user_id: user_id.to_string(),
+        game_id: game_id.to_string(),
         text: text.to_string(),
         r#type: r#type.to_string(),
     };
 
     match diesel::insert_into(embeddings::table)
         .values(&new_embedding)
-        .get_result::<Embedding>(conn)
+        .returning(Embedding::as_returning())
+        .get_result(conn)
     {
         Ok(e) => Ok(e),
         Err(_) => Err(anyhow::anyhow!("Error inserting Embedding")),
     }
 }
+
 async fn similarity_search(
     conn: &mut PgConnection,
     limit: i64,
@@ -322,50 +326,12 @@ async fn similarity_search(
         .filter(embeddings::game_id.eq(game_id))
         .filter(embeddings::r#type.eq("output"))
         .order(embeddings::embedding.l2_distance(embedding))
-        .limit(limit);
+        .limit(limit)
+        .select(Embedding::as_select());
 
     // let debug = debug_query::<diesel::pg::Pg, _>(&query);
     // println!("QUERY: {:?}", debug);
 
-    let neighbors = query.load::<Embedding>(conn);
-
-    match neighbors {
-        Ok(e) => Ok(e),
-        Err(_) => Err(anyhow::anyhow!("Error finding neighbors")),
-    }
-}
-
-#[derive(Queryable, Selectable, Debug, Serialize, Deserialize)]
-#[diesel(table_name = embeddings)]
-pub struct Embedding {
-    pub id: i32,
-    pub embedding: Vector,
-    pub user_id: String,
-    pub game_id: String,
-    pub text: String,
-    pub r#type: String,
-}
-
-#[derive(Insertable)]
-#[diesel(table_name = embeddings)]
-pub struct NewEmbedding {
-    pub embedding: Vector,
-    pub user_id: String,
-    pub game_id: String,
-    pub text: String,
-    pub r#type: String,
-}
-
-diesel::table! {
-    use diesel::sql_types::*;
-    use pgvector::sql_types::*;
-
-    embeddings (id) {
-        id -> Int4,
-        embedding -> Vector,
-        user_id -> Text,
-        game_id -> Text,
-        text -> Text,
-        r#type -> Text,
-    }
+    let neighbors = query.load(conn).expect("Error finding neighbors");
+    Ok(neighbors)
 }
