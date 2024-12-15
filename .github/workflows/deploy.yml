@@ -12,6 +12,7 @@ on:
       - '.github/**'
       - 'infra/**'
       - 'src/**'
+      - 'just/**'
       - 'justfile'
    
 jobs:

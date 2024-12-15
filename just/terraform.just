@@ -1,6 +1,3 @@
-infraDir := "infra/modules/aws"
-env := 'dev'
-
 clean:
     find . -name "_.*.gen.tf" -type f | xargs -r rm -rv
     find . -name ".terraform.lock.hcl" -type f | xargs -r rm -rv
