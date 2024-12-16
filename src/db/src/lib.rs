@@ -68,3 +68,13 @@ pub async fn try_similarity_search(
     let neighbors = query.load(conn).expect("Error finding neighbors");
     Ok(neighbors)
 }
+
+fn get_context_from_neighbors(neighbors: Vec<Embedding>) -> Vec<String> {
+    let contexts = neighbors
+        .into_iter()
+        .map(|e| format!("\n{}\n", e.text))
+        .collect::<Vec<String>>();
+
+    tracing::debug!("Embedding Contexts: {:?}", contexts);
+    contexts
+}

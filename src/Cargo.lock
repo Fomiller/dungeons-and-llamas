@@ -180,9 +180,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-bedrockruntime"
-version = "1.63.0"
+version = "1.64.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31f8f293d588205fdee53e49d8956d003d79d1175ebeec59ea72a4ba139ce987"
+checksum = "37ed488cf4e3f3acd56ead725dc01a60afcad0161b46c692aa605d63c679e7d0"
 dependencies = [
  "aws-credential-types",
  "aws-runtime",
@@ -2060,6 +2060,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
 
 [[package]]
+name = "llm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-sdk-bedrockruntime",
+ "serde_json",
+]
+
+[[package]]
 name = "llm-handler"
 version = "0.1.0"
 dependencies = [
@@ -2069,6 +2078,7 @@ dependencies = [
  "db",
  "diesel",
  "lambda_runtime",
+ "llm",
  "pgvector",
  "serde",
  "serde_json",
