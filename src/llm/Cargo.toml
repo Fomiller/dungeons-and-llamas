@@ -5,5 +5,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.94"
-aws-sdk-bedrockruntime = { version = "1.64.0", features = ["behavior-version-latest"] }
+aws-sdk-bedrockruntime = { version = "1.64.0", features = [
+    "behavior-version-latest",
+] }
+pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
 serde_json = "1.0.133"

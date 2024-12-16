@@ -2065,6 +2065,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "aws-sdk-bedrockruntime",
+ "pgvector",
  "serde_json",
 ]
 
@@ -2076,12 +2077,9 @@ dependencies = [
  "aws-config",
  "aws-sdk-bedrockruntime",
  "db",
- "diesel",
  "lambda_runtime",
  "llm",
- "pgvector",
  "serde",
- "serde_json",
  "tokio",
 ]
 

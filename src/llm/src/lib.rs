@@ -3,6 +3,7 @@ use aws_sdk_bedrockruntime::{
     operation::converse::ConverseOutput,
     types::{Message, SystemContentBlock},
 };
+use pgvector::Vector;
 use serde_json::{json, Value};
 
 pub struct Llm {
@@ -18,26 +19,27 @@ impl Llm {
         &self,
         model_id: &str,
         system: String,
-        message: Message,
+        messages: Vec<Message>,
     ) -> anyhow::Result<ConverseOutput> {
         let response = self
             .client
             .converse()
             .model_id(model_id)
             .system(SystemContentBlock::Text(system))
-            .messages(message)
+            .set_messages(Some(messages))
             .send()
             .await?;
 
         Ok(response)
     }
 
-    pub async fn try_create_embed(
+    pub async fn try_create_vector(
         &self,
         input_text: &str,
         dimensions: i64,
         normalize: bool,
-    ) -> anyhow::Result<Vec<f32>> {
+    ) -> anyhow::Result<Vector> {
+        //Todo create a struct for this
         let body = json!({
             "inputText": input_text,
             "dimensions": dimensions,
@@ -54,7 +56,7 @@ impl Llm {
             .send()
             .await;
 
-        let embedding_prompt = match res {
+        match res {
             Ok(output) => {
                 // Convert response bytes into a String
                 let output_string = String::from_utf8(output.body.into_inner())
@@ -66,16 +68,13 @@ impl Llm {
 
                 // Extract relevant fields from the JSON response
                 let embedding = json_response.get("embedding").unwrap();
-                let x = Self::value_to_f32_slice(embedding);
-                Ok(x)
+                Ok(Vector::from(Self::value_to_f32_slice(embedding)?))
             }
             Err(e) => {
                 println!("{:?}", e.as_service_error());
                 Err(anyhow::anyhow!("{:?}", e.as_service_error()))
             }
-        };
-
-        embedding_prompt.unwrap()
+        }
     }
 
     #[allow(dead_code)]

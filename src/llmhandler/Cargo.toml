@@ -17,8 +17,6 @@ edition = "2021"
 [dependencies]
 db = { path = "../db/" }
 llm = { path = "../llm/" }
-
-serde_json = "1"
 lambda_runtime = "0.13.0"
 tokio = { version = "1", features = ["macros"] }
 aws-config = "1.5.10"
@@ -26,6 +24,4 @@ serde = { version = "1.0.215", features = ["derive"] }
 aws-sdk-bedrockruntime = { version = "1.61.0", features = [
     "behavior-version-latest",
 ] }
-diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
-pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
 anyhow = "1.0.94"
