@@ -11,7 +11,7 @@ pub struct Embedding {
     pub user_id: String,
     pub game_id: String,
     pub text: String,
-    pub r#type: String,
+    pub type_: String,
 }
 
 #[derive(Insertable)]
@@ -22,5 +22,5 @@ pub struct NewEmbedding {
     pub user_id: String,
     pub game_id: String,
     pub text: String,
-    pub r#type: String,
+    pub type_: String,
 }

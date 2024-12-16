@@ -294,14 +294,14 @@ async fn write_to_database(
     user_id: &str,
     game_id: &str,
     text: &str,
-    r#type: &str,
+    type_: &str,
 ) -> anyhow::Result<Embedding> {
     let new_embedding = NewEmbedding {
         embedding,
         user_id: user_id.to_string(),
         game_id: game_id.to_string(),
         text: text.to_string(),
-        r#type: r#type.to_string(),
+        type_: type_.to_string(),
     };
 
     match diesel::insert_into(embeddings::table)
@@ -324,7 +324,7 @@ async fn similarity_search(
     let query = embeddings::table
         .filter(embeddings::user_id.eq(user_id))
         .filter(embeddings::game_id.eq(game_id))
-        .filter(embeddings::r#type.eq("output"))
+        .filter(embeddings::type_.eq("output"))
         .order(embeddings::embedding.l2_distance(embedding))
         .limit(limit)
         .select(Embedding::as_select());

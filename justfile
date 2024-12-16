@@ -62,3 +62,19 @@ ssh-tunnel:
 kill-ssh:
     kill $(ps aux | grep ssh | grep -v grep | awk '{print $2}')
 
+db-build:
+    docker build -t postgres-dnl .
+    
+db-up:
+    docker run \
+    --rm \
+    --name postgres-{{project}} \
+    -e POSTGRES_USER=dev \
+    -e POSTGRES_PASSWORD=dev123 \
+    -e POSTGRES_DB=dungeons_and_llamas \
+    -p 5432:5432 \
+    -d postgres-dnl
+    
+db-down:
+    docker stop postgres-{{project}}
+
