@@ -9,7 +9,7 @@ diesel::table! {
         user_id -> Text,
         game_id -> Text,
         text -> Text,
-        embedding -> Vector,
+        vector -> Vector,
         #[sql_name = "type"]
         type_ -> Text,
     }
