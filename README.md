@@ -1,5 +1,5 @@
 <p align="center">
-<img src="src/data/DNL_README.jpg" alt="Dungeons and Llamas" width="600"/>
+<img src="src/_data/DNL_README.jpg" alt="Dungeons and Llamas" width="600"/>
 </p>
 
 

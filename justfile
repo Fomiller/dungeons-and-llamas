@@ -47,7 +47,7 @@ deploy-lambdas: build-lambdas
     --terragrunt-working-dir {{infraDir}}/lambda
 
 update-commands:
-    aws s3 cp src/data/commands.json s3://fomiller-dev-dungeons-and-llamas/data/commands.json
+    aws s3 cp src/_data/commands.json s3://fomiller-dev-dungeons-and-llamas/data/commands.json
 
 bacon:
     bacon --project src/
