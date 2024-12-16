@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Embedding {
     pub id: i32,
-    pub embedding: Vector,
+    pub vector: Vector,
     pub user_id: String,
     pub game_id: String,
     pub text: String,
@@ -17,10 +17,10 @@ pub struct Embedding {
 #[derive(Insertable)]
 #[diesel(table_name = crate::schema::embeddings)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewEmbedding {
-    pub embedding: Vector,
-    pub user_id: String,
-    pub game_id: String,
+pub struct NewEmbedding<'a> {
+    pub vector: Vector,
+    pub user_id: &'a str,
+    pub game_id: &'a str,
     pub text: String,
     pub type_: String,
 }
