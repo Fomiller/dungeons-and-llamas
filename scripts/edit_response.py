@@ -6,11 +6,11 @@ APP_ID = os.environ["DISCORD_APPLICATION_ID"]
 BOT_TOKEN = os.environ["DISCORD_TOKEN"]
 CHANNEL_ID = "1293632547586052168"
 INTERACTION = "1294442203418066986"
-MSG_ID = "1294448188408991806"
+MSG_ID = "1318408585688125500"
 
 # the interaction token has to be the token of the message_id that you want to edit
 # store this token when a message that we know we will want to edit is handled and reference it later
-INTERACTION_TOKEN = "aW50ZXJhY3Rpb246MTI5NDQ0ODE4NTU2NTI1MzY2MjpMRkluQmJ6Z2xISXdEV0c0aHlhSkdSbUpGbmw5a3c0OWxmR01pa0llcU1PTU5MZEpiUkxVMGJPWlNEWklxcm5BRk1OQnRMOElqd2dhcFNPZTNrYUlpS2w0cWVNOEFZUEl1cWY1M1BmdUFiRXV0Rm1Dcm44OFV1ZWk4TFJHbGd2NQ"
+INTERACTION_TOKEN = "aW50ZXJhY3Rpb246MTMxODQwODU4MTk4MDA5NDQ5NDo4ZW5QazBSZGdnc3JuV0FRS1RZN3FQMkV6SUJCbVV5SVc4WU9iOWlteDFFaVFMTjhqTWl2N2VzRTJqQ1VjNVFFb3JvSXl2THFrS25raDZKSTQ0aHdISDlQWGhPRVRsVHlxU2xEUXo3bXJqMWNHZk1wS0paTEpSbVZwVG5kUHhoWA"
 
 # see documentation
 # https://discord.com/developers/docs/interactions/application-commands#endpoints

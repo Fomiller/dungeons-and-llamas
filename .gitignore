@@ -41,3 +41,6 @@ schema.csv
 # sqlite
 *.db
 *.sqlite
+
+# python
+.venv
