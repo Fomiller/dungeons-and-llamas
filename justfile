@@ -78,3 +78,5 @@ db-up:
 db-down:
     docker stop postgres-{{project}}
 
+activate:
+    source .venv/bin/activate
