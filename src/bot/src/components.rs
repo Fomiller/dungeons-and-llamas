@@ -1,4 +1,5 @@
 use crate::commands::*;
+use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;
 use std::str::FromStr;
@@ -6,7 +7,7 @@ use strum::EnumString;
 
 pub async fn try_handle_component_interaction(
     interaction: ComponentInteraction,
-) -> anyhow::Result<CreateInteractionResponse> {
+) -> anyhow::Result<Option<CreateInteractionResponse>> {
     // custom_id's need to become Enums
     match CustomId::from_str(&interaction.data.custom_id)? {
         CustomId::BackGroundMenu(cmd) => cmd.execute(interaction),
@@ -41,13 +42,16 @@ impl ClassMenuCmd {
     pub async fn execute(
         &self,
         interaction: ComponentInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        info!("Class CMD");
         EditCmd::new().execute(interaction).await?;
+        let duration = std::time::Duration::from_secs(2);
+        std::thread::sleep(duration);
         let message = CreateInteractionResponseMessage::new()
             .embeds(vec![])
-            .content("EDITED")
+            .content("LLM RESPONSE")
             .components(vec![]);
-        Ok(CreateInteractionResponse::UpdateMessage(message))
+        Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
     }
 }
 
@@ -55,13 +59,13 @@ impl RaceMenuCmd {
     pub fn execute(
         &self,
         interaction: ComponentInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let content = format!(
             "custom_id: {:?}, kind: {:?}",
             interaction.data.custom_id, interaction.data.kind
         );
         let message = CreateInteractionResponseMessage::new().content(content);
-        Ok(CreateInteractionResponse::UpdateMessage(message))
+        Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
     }
 }
 
@@ -69,12 +73,12 @@ impl BackGroundMenuCmd {
     pub fn execute(
         &self,
         interaction: ComponentInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let content = format!(
             "custom_id: {:?}, kind: {:?}",
             interaction.data.custom_id, interaction.data.kind
         );
         let message = CreateInteractionResponseMessage::new().content(content);
-        Ok(CreateInteractionResponse::UpdateMessage(message))
+        Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
     }
 }

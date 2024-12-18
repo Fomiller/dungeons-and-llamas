@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use dice::Dice;
 use game::client::Client;
 use game::state::buildable::SortKeyBuildable;
@@ -7,6 +6,7 @@ use game::state::message::MessageSortKey;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
 use serenity::builder::*;
+use serenity::http::Http;
 use serenity::model::application::*;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -18,13 +18,13 @@ lazy_static::lazy_static! {
 
 pub async fn try_handle_command_interaction(
     interaction: CommandInteraction,
-) -> anyhow::Result<CreateInteractionResponse> {
+) -> anyhow::Result<Option<CreateInteractionResponse>> {
     info!("NAME: {:?}", &interaction.data.name);
 
     let command_name = SlashCommands::from_str(&interaction.data.name).unwrap();
     info!("COMMAND NAME: {:?}", command_name);
 
-    match command_name {
+    let res = match command_name {
         SlashCommands::Class(cmd) => cmd.execute(interaction),
         SlashCommands::Roll(cmd) => cmd.execute(interaction),
         SlashCommands::NewGame(cmd) => cmd.execute(interaction).await,
@@ -33,7 +33,10 @@ pub async fn try_handle_command_interaction(
         SlashCommands::Buttons(cmd) => cmd.execute(),
         SlashCommands::Menu(cmd) => cmd.execute(),
         SlashCommands::Text(cmd) => cmd.execute(interaction).await,
-    }
+        SlashCommands::LLM(cmd) => cmd.execute(interaction).await,
+    }?;
+
+    Ok(res)
 }
 
 #[derive(Debug, PartialEq, Default)]
@@ -66,6 +69,9 @@ pub struct EmbedCmd;
 #[derive(Debug, PartialEq, Default)]
 pub struct EditCmd;
 
+#[derive(Debug, PartialEq, Default)]
+pub struct LLMCmd;
+
 #[derive(Debug, PartialEq, EnumString)]
 pub enum SlashCommands {
     #[strum(ascii_case_insensitive)]
@@ -84,10 +90,15 @@ pub enum SlashCommands {
     Menu(MenuCmd),
     #[strum(serialize = "text", ascii_case_insensitive)]
     Text(TextCmd),
+    #[strum(serialize = "llm", ascii_case_insensitive)]
+    LLM(LLMCmd),
 }
 
 impl RollCmd {
-    pub fn execute(&self, cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+    pub fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let count = Self::get_count(&cmd);
 
         let sides = Self::get_sides(&cmd);
@@ -116,7 +127,7 @@ impl RollCmd {
 
         let message = CreateInteractionResponseMessage::new().content(content);
 
-        Ok(CreateInteractionResponse::Message(message))
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 
     fn create_roll_text(dice_values: Vec<usize>, modifier: usize) -> String {
@@ -179,7 +190,7 @@ impl NewGameCmd {
     pub async fn execute(
         &self,
         cmd: CommandInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let user_id = cmd.user.id.to_string();
         let client = reqwest::Client::new();
 
@@ -191,9 +202,9 @@ impl NewGameCmd {
         match client.post(url).json(&json).send().await {
             Ok(_) => {
                 let content = format!("New game created.");
-                Ok(format_interaction_response(content))
+                Ok(Some(format_interaction_response(content)))
             }
-            Err(e) => Err(anyhow!(e)),
+            Err(e) => Err(anyhow::anyhow!(e)),
         }
     }
 }
@@ -202,32 +213,35 @@ impl ResumeGameCmd {
     pub async fn execute(
         &self,
         cmd: CommandInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
         let result = client.try_get_game_state(&user_id).await?;
 
         if let Some(state) = result {
             let content = format!("{:?}", state);
-            Ok(format_interaction_response(content))
+            Ok(Some(format_interaction_response(content)))
         } else {
-            Ok(format_interaction_response(
+            Ok(Some(format_interaction_response(
                 "No games available to resume.\nUse '/new-game' to start a new game.".to_string(),
-            ))
+            )))
         }
     }
 }
 
 impl ListGamesCmd {
-    pub fn execute(&self) -> anyhow::Result<CreateInteractionResponse> {
+    pub fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let content = format!("No games found.");
 
-        Ok(format_interaction_response(content))
+        Ok(Some(format_interaction_response(content)))
     }
 }
 
 impl ClassCmd {
-    pub fn execute(&self, cmd: CommandInteraction) -> anyhow::Result<CreateInteractionResponse> {
+    pub fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let class = &cmd
             .data
             .options
@@ -237,7 +251,7 @@ impl ClassCmd {
 
         let content = format!("You chose the {} class", class.as_str().unwrap());
 
-        Ok(format_interaction_response(content))
+        Ok(Some(format_interaction_response(content)))
     }
 }
 
@@ -248,7 +262,7 @@ pub fn format_interaction_response(content: String) -> CreateInteractionResponse
 }
 
 impl ButtonsCmd {
-    pub fn execute(&self) -> anyhow::Result<CreateInteractionResponse> {
+    pub fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let content = format!("My Button!");
         let button = CreateButton::new("my_button")
             .style(ButtonStyle::Primary)
@@ -259,12 +273,12 @@ impl ButtonsCmd {
             .content(content)
             .button(button);
 
-        Ok(CreateInteractionResponse::Message(message))
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }
 
 impl MenuCmd {
-    pub fn execute(&self) -> anyhow::Result<CreateInteractionResponse> {
+    pub fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let content = format!("My Menu!");
         let options = vec![
             CreateSelectMenuOption::new("Pizza", "pizza"),
@@ -280,7 +294,7 @@ impl MenuCmd {
             .content(content)
             .components(components);
 
-        Ok(CreateInteractionResponse::Message(message))
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }
 
@@ -288,7 +302,7 @@ impl TextCmd {
     pub async fn execute(
         &self,
         cmd: CommandInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let token = cmd.token;
 
         let client = Client::new().await;
@@ -387,8 +401,7 @@ impl TextCmd {
         // debug!("{:?}", modal);
 
         debug!("EMBED {:?}", message);
-        Ok(CreateInteractionResponse::Message(message))
-        // Ok(CreateInteractionResponse::Modal(modal))
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }
 
@@ -400,7 +413,7 @@ impl EditCmd {
     pub async fn execute(
         &self,
         cmd: ComponentInteraction,
-    ) -> anyhow::Result<CreateInteractionResponse> {
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let client = Client::new().await;
         let user_id = cmd.user.id.to_string();
 
@@ -430,7 +443,7 @@ impl EditCmd {
         let client = reqwest::Client::new();
 
         let mut map = HashMap::new();
-        map.insert("content", "EDITED");
+        map.insert("content", "Generating...");
         let res = client
             .patch(format!(
                 "https://discord.com/api/v10/webhooks/{}/{}/messages/{}",
@@ -445,6 +458,44 @@ impl EditCmd {
             .await?;
         info!("RES: {:?}", res);
 
-        Ok(format_interaction_response("".to_string()))
+        Ok(Some(format_interaction_response("".to_string())))
+    }
+}
+
+impl LLMCmd {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub async fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let token =
+            std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
+
+        let http = Http::new(&token);
+        http.set_application_id(cmd.application_id);
+
+        // let webhook_url =
+        //     "https://discord.com/api/webhooks/1318753739019911208/L4SrqwjS7L_3yGYD_IPOPAgZo9I3QXY7Lw0gpolefjA_UvNTj2bYjGRsIvPW0Sx49fCK";
+        //
+        // let res = cmd
+        //     .channel_id
+        //     .create_webhook(Http::new(&token), CreateWebhook::new("DNL-WEBHOOK"))
+        //     .await?;
+        // info!("{:?}", res);
+
+        let res = cmd.defer(&http).await?;
+        info!("DEFER: {:?}", res);
+
+        let duration = std::time::Duration::from_secs(2);
+        std::thread::sleep(duration);
+
+        let m = CreateInteractionResponseFollowup::new().content("FOLLOWING");
+        let res = cmd.create_followup(&http, m).await;
+        info!("FOLLOW: {:?}", res);
+
+        Ok(None)
     }
 }

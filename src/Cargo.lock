@@ -1150,6 +1150,7 @@ dependencies = [
  "lambda_http",
  "lazy_static",
  "reqwest 0.12.9",
+ "serde",
  "serde_json",
  "serenity",
  "strum",

@@ -29,27 +29,35 @@ async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     info!("MSG TYPE: {:?}", interaction_type.kind());
 
     let response = match interaction_type {
-        Interaction::Ping(_) => CreateInteractionResponse::Pong,
+        Interaction::Ping(_) => Some(CreateInteractionResponse::Pong),
         Interaction::Command(interaction) => try_handle_command_interaction(interaction).await?,
-        Interaction::Modal(interaction) => try_handle_modal_interaction(interaction),
+        Interaction::Modal(interaction) => try_handle_modal_interaction(interaction)?,
         Interaction::Component(interaction) => {
             try_handle_component_interaction(interaction).await?
         }
-        _ => commands::format_interaction_response(format!("Command not found.")),
+        _ => Some(commands::format_interaction_response(format!(
+            "Command not found."
+        ))),
     };
 
-    debug!("RES MESSAGE: {:?}", response);
+    info!("RES MESSAGE: {:?}", response);
     debug!("SERIALIZE {}", serde_json::to_string(&response)?);
 
-    let resp: Response<Body> = Response::builder()
-        .status(200)
-        .header("Content-Type", "application/json")
-        .body(Body::Text(serde_json::to_string(&response)?))
-        .unwrap();
+    if let Some(res) = response {
+        let body = serde_json::to_string(&res)?;
+        let resp: Response<Body> = Response::builder()
+            .status(200)
+            .header("Content-Type", "application/json")
+            .body(Body::Text(body))
+            .unwrap();
 
-    debug!("RESPONSE: {:?}", resp);
-
-    Ok(resp)
+        info!("RESPONSE: {:?}", resp);
+        Ok(resp)
+    } else {
+        let resp: Response<Body> = Response::builder().status(204).body(Body::Empty).unwrap();
+        info!("RESPONSE: {:?}", resp);
+        Ok(resp)
+    }
 }
 
 #[tokio::main]
