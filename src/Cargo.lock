@@ -1196,6 +1196,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dnl_client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "db",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "dsl_auto_type"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

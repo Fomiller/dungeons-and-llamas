@@ -477,15 +477,6 @@ impl LLMCmd {
         let http = Http::new(&token);
         http.set_application_id(cmd.application_id);
 
-        // let webhook_url =
-        //     "https://discord.com/api/webhooks/1318753739019911208/L4SrqwjS7L_3yGYD_IPOPAgZo9I3QXY7Lw0gpolefjA_UvNTj2bYjGRsIvPW0Sx49fCK";
-        //
-        // let res = cmd
-        //     .channel_id
-        //     .create_webhook(Http::new(&token), CreateWebhook::new("DNL-WEBHOOK"))
-        //     .await?;
-        // info!("{:?}", res);
-
         let res = cmd.defer(&http).await?;
         info!("DEFER: {:?}", res);
 

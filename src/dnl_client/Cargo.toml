@@ -1,0 +1,18 @@
+[package]
+name = "dnl_client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+db = { path = "../db/" }
+aws-config = "1.5.10"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_json = "1.0.132"
+reqwest = { version = "0.12.8", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
+aws-sdk-bedrockruntime = { version = "1.61.0", features = [
+    "behavior-version-latest",
+] }
+anyhow = "1.0.94"
