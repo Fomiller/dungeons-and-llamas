@@ -2082,6 +2082,7 @@ dependencies = [
  "aws-sdk-bedrockruntime",
  "db",
  "diesel",
+ "lambda_runtime",
  "pgvector",
  "serde_json",
 ]

@@ -21,6 +21,6 @@ pub struct NewEmbedding<'a> {
     pub vector: Vector,
     pub user_id: &'a str,
     pub game_id: &'a str,
-    pub text: String,
+    pub text: &'a str,
     pub type_: String,
 }

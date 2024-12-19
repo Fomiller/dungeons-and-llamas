@@ -9,6 +9,23 @@ pub struct EmbeddingConfig {
     pub normalize: bool,
 }
 
+impl EmbeddingConfig {
+    pub fn default() -> Self {
+        Self {
+            model: "amazon.titan-embed-text-v2:0".to_string(),
+            dimension: 256,
+            normalize: true,
+        }
+    }
+    pub fn new(model: String, dimension: u64, normalize: bool) -> Self {
+        Self {
+            model,
+            dimension,
+            normalize,
+        }
+    }
+}
+
 pub trait ToF32Slice {
     fn value_to_f32_slice(&self) -> anyhow::Result<Vec<f32>>;
 }

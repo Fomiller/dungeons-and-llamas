@@ -11,33 +11,41 @@ pub struct LlmHandler {
     pub model: String,
     pub system: String,
     pub messages: Vec<Message>,
+    pub instructions: String,
+    pub output: Option<ConverseOutput>,
 }
 
 impl LlmHandler {
-    pub fn new(client: BedrockClient, model: String, system: String) -> Self {
+    pub fn new(client: BedrockClient, model: String, system: String, instructions: String) -> Self {
         Self {
             client,
             model,
             system,
             messages: vec![],
+            instructions,
+            output: None,
         }
     }
 
-    pub async fn converse(self) -> anyhow::Result<ConverseOutput> {
+    pub async fn converse(&mut self) -> anyhow::Result<()> {
         let response = self
             .client
             .converse()
-            .model_id(self.model)
-            .system(SystemContentBlock::Text(self.system))
-            .set_messages(Some(self.messages))
+            .model_id(&self.model)
+            .system(SystemContentBlock::Text(self.system.clone()))
+            .set_messages(Some(self.messages.clone()))
             .send()
             .await?;
 
-        Ok(response)
+        self.output = Some(response);
+        Ok(())
     }
 
-    pub fn get_converse_output_text(output: ConverseOutput) -> anyhow::Result<String> {
-        let text = output
+    pub fn get_converse_output_text(&self) -> anyhow::Result<String> {
+        let text = self
+            .output
+            .clone()
+            .expect("No ouput available")
             .output()
             .ok_or_else(|| anyhow::anyhow!("no output"))?
             .as_message()
@@ -51,14 +59,14 @@ impl LlmHandler {
         Ok(text)
     }
 
-    pub fn create_input(contexts: Vec<String>, instructions: String, prompt: String) -> String {
+    pub fn create_input(&mut self, contexts: Vec<String>, prompt: &str) -> String {
         let mut input_context = String::new();
         for context in contexts {
             input_context.push_str(&context)
         }
         let input = format!(
             "{}\n<Context>{}</Context>\n<Prompt>\n{}\n</Prompt>",
-            instructions, input_context, prompt
+            self.instructions, input_context, prompt
         );
 
         input
