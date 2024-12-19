@@ -1150,7 +1150,6 @@ dependencies = [
  "lambda_http",
  "lazy_static",
  "reqwest 0.12.9",
- "serde",
  "serde_json",
  "serenity",
  "strum",
@@ -1200,12 +1199,8 @@ name = "dnl_client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "aws-config",
- "aws-sdk-bedrockruntime",
- "db",
  "reqwest 0.12.9",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -2081,7 +2076,6 @@ dependencies = [
  "aws-config",
  "aws-sdk-bedrockruntime",
  "db",
- "diesel",
  "lambda_runtime",
  "pgvector",
  "serde_json",
@@ -2091,10 +2085,6 @@ dependencies = [
 name = "llm-handler"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "aws-config",
- "aws-sdk-bedrockruntime",
- "db",
  "lambda_runtime",
  "llm",
  "serde",

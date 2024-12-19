@@ -14,4 +14,3 @@ aws-sdk-bedrockruntime = { version = "1.64.0", features = [
 lambda_runtime = "0.13.0"
 pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
 serde_json = "1.0.133"
-diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }

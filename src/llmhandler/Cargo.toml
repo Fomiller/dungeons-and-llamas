@@ -15,13 +15,7 @@ edition = "2021"
 # and it will keep the alphabetic ordering for you.
 
 [dependencies]
-db = { path = "../db/" }
 llm = { path = "../llm/" }
 lambda_runtime = "0.13.0"
 tokio = { version = "1", features = ["macros"] }
-aws-config = "1.5.10"
 serde = { version = "1.0.215", features = ["derive"] }
-aws-sdk-bedrockruntime = { version = "1.61.0", features = [
-    "behavior-version-latest",
-] }
-anyhow = "1.0.94"

@@ -29,4 +29,3 @@ serenity = { version = "0.12.2", features = ["http"] }
 strum = { version = "0.26.3", features = ["derive"] }
 tokio = { version = "1", features = ["macros"] }
 reqwest = { version = "0.12.8", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1.0.216", features = ["derive"] }
