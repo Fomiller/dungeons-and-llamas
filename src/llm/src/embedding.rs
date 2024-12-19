@@ -1,5 +1,6 @@
+use aws_sdk_bedrockruntime::Client as BedrockClient;
 use pgvector::Vector;
-use serde_json::Value;
+use serde_json::{json, Value};
 
 // this could probably have a builder method with a default config if values missing
 #[derive(Debug, Clone)]
@@ -7,6 +8,59 @@ pub struct EmbeddingConfig {
     pub model: String,
     pub dimension: u64,
     pub normalize: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct EmbeddingEngine {
+    pub client: aws_sdk_bedrockruntime::Client,
+    pub config: EmbeddingConfig,
+}
+
+impl EmbeddingEngine {
+    pub async fn new(config: EmbeddingConfig) -> Self {
+        let aws_config = aws_config::load_from_env().await;
+        let client = BedrockClient::new(&aws_config);
+        Self { client, config }
+    }
+
+    pub async fn try_create_vector(&mut self, input_text: &str) -> anyhow::Result<Vector> {
+        //Todo create a struct for this
+        let body = json!({
+            "inputText": input_text,
+            "dimensions": &self.config.dimension,
+            "normalize": &self.config.normalize
+        });
+
+        let res = self
+            .client
+            .invoke_model()
+            .model_id(&self.config.model)
+            .body(body.to_string().into_bytes().into())
+            .accept("application/json")
+            .content_type("application/json")
+            .send()
+            .await;
+
+        match res {
+            Ok(output) => {
+                // Convert response bytes into a String
+                let output_string = String::from_utf8(output.body.into_inner())
+                    .expect("Response body is not valid UTF-8");
+
+                // Parse JSON string into a serde_json::Value
+                let json_response: serde_json::Value =
+                    serde_json::from_str(&output_string).expect("Response body is not valid JSON");
+
+                // Extract relevant fields from the JSON response
+                let embedding = json_response.get("embedding").unwrap();
+                Ok(embedding.to_vector()?)
+            }
+            Err(e) => {
+                println!("{:?}", e.as_service_error());
+                Err(anyhow::anyhow!("{:?}", e.as_service_error()))
+            }
+        }
+    }
 }
 
 impl EmbeddingConfig {

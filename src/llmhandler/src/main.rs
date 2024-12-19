@@ -1,7 +1,6 @@
-use llm::embedding::EmbeddingConfig;
+use llm::embedding::{EmbeddingConfig, EmbeddingEngine};
 use llm::llm::*;
 
-use aws_sdk_bedrockruntime::Client as BedrockClient;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
 use llm::rag::RagWorkflow;
 use serde::{Deserialize, Serialize};
@@ -32,18 +31,15 @@ async fn main() -> Result<(), Error> {
 async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse, Error> {
     let (payload, _context) = event.into_parts();
 
-    let config = aws_config::load_from_env().await;
-    let bedrock_client = BedrockClient::new(&config);
-
     let model_id = env::var("MODEL_ID")?;
 
     let system = "You are a Dungeons and Dragons Dungeon Master.".to_string();
 
-    let embedding_config = EmbeddingConfig::default();
+    let embed = EmbeddingEngine::new(EmbeddingConfig::default()).await;
 
-    let llm = LlmHandler::new(bedrock_client, model_id, system, payload.instructions);
+    let llm = LlmHandler::new(model_id, system, payload.instructions).await;
 
-    let mut rag = RagWorkflow::new(llm, embedding_config).await;
+    let mut rag = RagWorkflow::new(llm, embed).await;
 
     let res = rag
         .execute(&payload.prompt, &payload.user_id, &payload.game_id)
