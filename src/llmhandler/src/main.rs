@@ -1,11 +1,13 @@
 use db::models::*;
 use db::*;
+use llm::embedding::EmbeddingConfig;
 use llm::llm::*;
 
 use anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
 use aws_sdk_bedrockruntime::Client as BedrockClient;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
+use llm::rag::RagWorkflow;
 use serde::{Deserialize, Serialize};
 use std::env;
 
@@ -39,18 +41,26 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
     let bedrock_client = BedrockClient::new(&config);
 
     let model_id = env::var("MODEL_ID")?;
+
     let dimension = 256;
-    let model = LlmHandler::new(bedrock_client);
 
-    let mut conn = db::connect_to_database().await;
+    let system = "You are a Dungeons and Dragons Dungeon Master.".to_string();
 
-    let vector_context = model
-        .try_create_vector(&payload.context, dimension, true)
-        .await?;
+    let embedding_model = "amazon.titan-embed-text-v2:0".to_string();
 
-    let vector_prompt = model
-        .try_create_vector(&payload.prompt, dimension, true)
-        .await?;
+    let embedding_config = EmbeddingConfig {
+        model: embedding_model,
+        dimension,
+        normalize: true,
+    };
+
+    let llm = LlmHandler::new(bedrock_client, model_id, system);
+
+    let mut rag = RagWorkflow::new(llm, embedding_config).await;
+
+    let vector_context = rag.try_create_vector(&payload.context).await?;
+
+    let vector_prompt = rag.try_create_vector(&payload.prompt).await?;
 
     // create embedding for context
     let ctx_embed = NewEmbedding {
@@ -60,7 +70,8 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
         text: payload.context.to_string(),
         type_: "output".to_string(),
     };
-    try_insert_new_embedding(&mut conn, &ctx_embed).await?;
+
+    rag.database.try_insert_new_embedding(&ctx_embed).await?;
 
     // create embedding for prompt
     let prompt_embed = NewEmbedding {
@@ -70,33 +81,33 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
         text: payload.prompt.to_string(),
         type_: "prompt".to_string(),
     };
-    try_insert_new_embedding(&mut conn, &prompt_embed).await?;
 
-    let neighbors = db::try_similarity_search(
-        &mut conn,
-        5,
-        prompt_embed.vector,
-        prompt_embed.user_id,
-        prompt_embed.game_id,
-        false,
-    )
-    .await?;
+    rag.database.try_insert_new_embedding(&prompt_embed).await?;
+
+    let neighbors = rag
+        .database
+        .try_similarity_search(
+            5,
+            prompt_embed.vector,
+            prompt_embed.user_id,
+            prompt_embed.game_id,
+            false,
+        )
+        .await?;
     tracing::info!("Neighbors: {:?}", neighbors);
 
-    let contexts = db::get_context_from_neighbors(neighbors);
+    let contexts = VectorDatabase::get_context_from_neighbors(neighbors);
     tracing::debug!("Embedding Contexts: {:?}", contexts);
 
     let input = LlmHandler::create_input(contexts, payload.instructions, payload.prompt);
     tracing::debug!("INPUT: {}", input);
 
-    let messages = vec![Message::builder()
+    rag.llm.messages = vec![Message::builder()
         .role(ConversationRole::User)
         .content(ContentBlock::Text(input.to_string()))
         .build()?];
 
-    let system = "You are a Dungeons and Dragons Dungeon Master.".to_string();
-
-    let response = model.converse(&model_id, system, messages).await;
+    let response = rag.llm.converse().await;
 
     let res = match response {
         Ok(output) => Ok(LlmHandler::get_converse_output_text(output)?),

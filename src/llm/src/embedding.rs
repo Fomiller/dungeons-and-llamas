@@ -1,6 +1,14 @@
 use pgvector::Vector;
 use serde_json::Value;
 
+// this could probably have a builder method with a default config if values missing
+#[derive(Debug, Clone)]
+pub struct EmbeddingConfig {
+    pub model: String,
+    pub dimension: u64,
+    pub normalize: bool,
+}
+
 pub trait ToF32Slice {
     fn value_to_f32_slice(&self) -> anyhow::Result<Vec<f32>>;
 }
