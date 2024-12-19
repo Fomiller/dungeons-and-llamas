@@ -1,3 +1,4 @@
+use crate::embedding::ToVector;
 use anyhow;
 use aws_sdk_bedrockruntime::{
     operation::converse::ConverseOutput,
@@ -5,7 +6,7 @@ use aws_sdk_bedrockruntime::{
 };
 
 use pgvector::Vector;
-use serde_json::{json, Value};
+use serde_json::json;
 
 pub struct LlmHandler {
     pub client: aws_sdk_bedrockruntime::Client,
@@ -78,25 +79,6 @@ impl LlmHandler {
         }
     }
 
-    #[allow(dead_code)]
-    fn value_to_f32_slice(value: &Value) -> anyhow::Result<Vec<f32>> {
-        if let Value::Array(array) = value {
-            // Try to parse each element as f32
-            let result: Result<Vec<f32>, _> = array
-                .iter()
-                .map(|v| {
-                    v.as_f64()
-                        .ok_or_else(|| anyhow::anyhow!("Value is not a valid number"))
-                })
-                .map(|num| num.and_then(|n| Ok(n as f32)))
-                .collect();
-
-            result.map_err(|e| anyhow::anyhow!("Error parsing array: {}", e))
-        } else {
-            Err(anyhow::anyhow!("Value is not an array"))
-        }
-    }
-
     pub fn get_converse_output_text(output: ConverseOutput) -> anyhow::Result<String> {
         let text = output
             .output()
@@ -123,39 +105,5 @@ impl LlmHandler {
         );
 
         input
-    }
-}
-
-trait ToF32Slice {
-    fn value_to_f32_slice(&self) -> anyhow::Result<Vec<f32>>;
-}
-
-trait ToVector {
-    fn to_vector(&self) -> anyhow::Result<Vector>;
-}
-
-impl ToF32Slice for serde_json::Value {
-    fn value_to_f32_slice(&self) -> anyhow::Result<Vec<f32>> {
-        if let Value::Array(array) = self {
-            // Try to parse each element as f32
-            let result: Result<Vec<f32>, _> = array
-                .iter()
-                .map(|v| {
-                    v.as_f64()
-                        .ok_or_else(|| anyhow::anyhow!("Value is not a valid number"))
-                })
-                .map(|num| num.and_then(|n| Ok(n as f32)))
-                .collect();
-
-            result.map_err(|e| anyhow::anyhow!("Error parsing array: {}", e))
-        } else {
-            Err(anyhow::anyhow!("Value is not an array"))
-        }
-    }
-}
-
-impl ToVector for serde_json::Value {
-    fn to_vector(&self) -> anyhow::Result<Vector> {
-        Ok(Vector::from(self.value_to_f32_slice()?))
     }
 }

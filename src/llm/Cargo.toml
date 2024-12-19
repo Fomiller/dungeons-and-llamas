@@ -4,9 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+db = { path = "../db/" }
+
 anyhow = "1.0.94"
+aws-config = "1.5.10"
 aws-sdk-bedrockruntime = { version = "1.64.0", features = [
     "behavior-version-latest",
 ] }
 pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
 serde_json = "1.0.133"
+diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
