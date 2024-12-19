@@ -480,13 +480,34 @@ impl LLMCmd {
         let res = cmd.defer(&http).await?;
         info!("DEFER: {:?}", res);
 
-        let duration = std::time::Duration::from_secs(2);
-        std::thread::sleep(duration);
+        let client = reqwest::Client::new();
+        let options = &cmd.data.options;
 
-        let m = CreateInteractionResponseFollowup::new().content("FOLLOWING");
-        let res = cmd.create_followup(&http, m).await;
-        info!("FOLLOW: {:?}", res);
+        let mut json = HashMap::new();
 
-        Ok(None)
+        let prompt = options[0].value.as_str().unwrap();
+        let system = options[1].value.as_str().unwrap();
+        let instructions = options[2].value.as_str().unwrap();
+        let model = options[3].value.as_str().unwrap();
+
+        json.insert("prompt", prompt);
+        json.insert("system", system);
+        json.insert("instructions", instructions);
+        json.insert("model", model);
+
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/converse");
+        let response = client.post(url).json(&json).send().await;
+
+        match response {
+            Ok(res) => {
+                let text = res.text().await?;
+                info!("Text: {:?}", text);
+                let message = CreateInteractionResponseFollowup::new().content(text);
+                let res = cmd.create_followup(&http, message).await;
+                info!("FOLLOW: {:?}", res);
+                Ok(None)
+            }
+            Err(e) => Err(anyhow::anyhow!(e)),
+        }
     }
 }

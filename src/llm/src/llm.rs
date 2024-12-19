@@ -1,7 +1,7 @@
 use anyhow;
 use aws_sdk_bedrockruntime::{
     operation::converse::ConverseOutput,
-    types::{Message, SystemContentBlock},
+    types::{ContentBlock, ConversationRole, Message, SystemContentBlock},
     Client as BedrockClient,
 };
 
@@ -59,6 +59,14 @@ impl LlmHandler {
             .map_err(|_| anyhow::anyhow!("content is not text"))?
             .to_string();
         Ok(text)
+    }
+
+    pub fn set_messages(&mut self, input: &str) -> anyhow::Result<()> {
+        self.messages = vec![Message::builder()
+            .role(ConversationRole::User)
+            .content(ContentBlock::Text(input.to_string()))
+            .build()?];
+        Ok(())
     }
 
     pub fn create_input(&mut self, contexts: Vec<String>, prompt: &str) -> String {

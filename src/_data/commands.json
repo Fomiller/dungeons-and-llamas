@@ -2,7 +2,39 @@
     {
         "name": "llm",
         "type": 1,
-        "description": "create a llm response"
+        "description": "create a llm response",
+        "options": [
+            {
+                "name": "prompt",
+                "description": "Prompt to llm model",
+                "type": 3,
+                "required": true
+            },
+            {
+                "name": "system",
+                "description": "System message to llm model",
+                "type": 3,
+                "required": true
+            },
+            {
+                "name": "instructions",
+                "description": "Instructions to llm model",
+                "type": 3,
+                "required": true
+            },
+            {
+                "name": "model",
+                "description": "Prompt to llm model",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Meta",
+                        "value": "meta.llama3-8b-instruct-v1:0"
+                    }
+                ]
+            }
+        ]
     },
     {
         "name": "modal",

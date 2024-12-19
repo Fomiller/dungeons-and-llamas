@@ -1,4 +1,5 @@
 pub mod game;
+pub mod llm;
 
 use axum::http::StatusCode;
 use axum::response::IntoResponse;

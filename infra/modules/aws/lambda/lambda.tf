@@ -56,16 +56,27 @@ resource "aws_lambda_function" "dnl_api" {
   architectures    = ["arm64"]
   memory_size      = 128
   timeout          = 10
+  
   environment {
     variables = {
       ACCOUNT               = data.aws_caller_identity.current.account_id
-      AWS_LAMBDA_LOG_LEVEL  = "INFO"
       AWS_LAMBDA_LOG_FORMAT = "JSON"
+      AWS_LAMBDA_LOG_LEVEL  = "INFO"
+      DATABASE_ENDPOINT     = var.database_endpoint
+      DATABASE_NAME         = var.database_name
       DISCORD_APP_ID        = var.discord_application_id
       DISCORD_BOT_TOKEN     = var.discord_token
       ENVIRONMENT           = var.environment
+      MODEL_ID              = "meta.llama3-8b-instruct-v1:0"
+      RDS_PASSWORD          = var.rds_password
+      RDS_USERNAME          = var.rds_username
       REGION                = data.aws_region.current.name
     }
+  }
+  
+  vpc_config {
+    subnet_ids         = data.aws_subnets.private.ids
+    security_group_ids = [var.aws_security_group_id_lambda_basic, data.aws_security_group.rds.id]
   }
 }
 

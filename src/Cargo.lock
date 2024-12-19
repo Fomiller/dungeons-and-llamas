@@ -1185,10 +1185,12 @@ dependencies = [
 name = "dnl-api"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "axum",
  "axum-macros",
  "game",
  "lambda_http",
+ "llm",
  "serde",
  "serde_json",
  "tokio",
