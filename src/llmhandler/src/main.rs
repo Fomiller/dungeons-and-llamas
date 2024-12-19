@@ -1,6 +1,6 @@
 use db::models::*;
 use db::*;
-use llm::*;
+use llm::llm::*;
 
 use anyhow;
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
@@ -40,7 +40,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
 
     let model_id = env::var("MODEL_ID")?;
     let dimension = 256;
-    let model = Llm::new(bedrock_client);
+    let model = LlmHandler::new(bedrock_client);
 
     let mut conn = db::connect_to_database().await;
 
@@ -86,7 +86,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
     let contexts = db::get_context_from_neighbors(neighbors);
     tracing::debug!("Embedding Contexts: {:?}", contexts);
 
-    let input = Llm::create_input(contexts, payload.instructions, payload.prompt);
+    let input = LlmHandler::create_input(contexts, payload.instructions, payload.prompt);
     tracing::debug!("INPUT: {}", input);
 
     let messages = vec![Message::builder()
@@ -99,7 +99,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
     let response = model.converse(&model_id, system, messages).await;
 
     let res = match response {
-        Ok(output) => Ok(Llm::get_converse_output_text(output)?),
+        Ok(output) => Ok(LlmHandler::get_converse_output_text(output)?),
         Err(e) => Err(anyhow::anyhow!("{}", e)),
     };
 
