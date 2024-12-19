@@ -36,7 +36,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
 
-pub struct Client {
+pub struct Store {
     client: aws_sdk_dynamodb::Client,
 }
 
@@ -45,7 +45,7 @@ lazy_static::lazy_static! {
 }
 const SQID_ALPHABET: &str = "k3G7QAe51FCsPW92uEOyq4Bg6Sp8YzVTmnU0liwDdHXLajZrfxNhobJIRcMvKt";
 
-impl Client {
+impl Store {
     pub async fn new() -> Self {
         let config = aws_config::defaults(BehaviorVersion::latest())
             .region("us-east-1")

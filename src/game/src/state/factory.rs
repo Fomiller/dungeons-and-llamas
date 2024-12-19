@@ -1,34 +1,34 @@
-use crate::{
-    client::{
-        EntitySortKey, EquippedStateSortKey, InventorySortKeyBuilder, ItemSortKeyBuilder,
-        WeaponSortKey, WeaponSortKeyBuilder,
-    },
-    state::{
-        builder::RootSortKeyBuilder,
-        game::{
-            entity::{
-                actions::{
-                    spells::{SpellSortKey, SpellSortKeyIter},
-                    ActionsSortKey, ActionsSortKeyBuilder, ActionsSortKeyIter,
-                },
-                inventory::items::{
+use crate::state::{
+    builder::RootSortKeyBuilder,
+    game::{
+        entity::{
+            actions::{
+                spells::{SpellSortKey, SpellSortKeyIter},
+                ActionsSortKey, ActionsSortKeyBuilder, ActionsSortKeyIter,
+            },
+            inventory::{
+                items::{
                     armor::{ArmorSortKey, ArmorSortKeyBuilder},
                     books_and_scrolls::{BookAndScrollSortKey, BookAndScrollSortKeyIter},
+                    equipped::EquippedStateSortKey,
                     magic::{MagicItemSortKey, MagicItemSortKeyIter},
                     tools::{ToolSortKey, ToolSortKeyIter},
+                    weapons::{WeaponSortKey, WeaponSortKeyBuilder},
+                    ItemSortKeyBuilder,
                 },
-                stats::{
-                    abilities::{AbilitiesSortKey, AbilitiesSortKeyIter},
-                    conditions::{ConditionsSortKey, ConditionsSortKeyIter},
-                    core_attributes::{CoreAttributesSortKey, CoreAttributesSortKeyIter},
-                    saving_throws::{SavingThrowsSortKey, SavingThrowsSortKeyIter},
-                    skills::{SkillsSortKey, SkillsSortKeyIter},
-                    StatsSortKey, StatsSortKeyBuilder, StatsSortKeyIter,
-                },
-                Entity, EntitySortKeyBuilder,
+                InventorySortKeyBuilder,
             },
-            GameSortKeyBuilder,
+            stats::{
+                abilities::{AbilitiesSortKey, AbilitiesSortKeyIter},
+                conditions::{ConditionsSortKey, ConditionsSortKeyIter},
+                core_attributes::{CoreAttributesSortKey, CoreAttributesSortKeyIter},
+                saving_throws::{SavingThrowsSortKey, SavingThrowsSortKeyIter},
+                skills::{SkillsSortKey, SkillsSortKeyIter},
+                StatsSortKey, StatsSortKeyBuilder, StatsSortKeyIter,
+            },
+            Entity, EntitySortKey, EntitySortKeyBuilder,
         },
+        GameSortKeyBuilder,
     },
 };
 

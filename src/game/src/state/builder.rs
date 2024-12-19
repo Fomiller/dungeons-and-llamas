@@ -5,26 +5,26 @@ use super::user::UserSortKey;
 
 use std::any::Any;
 
-use crate::{
-    client::{
-        EntitySortKeyBuilder, EquippedStateSortKey, InventorySortKeyBuilder, ItemSortKeyBuilder,
-        WeaponSortKey, WeaponSortKeyBuilder,
-    },
-    state::game::entity::{
-        inventory::items::{
+use crate::state::game::entity::{
+    inventory::{
+        items::{
             armor::{ArmorSortKey, ArmorSortKeyBuilder},
             books_and_scrolls::BookAndScrollSortKey,
             clothing::ClothingSortKey,
+            equipped::EquippedStateSortKey,
             magic::MagicItemSortKey,
             tools::ToolSortKey,
+            weapons::{WeaponSortKey, WeaponSortKeyBuilder},
+            ItemSortKeyBuilder,
         },
-        stats::{
-            abilities::AbilitiesSortKey, conditions::ConditionsSortKey,
-            core_attributes::CoreAttributesSortKey, saving_throws::SavingThrowsSortKey,
-            skills::SkillsSortKey, StatsSortKeyBuilder,
-        },
-        Entity,
+        InventorySortKeyBuilder,
     },
+    stats::{
+        abilities::AbilitiesSortKey, conditions::ConditionsSortKey,
+        core_attributes::CoreAttributesSortKey, saving_throws::SavingThrowsSortKey,
+        skills::SkillsSortKey, StatsSortKeyBuilder,
+    },
+    Entity, EntitySortKeyBuilder,
 };
 
 #[derive(Default)]

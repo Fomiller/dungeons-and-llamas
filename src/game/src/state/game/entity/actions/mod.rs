@@ -1,6 +1,6 @@
 pub mod spells;
 
-use crate::client::SortKeyBuildable;
+use crate::state::buildable::SortKeyBuildable;
 use spells::SpellSortKey;
 
 use std::any::Any;

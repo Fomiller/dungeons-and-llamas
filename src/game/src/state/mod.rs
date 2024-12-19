@@ -39,7 +39,7 @@ pub enum RootSortKey {
 
 #[cfg(test)]
 mod tests {
-    use crate::client::SortKeyFactory;
+    use crate::state::factory::SortKeyFactory;
 
     use super::buildable::SortKeyBuildable;
     use super::builder::RootSortKeyBuilder;

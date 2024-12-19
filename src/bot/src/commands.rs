@@ -1,8 +1,8 @@
 use dice::Dice;
-use game::client::Client;
 use game::state::buildable::SortKeyBuildable;
 use game::state::builder::RootSortKeyBuilder;
 use game::state::message::MessageSortKey;
+use game::store::Store;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
 use serenity::builder::*;
@@ -214,7 +214,7 @@ impl ResumeGameCmd {
         &self,
         cmd: CommandInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let client = Client::new().await;
+        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
         let result = client.try_get_game_state(&user_id).await?;
 
@@ -305,7 +305,7 @@ impl TextCmd {
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let token = cmd.token;
 
-        let client = Client::new().await;
+        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
         client.try_save_message_token(&user_id, &token).await?;
 
@@ -414,7 +414,7 @@ impl EditCmd {
         &self,
         cmd: ComponentInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let client = Client::new().await;
+        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
 
         let query = client.try_get_last_message_token(&user_id).await?;

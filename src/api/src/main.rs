@@ -5,7 +5,7 @@ use axum::{
     Router,
 };
 use axum_macros::debug_handler;
-use game::client::Client;
+use game::store::Store;
 use lambda_http::{run, tracing, Error};
 use serde_json::json;
 
@@ -32,7 +32,7 @@ async fn root() -> impl IntoResponse {
 
 #[debug_handler]
 async fn post_new_game_handler(Json(payload): Json<User>) -> impl IntoResponse {
-    let client = Client::new().await;
+    let client = Store::new().await;
 
     match client.try_new_game(&payload.id).await {
         Ok(_) => (
