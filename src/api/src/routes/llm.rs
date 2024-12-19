@@ -1,5 +1,6 @@
+use crate::error::ApiError;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Json};
+use axum::response::{IntoResponse, Json, Response};
 use axum::{routing::post, Router};
 use axum_macros::debug_handler;
 use llm::llm::*;
@@ -13,30 +14,27 @@ pub fn llm_router() -> Router {
 }
 
 #[debug_handler]
-pub async fn post_llm_converse(Json(payload): Json<LlmConverseInput>) -> impl IntoResponse {
+pub async fn post_llm_converse(
+    Json(payload): Json<LlmConverseInput>,
+) -> Result<Response, ApiError> {
     println!("Payload: {:?}", payload);
+
     let mut llm = LlmHandler::new(payload.model, payload.system, payload.instructions).await;
 
-    let input = llm.create_input(
-        vec!["jokes about fish are funny".to_string()],
-        &payload.prompt,
-    );
+    let input = llm.create_input(None, &payload.prompt);
 
-    let _ = llm.set_messages(&input);
+    llm.set_messages(&input)?;
 
-    let _ = llm.converse().await;
-
-    match llm.get_converse_output_text() {
+    match llm.converse().await?.get_text() {
         Ok(text) => {
             let status = StatusCode::OK;
-            println!("Text: {:?}", text);
             let json = Json(json!({"detail": text}));
-            (status, json).into_response()
+            Ok((status, json).into_response())
         }
         Err(e) => {
             let status = StatusCode::BAD_REQUEST;
             let json = Json(json!({"error": format!("{}",e)}));
-            (status, json).into_response()
+            Ok((status, json).into_response())
         }
     }
 }

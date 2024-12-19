@@ -5,12 +5,18 @@ use game::state::message::MessageSortKey;
 use game::store::Store;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
+use serde::{Deserialize, Serialize};
 use serenity::builder::*;
 use serenity::http::Http;
 use serenity::model::application::*;
 use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ApiResponse {
+    detail: String,
+}
 
 lazy_static::lazy_static! {
     static ref DNL_API_URL: String = format!("https://dnl-api.{}.aws.fomillercloud.com", std::env::var("ENVIRONMENT").unwrap());
@@ -485,24 +491,26 @@ impl LLMCmd {
 
         let mut json = HashMap::new();
 
-        let prompt = options[0].value.as_str().unwrap();
-        let system = options[1].value.as_str().unwrap();
-        let instructions = options[2].value.as_str().unwrap();
-        let model = options[3].value.as_str().unwrap();
+        let model = options[0].value.as_str().unwrap();
+        let prompt = options[1].value.as_str().unwrap();
+        let system = options[2].value.as_str().unwrap();
 
         json.insert("prompt", prompt);
         json.insert("system", system);
-        json.insert("instructions", instructions);
         json.insert("model", model);
+
+        if options.len() == 4 {
+            let instructions = options[3].value.as_str().unwrap();
+            json.insert("instructions", instructions);
+        }
 
         let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/converse");
         let response = client.post(url).json(&json).send().await;
 
         match response {
             Ok(res) => {
-                let text = res.text().await?;
-                info!("Text: {:?}", text);
-                let message = CreateInteractionResponseFollowup::new().content(text);
+                let text = res.json::<ApiResponse>().await?;
+                let message = CreateInteractionResponseFollowup::new().content(text.detail);
                 let res = cmd.create_followup(&http, message).await;
                 info!("FOLLOW: {:?}", res);
                 Ok(None)

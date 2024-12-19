@@ -3,5 +3,5 @@ pub struct LlmConverseInput {
     pub model: String,
     pub prompt: String,
     pub system: String,
-    pub instructions: String,
+    pub instructions: Option<String>,
 }

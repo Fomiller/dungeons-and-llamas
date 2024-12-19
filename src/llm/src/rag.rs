@@ -1,5 +1,5 @@
-use crate::embedding::*;
 use crate::llm::LlmHandler;
+use crate::{embedding::*, llm::ParseConverseOuput};
 use aws_sdk_bedrockruntime::types::{ContentBlock, ConversationRole, Message};
 use db::*;
 use lambda_runtime::tracing;
@@ -41,7 +41,7 @@ impl RagWorkflow {
         let contexts = VectorDatabase::get_context_from_neighbors(neighbors);
         tracing::debug!("Embedding Contexts: {:?}", contexts);
 
-        let input = self.llm.create_input(contexts, prompt);
+        let input = self.llm.create_input(Some(contexts), prompt);
         tracing::debug!("INPUT: {}", input);
 
         self.llm.messages = vec![Message::builder()
@@ -49,10 +49,8 @@ impl RagWorkflow {
             .content(ContentBlock::Text(input.to_string()))
             .build()?];
 
-        let response = self.llm.converse().await;
-
-        match response {
-            Ok(_) => Ok(self.llm.get_converse_output_text()?),
+        match self.llm.converse().await?.get_text() {
+            Ok(text) => Ok(text),
             Err(e) => Err(anyhow::anyhow!("{}", e)),
         }
     }

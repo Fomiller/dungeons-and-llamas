@@ -11,12 +11,11 @@ pub struct LlmHandler {
     pub model: String,
     pub system: String,
     pub messages: Vec<Message>,
-    pub instructions: String,
-    pub output: Option<ConverseOutput>,
+    pub instructions: Option<String>,
 }
 
 impl LlmHandler {
-    pub async fn new(model: String, system: String, instructions: String) -> Self {
+    pub async fn new(model: String, system: String, instructions: Option<String>) -> Self {
         let config = aws_config::load_from_env().await;
         let client = BedrockClient::new(&config);
         Self {
@@ -25,11 +24,10 @@ impl LlmHandler {
             system,
             messages: vec![],
             instructions,
-            output: None,
         }
     }
 
-    pub async fn converse(&mut self) -> anyhow::Result<()> {
+    pub async fn converse(&mut self) -> anyhow::Result<ConverseOutput> {
         let response = self
             .client
             .converse()
@@ -39,15 +37,47 @@ impl LlmHandler {
             .send()
             .await?;
 
-        self.output = Some(response);
+        Ok(response)
+    }
+
+    pub fn set_messages(&mut self, input: &str) -> anyhow::Result<()> {
+        self.messages = vec![Message::builder()
+            .role(ConversationRole::User)
+            .content(ContentBlock::Text(input.to_string()))
+            .build()?];
         Ok(())
     }
 
-    pub fn get_converse_output_text(&self) -> anyhow::Result<String> {
+    pub fn create_input(&mut self, contexts: Option<Vec<String>>, prompt: &str) -> String {
+        let mut input = String::new();
+
+        if let Some(instructions) = &self.instructions {
+            input.push_str(&format!("{}\n", instructions))
+        }
+
+        if let Some(contexts) = contexts {
+            input.push_str("<Context>\n");
+            for context in contexts {
+                input.push_str(&format!("{}\n", &context))
+            }
+            input.push_str("</Context>\n");
+        }
+
+        let prompt = format!("<Prompt>\n{}\n</Prompt>", prompt);
+
+        input.push_str(&prompt);
+
+        input
+    }
+}
+
+pub trait ParseConverseOuput {
+    fn get_text(&self) -> anyhow::Result<String>;
+}
+
+impl ParseConverseOuput for ConverseOutput {
+    fn get_text(&self) -> anyhow::Result<String> {
         let text = self
-            .output
-            .clone()
-            .expect("No ouput available")
             .output()
             .ok_or_else(|| anyhow::anyhow!("no output"))?
             .as_message()
@@ -59,26 +89,5 @@ impl LlmHandler {
             .map_err(|_| anyhow::anyhow!("content is not text"))?
             .to_string();
         Ok(text)
-    }
-
-    pub fn set_messages(&mut self, input: &str) -> anyhow::Result<()> {
-        self.messages = vec![Message::builder()
-            .role(ConversationRole::User)
-            .content(ContentBlock::Text(input.to_string()))
-            .build()?];
-        Ok(())
-    }
-
-    pub fn create_input(&mut self, contexts: Vec<String>, prompt: &str) -> String {
-        let mut input_context = String::new();
-        for context in contexts {
-            input_context.push_str(&context)
-        }
-        let input = format!(
-            "{}\n<Context>{}</Context>\n<Prompt>\n{}\n</Prompt>",
-            self.instructions, input_context, prompt
-        );
-
-        input
     }
 }

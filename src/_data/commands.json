@@ -5,6 +5,18 @@
         "description": "create a llm response",
         "options": [
             {
+                "name": "model",
+                "description": "Which llm model to use",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Meta",
+                        "value": "meta.llama3-8b-instruct-v1:0"
+                    }
+                ]
+            },
+            {
                 "name": "prompt",
                 "description": "Prompt to llm model",
                 "type": 3,
@@ -18,21 +30,9 @@
             },
             {
                 "name": "instructions",
-                "description": "Instructions to llm model",
+                "description": "Optional Instructions to provide to the llm model",
                 "type": 3,
-                "required": true
-            },
-            {
-                "name": "model",
-                "description": "Prompt to llm model",
-                "type": 3,
-                "required": true,
-                "choices": [
-                    {
-                        "name": "Meta",
-                        "value": "meta.llama3-8b-instruct-v1:0"
-                    }
-                ]
+                "required": false
             }
         ]
     },
