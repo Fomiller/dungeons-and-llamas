@@ -49,7 +49,7 @@ impl RagWorkflow {
             .content(ContentBlock::Text(input.to_string()))
             .build()?];
 
-        match self.llm.converse().await?.get_text() {
+        match self.llm.converse(None).await?.get_text() {
             Ok(text) => Ok(text),
             Err(e) => Err(anyhow::anyhow!("{}", e)),
         }

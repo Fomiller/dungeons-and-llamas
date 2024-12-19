@@ -1187,6 +1187,7 @@ name = "dnl-api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "aws-sdk-bedrockruntime",
  "axum",
  "axum-macros",
  "game",

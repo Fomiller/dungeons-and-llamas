@@ -1,7 +1,7 @@
 use anyhow;
 use aws_sdk_bedrockruntime::{
     operation::converse::ConverseOutput,
-    types::{ContentBlock, ConversationRole, Message, SystemContentBlock},
+    types::{ContentBlock, ConversationRole, InferenceConfiguration, Message, SystemContentBlock},
     Client as BedrockClient,
 };
 
@@ -27,11 +27,15 @@ impl LlmHandler {
         }
     }
 
-    pub async fn converse(&mut self) -> anyhow::Result<ConverseOutput> {
+    pub async fn converse(
+        &mut self,
+        config: Option<InferenceConfiguration>,
+    ) -> anyhow::Result<ConverseOutput> {
         let response = self
             .client
             .converse()
             .model_id(&self.model)
+            .set_inference_config(config)
             .system(SystemContentBlock::Text(self.system.clone()))
             .set_messages(Some(self.messages.clone()))
             .send()

@@ -489,19 +489,13 @@ impl LLMCmd {
         let client = reqwest::Client::new();
         let options = &cmd.data.options;
 
-        let mut json = HashMap::new();
+        let mut json = HashMap::<&str, &str>::new();
 
-        let model = options[0].value.as_str().unwrap();
-        let prompt = options[1].value.as_str().unwrap();
-        let system = options[2].value.as_str().unwrap();
-
-        json.insert("prompt", prompt);
-        json.insert("system", system);
-        json.insert("model", model);
-
-        if options.len() == 4 {
-            let instructions = options[3].value.as_str().unwrap();
-            json.insert("instructions", instructions);
+        for option in options {
+            json.insert(
+                &option.name,
+                option.value.as_str().expect("Option value as not a string"),
+            );
         }
 
         let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/converse");

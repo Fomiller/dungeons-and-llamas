@@ -1,4 +1,5 @@
 use crate::error::ApiError;
+use aws_sdk_bedrockruntime::types::builders::InferenceConfigurationBuilder;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json, Response};
 use axum::{routing::post, Router};
@@ -25,7 +26,13 @@ pub async fn post_llm_converse(
 
     llm.set_messages(&input)?;
 
-    match llm.converse().await?.get_text() {
+    let cfg = Some(
+        InferenceConfigurationBuilder::default()
+            .temperature(1.0)
+            .build(),
+    );
+
+    match llm.converse(cfg).await?.get_text() {
         Ok(text) => {
             let status = StatusCode::OK;
             let json = Json(json!({"detail": text}));
