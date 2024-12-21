@@ -1,0 +1,5 @@
+[build]
+rustflags = [
+    "--cfg",
+    "aws_sdk_unstable", # needed for aws-smithy-types + serde-(de)serialize
+]
