@@ -11,8 +11,16 @@
                 "required": true,
                 "choices": [
                     {
-                        "name": "Meta",
+                        "name": "Meta3.1-8b",
                         "value": "meta.llama3-8b-instruct-v1:0"
+                    },
+                    {
+                        "name": "Meta3.3-70b",
+                        "value": "meta.llama3-3-70b-instruct-v1:0"
+                    },
+                    {
+                        "name": "Claude3.5 Sonnet",
+                        "value": "anthropic.claude-3-5-sonnet-20240620-v1:0"
                     }
                 ]
             },
