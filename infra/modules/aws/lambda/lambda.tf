@@ -7,7 +7,7 @@ resource "aws_lambda_function" "discord_bot" {
   runtime          = local.runtime
   architectures    = ["arm64"]
   memory_size      = 128
-  timeout          = 10
+  timeout          = 60
   environment {
     variables = {
       ACCOUNT               = data.aws_caller_identity.current.account_id
@@ -55,7 +55,7 @@ resource "aws_lambda_function" "dnl_api" {
   runtime          = local.runtime
   architectures    = ["arm64"]
   memory_size      = 128
-  timeout          = 10
+  timeout          = 60
   
   environment {
     variables = {
