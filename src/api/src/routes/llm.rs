@@ -1,13 +1,18 @@
 use crate::error::ApiError;
+use crate::models::llm::BattleToolResponse;
+use crate::models::llm::LlmConverseInput;
+use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::InferenceConfigurationBuilder;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json, Response};
 use axum::{routing::post, Router};
 use axum_macros::debug_handler;
+use lambda_http::tracing::info;
 use llm::llm::*;
 use serde_json::json;
 
-use crate::models::llm::LlmConverseInput;
+#[allow(unused_imports)] // Only if warnings are related to unused imports.
+use serde::Serialize;
 
 pub fn llm_router() -> Router {
     let router: Router = Router::new().route("/converse", post(post_llm_converse));
@@ -32,10 +37,23 @@ pub async fn post_llm_converse(
             .build(),
     );
 
-    match llm.converse(cfg).await?.get_text() {
-        Ok(text) => {
+    let con_res = llm.converse(cfg).await;
+    info!("CON-RES: {:?}", con_res);
+
+    match con_res?.get_tool_output() {
+        Ok(tool) => {
             let status = StatusCode::OK;
-            let json = Json(json!({"detail": text}));
+            let input = &tool[0].input;
+            let value = serde_json::to_value(input)?;
+            info!("Value: {}", value);
+
+            let res: BattleToolResponse = serde_json::from_value(value.clone())
+                .context("Could not convert to BattleToolResponse")?;
+            info!("BTR: {:?}", res);
+
+            let json = Json(json!({"detail": res}));
+
+            info!("Response: {:?}", json);
             Ok((status, json).into_response())
         }
         Err(e) => {

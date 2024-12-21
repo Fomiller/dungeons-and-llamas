@@ -14,3 +14,8 @@ aws-sdk-bedrockruntime = { version = "1.64.0", features = [
 lambda_runtime = "0.13.0"
 pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
 serde_json = "1.0.133"
+aws-smithy-types = { version = "1.2.10", aws_sdk_unstable = true, features = [
+    "serde-deserialize",
+    "serde-serialize",
+] }
+serde = { version = "1.0.215", features = ["derive"] }

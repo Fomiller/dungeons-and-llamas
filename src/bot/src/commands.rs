@@ -13,9 +13,25 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct BattleToolResponse {
+    pub enemies: Vec<Enemy>,
+    pub summary: String,
+    pub name: String,
+    pub terrain: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Enemy {
+    pub health: u8,
+    pub enemy_type: String,
+    pub attack_damage: String,
+    pub attack_name: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct ApiResponse {
-    detail: String,
+    detail: BattleToolResponse,
 }
 
 lazy_static::lazy_static! {
@@ -503,8 +519,25 @@ impl LLMCmd {
 
         match response {
             Ok(res) => {
+                info!("RES: {:?}", res);
                 let text = res.json::<ApiResponse>().await?;
-                let message = CreateInteractionResponseFollowup::new().content(text.detail);
+                info!("Text: {:?}", text);
+                let mut enemy_description = String::new();
+
+                for enemy in text.detail.enemies {
+                    let description = format!(
+                        "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
+                        enemy.enemy_type, enemy.attack_name, enemy.attack_damage, enemy.health
+                    );
+                    enemy_description.push_str(&description);
+                }
+
+                let content = format!(
+                    "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
+                    text.detail.name, text.detail.summary, text.detail.terrain, enemy_description
+                );
+
+                let message = CreateInteractionResponseFollowup::new().content(content);
                 let res = cmd.create_followup(&http, message).await;
                 info!("FOLLOW: {:?}", res);
                 Ok(None)
