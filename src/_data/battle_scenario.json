@@ -1,0 +1,16 @@
+{
+    "summary": "summary of the scenario",
+    "name": "A dangerous encounter",
+    "terrain": "description of the terrain",
+    "enemies": [
+        {
+            "enemy_type": "Goblin Archer",
+            "health": "1d8+2",
+            "attack": {
+                "attack_damage": "2d6+3",
+                "attack_name": "Short Bow"
+            }
+        }
+    ]
+}
+    
