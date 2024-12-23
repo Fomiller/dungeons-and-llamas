@@ -83,27 +83,47 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
     let max_retries = 5; // Limit the number of retries
     let mut attempts = 0;
-    loop {
+    let mut retry_prompt = None;
+    let retry_message = format!("Reached max retry limit of {max_retries}");
+    let response = loop {
         attempts += 1;
 
-        // add error output to prompt to help form json on retry
-        match generator.to_json(payload.json_prompt.clone()).await {
+        match generator
+            .to_json(payload.json_prompt.clone(), retry_prompt.clone())
+            .await
+        {
             Ok(_) => {
                 info!("JSON Created");
-                break;
+
+                let json = Json(json!({"data": generator.output.unwrap()}));
+
+                info!("Response: {:?}", json);
+
+                break Some((StatusCode::OK, json).into_response());
             }
             Err(e) => {
-                info!("Attempt {attempts} failed: {e}");
                 if attempts >= max_retries {
-                    info!("Reached max retry limit of {max_retries}. Exiting.");
-                    break;
+                    info!(retry_message);
+                    break None;
                 }
+
+                info!("Retrying creating JSON output");
+                info!("Attempt {attempts} failed: {e}");
+
+                retry_prompt = Some(format!(
+                    "The previous attempt to deserialize your response failed with the error: {}",
+                    e.to_string()
+                ));
             }
         }
+    };
+
+    if let Some(res) = response {
+        return Ok(res);
+    } else {
+        // this could potential be a cache fetch for a previous successful response.
+        let json = Json(json!({"error": retry_message}));
+        let res = (StatusCode::SERVICE_UNAVAILABLE, json).into_response();
+        return Ok(res);
     }
-
-    let json = Json(json!({"detail": generator.output.unwrap()}));
-
-    info!("Response: {:?}", json);
-    Ok((StatusCode::OK, json).into_response())
 }

@@ -88,15 +88,23 @@ impl BattleGenerator {
         Ok(())
     }
 
-    pub async fn to_json(&mut self, prompt: String) -> anyhow::Result<()> {
+    pub async fn to_json(
+        &mut self,
+        prompt: String,
+        additional_prompt: Option<String>,
+    ) -> anyhow::Result<()> {
         // THIS is a static prompt using lazy_static
         // let prompt = "".to_string();
+        let mut contexts: Vec<String> = Vec::new();
 
         let scenario = self.scenario.clone().expect("Scenario not found");
+        contexts.push(scenario);
 
-        let context = Some(vec![scenario]);
+        if let Some(add_prompt) = additional_prompt {
+            contexts.push(add_prompt)
+        }
 
-        let input = self.model.create_prompt(context, &prompt);
+        let input = self.model.create_prompt(Some(contexts), &prompt);
 
         let message = self.model.create_user_message(&input);
 

@@ -1155,6 +1155,7 @@ dependencies = [
  "serde_json",
  "serenity",
  "strum",
+ "thiserror 2.0.9",
  "tokio",
 ]
 

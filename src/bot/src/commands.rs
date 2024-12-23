@@ -6,6 +6,7 @@ use game::store::Store;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
 use llm::tool::BattleToolOutput;
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 use serenity::builder::*;
 use serenity::http::Http;
@@ -14,9 +15,15 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
 
+#[derive(thiserror::Error, Debug)]
+pub enum DiscordBotError {
+    #[error("Discord Bot process failed.")]
+    BotError,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-struct ApiResponse {
-    detail: BattleToolOutput,
+struct ApiScenarioResponse {
+    data: BattleToolOutput,
 }
 
 lazy_static::lazy_static! {
@@ -511,11 +518,11 @@ impl LLMCmd {
         match response {
             Ok(res) => {
                 info!("RES: {:?}", res);
-                let text = res.json::<ApiResponse>().await?;
+                let text = res.json::<ApiScenarioResponse>().await?;
                 info!("Text: {:?}", text);
                 let mut enemy_description = String::new();
 
-                for enemy in text.detail.enemies {
+                for enemy in text.data.enemies {
                     let description = format!(
                         "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
                         enemy.enemy_type,
@@ -528,7 +535,7 @@ impl LLMCmd {
 
                 let content = format!(
                     "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
-                    text.detail.name, text.detail.summary, text.detail.terrain, enemy_description
+                    text.data.name, text.data.summary, text.data.terrain, enemy_description
                 );
 
                 let message = CreateInteractionResponseFollowup::new().content(content);
@@ -572,37 +579,65 @@ impl ScenarioCmd {
         }
 
         let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/scenario");
-        let response = client.post(url).json(&json).send().await;
 
-        match response {
-            Ok(res) => {
-                info!("RES: {:?}", res);
-                let text = res.json::<ApiResponse>().await?;
-                info!("Text: {:?}", text);
-                let mut enemy_description = String::new();
-
-                for enemy in text.detail.enemies {
-                    let description = format!(
-                        "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
-                        enemy.enemy_type,
-                        enemy.attack.attack_name,
-                        enemy.attack.attack_damage,
-                        enemy.health
-                    );
-                    enemy_description.push_str(&description);
-                }
-
-                let content = format!(
-                    "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
-                    text.detail.name, text.detail.summary, text.detail.terrain, enemy_description
-                );
-
-                let message = CreateInteractionResponseFollowup::new().content(content);
-                let res = cmd.create_followup(&http, message).await;
-                info!("FOLLOW: {:?}", res);
+        let res = match client.post(url).json(&json).send().await {
+            Ok(response) => {
+                handle_sucessful_response(response, cmd, http).await?;
                 Ok(None)
             }
-            Err(e) => Err(anyhow::anyhow!(e)),
-        }
+            Err(err) => {
+                let message = CreateInteractionResponseFollowup::new().content(err.to_string());
+                let _ = cmd.create_followup(&http, message).await;
+                Err(anyhow::anyhow!(err))
+            }
+        };
+        res
     }
+}
+
+async fn handle_sucessful_response(
+    res: Response,
+    cmd: CommandInteraction,
+    http: Http,
+) -> anyhow::Result<()> {
+    match res.status() {
+        reqwest::StatusCode::OK => {
+            let data = res.json::<ApiScenarioResponse>().await?.data;
+
+            info!("Data: {:?}", data);
+
+            let content = format_battle_scenario(data);
+
+            let message = CreateInteractionResponseFollowup::new().content(content);
+
+            let res = cmd.create_followup(&http, message).await;
+
+            info!("FOLLOW: {:?}", res);
+            Ok(())
+        }
+        reqwest::StatusCode::SERVICE_UNAVAILABLE => {
+            let followup = CreateInteractionResponseFollowup::new();
+            let message = followup.content("Server error, Try again.");
+            cmd.create_followup(&http, message).await?;
+            Ok(())
+        }
+        _ => Ok(()),
+    }
+}
+
+fn format_battle_scenario(data: BattleToolOutput) -> String {
+    let mut enemy_description = String::new();
+
+    for enemy in data.enemies {
+        let description = format!(
+            "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
+            enemy.enemy_type, enemy.attack.attack_name, enemy.attack.attack_damage, enemy.health
+        );
+        enemy_description.push_str(&description);
+    }
+
+    format!(
+        "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
+        data.name, data.summary, data.terrain, enemy_description
+    )
 }

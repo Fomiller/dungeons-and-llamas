@@ -8,7 +8,7 @@ use aws_sdk_bedrockruntime::{
     },
     Client as BedrockClient,
 };
-use lambda_runtime::tracing::info;
+use lambda_runtime::tracing::{debug, info};
 
 #[derive(Debug, Clone)]
 pub struct LlmHandler {
@@ -50,13 +50,12 @@ impl LlmHandler {
             .set_messages(Some(messages));
 
         if let Some(tool) = tool {
-            info!("Adding tool");
             converse = converse.tool_config(tool.config()?);
         }
 
         let response = converse.send().await?;
 
-        println!("Converse Res: {:?}", response);
+        debug!("Converse Response: {:?}", response);
 
         Ok(response)
     }
@@ -108,8 +107,6 @@ pub trait ParseConverseOuput {
 impl ParseConverseOuput for ConverseOutput {
     fn get_text_output(&self) -> anyhow::Result<String> {
         let output = self.output();
-
-        info!("OUTPUT: {:?}", output);
 
         let text = output
             .ok_or_else(|| anyhow::anyhow!("no output"))?
