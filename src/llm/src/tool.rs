@@ -8,9 +8,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(thiserror::Error, Debug)]
-pub enum ToolError<'a> {
+pub enum ToolError {
     #[error("Unable to parse tool output to struct: {0}")]
-    ParseOutput(&'a str),
+    ParseOutput(String),
     #[error("No tool output available")]
     NoOutput,
 }
@@ -136,6 +136,46 @@ impl ToDocument for Property {
                 Document::String(self.description.to_owned()),
             ),
         ]))
+    }
+}
+
+pub trait MockData {
+    fn mock() -> Self;
+}
+
+impl MockData for BattleToolOutput {
+    fn mock() -> Self {
+        let sword = BattleToolEnemyAttack {
+            attack_damage: "1d6+2".to_string(),
+            attack_name: "Rusted Sword".to_string(),
+        };
+        let bow = BattleToolEnemyAttack {
+            attack_damage: "1d6+2".to_string(),
+            attack_name: "ShortBow".to_string(),
+        };
+        let enemies = vec![
+            BattleToolEnemy {
+                health: "1d6+8".to_string(),
+                enemy_type: "Goblin".to_string(),
+                attack: sword,
+            },
+            BattleToolEnemy {
+                health: "1d6+8".to_string(),
+                enemy_type: "Goblin Archer".to_string(),
+                attack: bow,
+            },
+        ];
+
+        let summary = "summary of the scenario".to_string();
+        let name = "a dangerous encounter".to_string();
+        let terrain = "description of the terrain".to_string();
+
+        Self {
+            enemies,
+            summary,
+            name,
+            terrain,
+        }
     }
 }
 

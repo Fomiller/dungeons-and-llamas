@@ -630,14 +630,14 @@ fn format_battle_scenario(data: BattleToolOutput) -> String {
 
     for enemy in data.enemies {
         let description = format!(
-            "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
+            "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
             enemy.enemy_type, enemy.attack.attack_name, enemy.attack.attack_damage, enemy.health
         );
         enemy_description.push_str(&description);
     }
 
     format!(
-        "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
+        "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}",
         data.name, data.summary, data.terrain, enemy_description
     )
 }

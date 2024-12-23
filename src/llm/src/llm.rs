@@ -16,11 +16,10 @@ pub struct LlmHandler {
     pub model: String,
     pub system: String,
     pub messages: Vec<Message>,
-    pub instructions: Option<String>,
 }
 
 impl LlmHandler {
-    pub async fn new(model: String, system: String, instructions: Option<String>) -> Self {
+    pub async fn new(model: String, system: String) -> Self {
         let config = aws_config::load_from_env().await;
         let client = BedrockClient::new(&config);
         Self {
@@ -28,7 +27,6 @@ impl LlmHandler {
             model,
             system,
             messages: vec![],
-            instructions,
         }
     }
 

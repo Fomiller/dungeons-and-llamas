@@ -37,7 +37,7 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<LambdaResponse,
 
     let embed = EmbeddingEngine::new(EmbeddingConfig::default()).await;
 
-    let llm = LlmHandler::new(model_id, system, Some(payload.instructions)).await;
+    let llm = LlmHandler::new(model_id, system).await;
 
     let mut rag = RagWorkflow::new(llm, embed).await;
 

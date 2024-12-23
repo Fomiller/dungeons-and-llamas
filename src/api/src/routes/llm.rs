@@ -9,13 +9,13 @@ use axum::response::{IntoResponse, Json, Response};
 use axum::{routing::post, Router};
 use axum_macros::debug_handler;
 use game::generators::battle::BattleGenerator;
+use game::generators::battle::BattleJsonGeneratorConfig;
+use game::generators::JsonResponseGenerator;
 use lambda_http::tracing::info;
 use llm::llm::*;
 use llm::tool::*;
 use serde_json::json;
-
-#[allow(unused_imports)] // Only if warnings are related to unused imports.
-use serde::Serialize;
+use std::collections::HashMap;
 
 pub fn llm_router() -> Router {
     let router: Router = Router::new()
@@ -30,7 +30,7 @@ pub async fn post_llm_converse(
 ) -> Result<Response, ApiError> {
     println!("Payload: {:?}", payload);
 
-    let mut llm = LlmHandler::new(payload.model, payload.system, payload.instructions).await;
+    let mut llm = LlmHandler::new(payload.model, payload.system).await;
 
     let input = llm.create_prompt(None, &payload.prompt);
 
@@ -75,23 +75,30 @@ pub async fn post_llm_converse(
 pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Response, ApiError> {
     println!("Payload: {:?}", payload);
 
-    let mut generator =
-        BattleGenerator::new(payload.model, payload.system, 1, payload.theme, None).await?;
+    let system_vars = HashMap::new();
+    let mut text_vars = HashMap::new();
+    let mut json_vars = HashMap::new();
 
-    generator.generate_scenario(payload.scenario_prompt).await?;
-    info!("Scenario Created");
+    text_vars.insert("theme".to_string(), payload.theme);
+    json_vars.insert(
+        "example".to_string(),
+        serde_json::to_string(&BattleToolOutput::mock())?,
+    );
 
-    let max_retries = 5; // Limit the number of retries
-    let mut attempts = 0;
-    let mut retry_prompt = None;
-    let retry_message = format!("Reached max retry limit of {max_retries}");
+    let config = BattleJsonGeneratorConfig::new(payload.model, system_vars, text_vars, json_vars);
+
+    let mut generator: BattleGenerator = JsonResponseGenerator::new(config).await;
+
+    generator.generate_text().await?;
+
+    info!("Text Created");
+
+    let mut ctxs: Vec<String> = vec![];
+
     let response = loop {
-        attempts += 1;
+        generator.attempts += 1;
 
-        match generator
-            .to_json(payload.json_prompt.clone(), retry_prompt.clone())
-            .await
-        {
+        match generator.to_json::<BattleToolOutput>(ctxs.clone()).await {
             Ok(_) => {
                 info!("JSON Created");
 
@@ -101,19 +108,20 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
                 break Some((StatusCode::OK, json).into_response());
             }
-            Err(e) => {
-                if attempts >= max_retries {
-                    info!(retry_message);
+            Err(err) => {
+                if generator.attempts >= generator.max_retries {
+                    info!("Reached max retry limit of {}", generator.max_retries);
                     break None;
                 }
 
                 info!("Retrying creating JSON output");
-                info!("Attempt {attempts} failed: {e}");
+                info!("Attempt {} failed: {}", generator.attempts, err);
 
-                retry_prompt = Some(format!(
+                let ctx = format!(
                     "The previous attempt to deserialize your response failed with the error: {}",
-                    e.to_string()
-                ));
+                    err.to_string()
+                );
+                ctxs.push(ctx)
             }
         }
     };
@@ -122,7 +130,8 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
         return Ok(res);
     } else {
         // this could potential be a cache fetch for a previous successful response.
-        let json = Json(json!({"error": retry_message}));
+        let err = format!("Reached max retry limit of {}", generator.max_retries);
+        let json = Json(json!({"error": err}));
         let res = (StatusCode::SERVICE_UNAVAILABLE, json).into_response();
         return Ok(res);
     }

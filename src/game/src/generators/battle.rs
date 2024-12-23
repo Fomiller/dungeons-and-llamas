@@ -1,166 +1,156 @@
-use super::Generator;
-use aws_sdk_bedrockruntime::types::builders::*;
-use llm::llm::LlmHandler;
-use llm::llm::ParseConverseOuput;
-use llm::tool::ToolError;
+use crate::generators::*;
+use lazy_static::lazy_static;
 use llm::tool::{BattleToolOutput, Tools};
-use std::any::type_name;
+use std::collections::HashMap;
 
-static BATTLE_GENERATOR_SYSTEM_MESSAGE: &str = "
-You are a DM/Narrator for a single player dungeons and dragons style text adventure game.
-It is important that you always create unique and fun scenarios with a wide variety of situations, enemies, items, and settings to keep the player engaged.
-You are able to create 3 different scenario types. Battle, Shop, and Rest.
-When creating scenarios keep them inline with the theme of the level.
+pub static BATTLE_SYSTEM_PROMPT: &str = "
+You are a DM for a single player dungeons and dragons style text adventure game.
+It is important that you always create unique and fun scenarios with a wide variety of
+situations, enemies, items, and settings to keep the player engaged.
+
+You are able to create 3 different scenario types. 
+- Battle 
+- Shop 
+- Rest
+
+Rules for creating battle scenarios:
+- Keep the scenarios inline with the theme provided
+- Make sure that the scenario is appropriate for the players level
+
+
 You always keep your scenarios to single 2-4 sentence paragraphs, without bullet points.
+
 ";
 
-static BATTLE_GENERATOR_TO_JSON_INSTRUCTIONS: &str = "
-Using the provide context use the 'battle' tool to generate a json response.
+pub static BATTLE_JSON_PROMPT: &str = "
+Using the context provided use the 'battle' tool to create a level one battle scenario.
+The responses should be json with the following structure:
+{{example}}
 ";
 
-static BATTLE_GENERATOR_PROMPT: &str = "
-Create a random battle scenario for the player.
+pub static BATTLE_TEXT_PROMPT: &str = "
+Create a random {{theme}} battle scenario for the player.
 ";
 
-#[derive(Debug, Clone)]
-pub struct BattleGenerator {
-    model: LlmHandler,
-    // TODO level and theme could probably be put into a "Scenario" struct
-    level: u8,
-    theme: String,
-    pub context: Option<Vec<String>>,
-    pub scenario: Option<String>,
-    pub output: Option<BattleToolOutput>,
-    tool: Tools,
+pub type BattleGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig, BattleToolOutput>;
+
+pub struct BattleJsonGeneratorConfig {
+    pub tool: Tools,
+    pub model: String, //can be and enum probably
+    pub system_prompt: Prompt,
+    pub json_prompt: Prompt,
+    pub text_prompt: Prompt,
 }
 
-impl BattleGenerator {
-    pub async fn new(
+impl JsonResponseGeneratorConfig for BattleJsonGeneratorConfig {
+    fn model(&self) -> String {
+        self.model.clone()
+    }
+    fn system_prompt(&self) -> String {
+        self.system_prompt.format()
+    }
+    fn schema(&self) -> serde_json::Value {
+        self.tool.schema()
+    }
+    fn json_prompt(&self) -> String {
+        self.json_prompt.format()
+    }
+    fn text_prompt(&self) -> String {
+        self.text_prompt.format()
+    }
+    fn tool(&self) -> Tools {
+        self.tool
+    }
+}
+
+impl BattleJsonGeneratorConfig {
+    pub fn new(
         model: String,
-        system: String,
-        level: u8,
-        theme: String,
-        context: Option<Vec<String>>,
-    ) -> anyhow::Result<Self> {
-        // let system = BATTLE_GENERATOR_SYSTEM_MESSAGE.to_string();
-        let model = LlmHandler::new(model, system, None).await;
-        let scenario = None;
-        let tool = Tools::Battle;
-        let output = None;
-
-        Ok(Self {
-            model,
-            level,
-            theme,
-            context,
-            scenario,
-            tool,
-            output,
-        })
-    }
-
-    pub async fn generate_scenario(&mut self, prompt: String) -> anyhow::Result<()> {
-        // let prompt = format!(
-        //     "Create me a battle scenario for a {} theme level.",
-        //     self.theme
-        // );
-
-        let prompt = self.model.create_prompt(self.context.clone(), &prompt);
-
-        let message = self.model.create_user_message(&prompt);
-
-        self.model.set_messages(vec![message]);
-
-        let inference_cfg_builder = InferenceConfigurationBuilder::default()
-            .temperature(1.0)
-            .top_p(1.0)
-            .max_tokens(1000)
-            .build();
-
-        let inference_cfg = Some(inference_cfg_builder);
-
-        let res = self.model.converse(None, inference_cfg).await?;
-
-        let scenario = res.get_text_output()?;
-
-        self.scenario = Some(scenario);
-
-        Ok(())
-    }
-
-    pub async fn to_json(
-        &mut self,
-        prompt: String,
-        additional_prompt: Option<String>,
-    ) -> anyhow::Result<()> {
-        // THIS is a static prompt using lazy_static
-        // let prompt = "".to_string();
-        let mut contexts: Vec<String> = Vec::new();
-
-        let scenario = self.scenario.clone().expect("Scenario not found");
-        contexts.push(scenario);
-
-        if let Some(add_prompt) = additional_prompt {
-            contexts.push(add_prompt)
-        }
-
-        let input = self.model.create_prompt(Some(contexts), &prompt);
-
-        let message = self.model.create_user_message(&input);
-
-        let inference_cfg_builder = InferenceConfigurationBuilder::default()
-            .temperature(0.3)
-            .top_p(0.8)
-            .max_tokens(1000)
-            .build();
-
-        let inference_cfg = Some(inference_cfg_builder);
-
-        self.model.set_messages(vec![message]);
-
-        let res = self.model.converse(Some(self.tool), inference_cfg).await?;
-
-        let tool_output = match res.get_tool_output() {
-            Ok(tool) => {
-                let tool_use_block = tool[0].input.clone();
-
-                Ok(tool_use_block)
-            }
-            Err(_) => {
-                let name = type_name::<BattleToolOutput>();
-
-                let err = ToolError::ParseOutput(name);
-
-                Err(err)
-            }
+        system_vars: HashMap<String, String>,
+        text_vars: HashMap<String, String>,
+        json_vars: HashMap<String, String>,
+    ) -> Self {
+        let system_prompt = Prompt {
+            text: BATTLE_SYSTEM_PROMPT.to_string(),
+            variables: system_vars,
         };
 
-        let output = match tool_output {
-            Ok(tool) => {
-                let value = serde_json::to_value(tool)?;
-                println!("TOOL VALUE: {:?}", value);
+        let json_prompt = Prompt {
+            text: BATTLE_JSON_PROMPT.to_string(),
+            variables: json_vars,
+        };
 
-                let output: BattleToolOutput = serde_json::from_value(value.clone())?;
+        let text_prompt = Prompt {
+            text: BATTLE_TEXT_PROMPT.to_string(),
+            variables: text_vars,
+        };
 
-                Ok(output)
-            }
-            Err(_) => {
-                let name = type_name::<BattleToolOutput>();
+        let tool = Tools::Battle;
 
-                let err = ToolError::ParseOutput(name);
-
-                Err(err)
-            }
-        }?;
-
-        self.output = Some(output);
-
-        Ok(())
+        Self {
+            model,
+            system_prompt,
+            tool,
+            json_prompt,
+            text_prompt,
+        }
     }
 }
 
-impl Generator for BattleGenerator {
-    fn generate(&self) -> String {
-        "".to_string()
-    }
+lazy_static! {
+    pub static ref BATTLE_TOOL_SCHEMA: serde_json::Value = {
+        serde_json::json!({
+            "type": "object",
+            "required": ["name", "summary", "terrain", "enemies", "enemy_type", "health", "attack", "attack_name", "attack_damage"],
+            "properties":{
+                "name": {
+                    "type":"string",
+                    "description":"A name for the battle encounter"
+                },
+                "summary":{
+                    "type":"string",
+                    "description":"A 1-4 sentence description of the battle scenario"
+                },
+                "terrain":{
+                    "type":"string",
+                    "description":"A description of the terrain the battle is happening in",
+                    "enum": ["Cave", "Desert", "Forest"]
+                },
+                "enemies": {
+                    "type": "array",
+                    "description": "A list of enemies to fight",
+                    "items": {
+                        "type": "object",
+                        "description": "An Object that defines an Enemy",
+                        "properties": {
+                            "enemy_type":{
+                                "type": "string",
+                                "description": "Type of enemy"
+                            },
+                            "health":{
+                                "type": "integer",
+                                "description": "Total health of the enemy",
+                                "minimum": 1,
+                                "maximum": 20
+                            },
+                            "attack":{
+                                "type": "object",
+                                "description": "An Object that defines an enemies attack",
+                                "properties": {
+                                    "attack_name": {
+                                        "type": "string",
+                                        "description": "Name of the attack"
+                                    },
+                                    "attack_damage": {
+                                        "type": "string",
+                                        "description": "Damage value of attack as a integer value",
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    };
 }
