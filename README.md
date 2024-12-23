@@ -60,3 +60,6 @@ doppler setup -p {project_name} -c {config_name}
     * just build-lambdas
     * just deploy-lambdas
 
+
+### Links
+https://artefact2.github.io/llm-sampling/index.xhtml
