@@ -5,6 +5,7 @@ use game::state::message::MessageSortKey;
 use game::store::Store;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
+use llm::tool::BattleToolOutput;
 use serde::{Deserialize, Serialize};
 use serenity::builder::*;
 use serenity::http::Http;
@@ -13,25 +14,9 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct BattleToolResponse {
-    pub enemies: Vec<Enemy>,
-    pub summary: String,
-    pub name: String,
-    pub terrain: String,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct Enemy {
-    pub health: u8,
-    pub enemy_type: String,
-    pub attack_damage: String,
-    pub attack_name: String,
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 struct ApiResponse {
-    detail: BattleToolResponse,
+    detail: BattleToolOutput,
 }
 
 lazy_static::lazy_static! {
@@ -533,7 +518,10 @@ impl LLMCmd {
                 for enemy in text.detail.enemies {
                     let description = format!(
                         "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
-                        enemy.enemy_type, enemy.attack_name, enemy.attack_damage, enemy.health
+                        enemy.enemy_type,
+                        enemy.attack.attack_name,
+                        enemy.attack.attack_damage,
+                        enemy.health
                     );
                     enemy_description.push_str(&description);
                 }
@@ -596,7 +584,10 @@ impl ScenarioCmd {
                 for enemy in text.detail.enemies {
                     let description = format!(
                         "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
-                        enemy.enemy_type, enemy.attack_name, enemy.attack_damage, enemy.health
+                        enemy.enemy_type,
+                        enemy.attack.attack_name,
+                        enemy.attack.attack_damage,
+                        enemy.health
                     );
                     enemy_description.push_str(&description);
                 }

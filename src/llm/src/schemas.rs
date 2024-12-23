@@ -132,7 +132,6 @@ lazy_static! {
                 "description": "A list of enemies to fight",
                 "items": {
                     "type": "object",
-                    "description": "An Object that defines an Enemy",
                     "properties": {
                         "enemy_type":{
                             "type": "string",

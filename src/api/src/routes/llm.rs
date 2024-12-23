@@ -81,8 +81,26 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     generator.generate_scenario(payload.scenario_prompt).await?;
     info!("Scenario Created");
 
-    generator.to_json(payload.json_prompt).await?;
-    info!("JSON Created");
+    let max_retries = 5; // Limit the number of retries
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+
+        // add error output to prompt to help form json on retry
+        match generator.to_json(payload.json_prompt.clone()).await {
+            Ok(_) => {
+                info!("JSON Created");
+                break;
+            }
+            Err(e) => {
+                info!("Attempt {attempts} failed: {e}");
+                if attempts >= max_retries {
+                    info!("Reached max retry limit of {max_retries}. Exiting.");
+                    break;
+                }
+            }
+        }
+    }
 
     let json = Json(json!({"detail": generator.output.unwrap()}));
 

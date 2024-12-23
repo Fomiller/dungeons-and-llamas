@@ -112,11 +112,24 @@ impl BattleGenerator {
 
         let res = self.model.converse(Some(self.tool), inference_cfg).await?;
 
-        let output = match res.get_tool_output() {
+        let tool_output = match res.get_tool_output() {
             Ok(tool) => {
-                let input = &tool[0].input;
+                let tool_use_block = tool[0].input.clone();
 
-                let value = serde_json::to_value(input)?;
+                Ok(tool_use_block)
+            }
+            Err(_) => {
+                let name = type_name::<BattleToolOutput>();
+
+                let err = ToolError::ParseOutput(name);
+
+                Err(err)
+            }
+        };
+
+        let output = match tool_output {
+            Ok(tool) => {
+                let value = serde_json::to_value(tool)?;
                 println!("TOOL VALUE: {:?}", value);
 
                 let output: BattleToolOutput = serde_json::from_value(value.clone())?;

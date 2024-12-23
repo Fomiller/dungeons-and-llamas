@@ -149,8 +149,13 @@ pub struct BattleToolOutput {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BattleToolEnemy {
-    pub health: u8,
+    pub health: String,
     pub enemy_type: String,
+    pub attack: BattleToolEnemyAttack,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct BattleToolEnemyAttack {
     pub attack_damage: String,
     pub attack_name: String,
 }

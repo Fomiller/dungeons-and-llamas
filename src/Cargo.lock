@@ -1149,6 +1149,7 @@ dependencies = [
  "hex",
  "lambda_http",
  "lazy_static",
+ "llm",
  "reqwest 0.12.9",
  "serde",
  "serde_json",

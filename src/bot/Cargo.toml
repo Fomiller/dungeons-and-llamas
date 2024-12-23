@@ -18,6 +18,7 @@ edition = "2021"
 [dependencies]
 dice = { path = "../dice/" }
 game = { path = "../game/" }
+llm = { path = "../llm/" }
 
 anyhow = "1.0.89"
 ed25519-dalek = "2.1.1"
