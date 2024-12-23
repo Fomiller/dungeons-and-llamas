@@ -9,11 +9,9 @@ pub struct LlmConverseInput {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct ScenarioInput {
     pub model: String,
-    pub scenario_prompt: String,
-    pub json_prompt: String,
-    pub system: String,
     pub scenario: String,
     pub theme: String,
+    pub level: String,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

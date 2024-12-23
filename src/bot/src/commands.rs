@@ -47,7 +47,6 @@ pub async fn try_handle_command_interaction(
         SlashCommands::Buttons(cmd) => cmd.execute(),
         SlashCommands::Menu(cmd) => cmd.execute(),
         SlashCommands::Text(cmd) => cmd.execute(interaction).await,
-        SlashCommands::LLM(cmd) => cmd.execute(interaction).await,
         SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
     }?;
 
@@ -85,9 +84,6 @@ pub struct EmbedCmd;
 pub struct EditCmd;
 
 #[derive(Debug, PartialEq, Default)]
-pub struct LLMCmd;
-
-#[derive(Debug, PartialEq, Default)]
 pub struct ScenarioCmd;
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -108,8 +104,6 @@ pub enum SlashCommands {
     Menu(MenuCmd),
     #[strum(serialize = "text", ascii_case_insensitive)]
     Text(TextCmd),
-    #[strum(serialize = "llm", ascii_case_insensitive)]
-    LLM(LLMCmd),
     #[strum(serialize = "scenario", ascii_case_insensitive)]
     Scenario(ScenarioCmd),
 }
@@ -482,77 +476,7 @@ impl EditCmd {
     }
 }
 
-impl LLMCmd {
-    pub fn new() -> Self {
-        Self
-    }
-
-    pub async fn execute(
-        &self,
-        cmd: CommandInteraction,
-    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let token =
-            std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
-
-        let http = Http::new(&token);
-        http.set_application_id(cmd.application_id);
-
-        let res = cmd.defer(&http).await?;
-        info!("DEFER: {:?}", res);
-
-        let client = reqwest::Client::new();
-        let options = &cmd.data.options;
-
-        let mut json = HashMap::<&str, &str>::new();
-
-        for option in options {
-            json.insert(
-                &option.name,
-                option.value.as_str().expect("Option value as not a string"),
-            );
-        }
-
-        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/converse");
-        let response = client.post(url).json(&json).send().await;
-
-        match response {
-            Ok(res) => {
-                info!("RES: {:?}", res);
-                let text = res.json::<ApiScenarioResponse>().await?;
-                info!("Text: {:?}", text);
-                let mut enemy_description = String::new();
-
-                for enemy in text.data.enemies {
-                    let description = format!(
-                        "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
-                        enemy.enemy_type,
-                        enemy.attack.attack_name,
-                        enemy.attack.attack_damage,
-                        enemy.health
-                    );
-                    enemy_description.push_str(&description);
-                }
-
-                let content = format!(
-                    "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
-                    text.data.name, text.data.summary, text.data.terrain, enemy_description
-                );
-
-                let message = CreateInteractionResponseFollowup::new().content(content);
-                let res = cmd.create_followup(&http, message).await;
-                info!("FOLLOW: {:?}", res);
-                Ok(None)
-            }
-            Err(e) => Err(anyhow::anyhow!(e)),
-        }
-    }
-}
-
 impl ScenarioCmd {
-    pub fn new() -> Self {
-        Self
-    }
-
     pub async fn execute(
         &self,
         cmd: CommandInteraction,
@@ -637,7 +561,7 @@ fn format_battle_scenario(data: BattleToolOutput) -> String {
     }
 
     format!(
-        "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}",
+        "# *{}\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}",
         data.name, data.summary, data.terrain, enemy_description
     )
 }

@@ -23,20 +23,8 @@
                 "required": true
             },
             {
-                "name": "scenario_prompt",
-                "description": "scenario Prompt to llm model",
-                "type": 3,
-                "required": true
-            },
-            {
-                "name": "json_prompt",
-                "description": "json Prompt to llm model",
-                "type": 3,
-                "required": true
-            },
-            {
-                "name": "system",
-                "description": "System message to llm model",
+                "name": "level",
+                "description": "level for the scenario",
                 "type": 3,
                 "required": true
             },

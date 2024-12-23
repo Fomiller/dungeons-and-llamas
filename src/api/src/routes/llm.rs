@@ -80,6 +80,8 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let mut json_vars = HashMap::new();
 
     text_vars.insert("theme".to_string(), payload.theme);
+
+    json_vars.insert("level".to_string(), payload.level);
     json_vars.insert(
         "example".to_string(),
         serde_json::to_string(&BattleToolOutput::mock())?,

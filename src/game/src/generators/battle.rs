@@ -23,7 +23,7 @@ You always keep your scenarios to single 2-4 sentence paragraphs, without bullet
 ";
 
 pub static BATTLE_JSON_PROMPT: &str = "
-Using the context provided use the 'battle' tool to create a level one battle scenario.
+Using the context provided use the 'battle' tool to create a level {{level}} battle scenario.
 The responses should be json with the following structure:
 {{example}}
 ";
