@@ -56,6 +56,7 @@ pub async fn try_handle_command_interaction(
         SlashCommands::Menu(cmd) => cmd.execute(),
         SlashCommands::Text(cmd) => cmd.execute(interaction).await,
         SlashCommands::LLM(cmd) => cmd.execute(interaction).await,
+        SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
     }?;
 
     Ok(res)
@@ -94,6 +95,9 @@ pub struct EditCmd;
 #[derive(Debug, PartialEq, Default)]
 pub struct LLMCmd;
 
+#[derive(Debug, PartialEq, Default)]
+pub struct ScenarioCmd;
+
 #[derive(Debug, PartialEq, EnumString)]
 pub enum SlashCommands {
     #[strum(ascii_case_insensitive)]
@@ -114,6 +118,8 @@ pub enum SlashCommands {
     Text(TextCmd),
     #[strum(serialize = "llm", ascii_case_insensitive)]
     LLM(LLMCmd),
+    #[strum(serialize = "scenario", ascii_case_insensitive)]
+    Scenario(ScenarioCmd),
 }
 
 impl RollCmd {
@@ -515,6 +521,69 @@ impl LLMCmd {
         }
 
         let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/converse");
+        let response = client.post(url).json(&json).send().await;
+
+        match response {
+            Ok(res) => {
+                info!("RES: {:?}", res);
+                let text = res.json::<ApiResponse>().await?;
+                info!("Text: {:?}", text);
+                let mut enemy_description = String::new();
+
+                for enemy in text.detail.enemies {
+                    let description = format!(
+                        "**Name**: {}\n**Attack**: {}\n**Damage**: {}\n**Health**: {}\n\n",
+                        enemy.enemy_type, enemy.attack_name, enemy.attack_damage, enemy.health
+                    );
+                    enemy_description.push_str(&description);
+                }
+
+                let content = format!(
+                    "**Battle Scenario**: {}\n**Description**: {}\n**Terrain**: {}\n\n**Enemies**:\n\n{}",
+                    text.detail.name, text.detail.summary, text.detail.terrain, enemy_description
+                );
+
+                let message = CreateInteractionResponseFollowup::new().content(content);
+                let res = cmd.create_followup(&http, message).await;
+                info!("FOLLOW: {:?}", res);
+                Ok(None)
+            }
+            Err(e) => Err(anyhow::anyhow!(e)),
+        }
+    }
+}
+
+impl ScenarioCmd {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub async fn execute(
+        &self,
+        cmd: CommandInteraction,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let token =
+            std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
+
+        let http = Http::new(&token);
+        http.set_application_id(cmd.application_id);
+
+        let res = cmd.defer(&http).await?;
+        info!("DEFER: {:?}", res);
+
+        let client = reqwest::Client::new();
+        let options = &cmd.data.options;
+
+        let mut json = HashMap::<&str, &str>::new();
+
+        for option in options {
+            json.insert(
+                &option.name,
+                option.value.as_str().expect("Option value as not a string"),
+            );
+        }
+
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/scenario");
         let response = client.post(url).json(&json).send().await;
 
         match response {

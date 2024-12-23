@@ -7,6 +7,16 @@ pub struct LlmConverseInput {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct ScenarioInput {
+    pub model: String,
+    pub scenario_prompt: String,
+    pub json_prompt: String,
+    pub system: String,
+    pub scenario: String,
+    pub theme: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct BattleToolResponse {
     pub enemies: Vec<Enemy>,
     pub summary: String,

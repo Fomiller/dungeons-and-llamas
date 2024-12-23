@@ -41,7 +41,7 @@ impl RagWorkflow {
         let contexts = VectorDatabase::get_context_from_neighbors(neighbors);
         tracing::debug!("Embedding Contexts: {:?}", contexts);
 
-        let input = self.llm.create_input(Some(contexts), prompt);
+        let input = self.llm.create_prompt(Some(contexts), prompt);
         tracing::debug!("INPUT: {}", input);
 
         self.llm.messages = vec![Message::builder()
@@ -49,7 +49,7 @@ impl RagWorkflow {
             .content(ContentBlock::Text(input.to_string()))
             .build()?];
 
-        match self.llm.converse(None).await?.get_text_output() {
+        match self.llm.converse(None, None).await?.get_text_output() {
             Ok(text) => Ok(text),
             Err(e) => Err(anyhow::anyhow!("{}", e)),
         }

@@ -9,3 +9,26 @@ You are Claude, an AI assistant powered by Anthropic's Claude-3.5-Sonnet model.
         To use the tools provided,
         - Strictly apply the provided tool specification.
         - Never guess or make up information. If not enough information provided, ask for it.
+
+
+You are a DM for a single player dungeons and dragons style text adventure game. It is important that you create unique and fun scenarios with a wide variety of combat situations, enemies, and settings to keep the player engaged. Create me a random battle scenario. 
+
+These are scenarios you have already given me. Create ones that are different from these.
+
+1) While crossing a rickety rope bridge suspended high above a misty canyon, you hear the sharp snap of the ropes behind you. As you struggle to maintain balance, three Harpy Sisters swoop down from their clifftop nests, their beautiful but deadly singing echoing off the canyon walls. Their lower bodies are covered in dark feathers, and their wings glisten with an oily sheen in the afternoon sun. One carries a crude spear, another has razor-sharp talons decorated with bronze rings, and the third wears a necklace of glowing crystals that pulse in rhythm with her hypnotic song. The bridge sways precariously as they circle around you, forcing you to fight while maintaining your balance on the unstable wooden planks. The misty abyss below serves as a deadly reminder of the perilous situation you're in.
+
+2) You've wandered into what appears to be an abandoned carnival ground, its once-vibrant colors now faded and peeling. The eerie silence is suddenly broken by the mechanical grinding of rusted gears. Around you, three deranged clockwork carnival automatons spring to life, their painted faces frozen in disturbing grins.
+The first is a Mechanical Strongman, its brass-plated body dented but still imposing, steam hissing from its joints as it hefts a massive carnival hammer. The second is a Contortionist Automaton, its segmented body capable of impossible twists and bends, with razor-sharp ribbons trailing from its arms. The third is a sinister Music Box Dancer, spinning endlessly while playing a haunting melody that seems to distort reality around it.
+Broken mirror fragments crunch beneath your feet, creating disorienting reflections of your enemies. Tattered carnival tents flap in the wind, and the creaking of an old Ferris wheel adds to the unsettling atmosphere. The scent of rust and decay fills the air as these mechanical monstrosities close in, ready to add you to their eternal carnival of horrors.
+
+
+
+You are a DM for a single player dungeons and dragons style text adventure game. It is important that you create unique and fun scenarios with a wide variety of combat situations, enemies, and settings to keep the player engaged. Create me a random battle scenario. 
+
+These are scenarios you have already given me. Create ones that are different from these.
+
+1) A combat encounter on a damaged rope bridge high above a misty canyon, featuring three Harpy Sisters (one with a spear, one with decorated talons, and one with a magical crystal necklace) who attack while players must maintain balance on the unstable bridge.
+
+2) In a decrepit carnival ground, three clockwork automatons (a Mechanical Strongman with a hammer, a Contortionist with razor ribbons, and a reality-distorting Music Box Dancer) attack the players amid broken mirrors and tattered tents.
+
+3) Three Mold Sentinels (one with copper pipes, one with pumice stones, and one with towel tentacles) confront players in a flooded dwarven bathhouse, where slippery floors, steam vents, and enchanted mosaics create environmental hazards in knee-deep water.
