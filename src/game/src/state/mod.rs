@@ -43,8 +43,7 @@ mod tests {
 
     use super::buildable::SortKeyBuildable;
     use super::builder::RootSortKeyBuilder;
-    use super::game::level::encounter::EncounterSortKey;
-    use super::game::level::round::{RoundSortKey, RoundSortKeyBuilder};
+    use super::game::level::encounter::{EncounterSortKey, EncounterSortKeyBuilder};
     use super::game::level::LevelSortKeyBuilder;
     use super::game::{
         entity::{
@@ -514,10 +513,10 @@ mod tests {
         // having to use a default
         let game_id = "12345";
 
-        let battle_sk_expected = "12345#Game#Level#1#Round#1#Encounter#Battle";
+        let battle_sk_expected = "12345#Game#Level#1#Encounter#Battle#Round#1";
 
-        let round_sk = RoundSortKeyBuilder::new(1).encounter(EncounterSortKey::Battle);
-        let level_skb = LevelSortKeyBuilder::new(1).round(round_sk);
+        let encounter_sk = EncounterSortKeyBuilder::new(1, EncounterSortKey::Battle);
+        let level_skb = LevelSortKeyBuilder::new(1).encounter(encounter_sk);
 
         let game_sk = GameSortKeyBuilder::new().level(level_skb);
         let root_sk = RootSortKeyBuilder::new().id(game_id).game(game_sk);

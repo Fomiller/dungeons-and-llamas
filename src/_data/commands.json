@@ -29,6 +29,12 @@
                 "required": true
             },
             {
+                "name": "round",
+                "description": "round for the scenario",
+                "type": 3,
+                "required": true
+            },
+            {
                 "name": "scenario",
                 "description": "Scenario to create",
                 "type": 3,

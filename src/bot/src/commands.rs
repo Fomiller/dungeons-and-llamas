@@ -3,6 +3,7 @@ use game::state::buildable::SortKeyBuildable;
 use game::state::builder::RootSortKeyBuilder;
 use game::state::message::MessageSortKey;
 use game::store::Store;
+use game::store::UserSortKey;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
 use llm::tool::BattleToolOutput;
@@ -490,10 +491,40 @@ impl ScenarioCmd {
         let res = cmd.defer(&http).await?;
         info!("DEFER: {:?}", res);
 
+        let client = Store::new().await;
+        let user_id = cmd.user.id.to_string();
+
+        let query = client.try_get_active_game_id(&user_id).await?;
+        let items = query.items.expect(
+            format!(
+                "Could not find {}",
+                RootSortKeyBuilder::new()
+                    .id(&user_id)
+                    .user(UserSortKey::ActiveGameId)
+                    .build()
+            )
+            .as_str(),
+        );
+
+        info!("QUERY: {:?}", items);
+
+        let game_id = items
+            .first()
+            .unwrap()
+            .get_key_value("State")
+            .expect("State for ActiveGameId not found")
+            .1
+            .as_s()
+            .unwrap();
+
         let client = reqwest::Client::new();
         let options = &cmd.data.options;
 
         let mut json = HashMap::<&str, &str>::new();
+        let user_id = cmd.user.id.to_string();
+
+        json.insert("user_id", &user_id);
+        json.insert("game_id", game_id);
 
         for option in options {
             json.insert(
@@ -561,7 +592,7 @@ fn format_battle_scenario(data: BattleToolOutput) -> String {
     }
 
     format!(
-        "# *{}\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}",
+        "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}",
         data.name, data.summary, data.terrain, enemy_description
     )
 }

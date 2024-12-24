@@ -33,6 +33,7 @@ impl SortKeyBuildable for RoundSortKeyBuilder {
         if let Some(encounter) = self.encounter {
             result.push_str(&format!("Encounter#{}", encounter.to_string()));
         }
+
         result
     }
     fn as_any(&self) -> &dyn Any {

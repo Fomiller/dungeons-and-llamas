@@ -3,7 +3,6 @@ use std::any::Any;
 pub mod encounter;
 pub mod round;
 use encounter::*;
-use round::RoundSortKeyBuilder;
 
 #[derive(strum::Display, strum::EnumIter)]
 pub enum LevelSortKey {
@@ -14,16 +13,19 @@ pub enum LevelSortKey {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct LevelSortKeyBuilder {
     level: u8,
-    round: Option<RoundSortKeyBuilder>,
+    encounter: Option<EncounterSortKeyBuilder>,
 }
 
 impl LevelSortKeyBuilder {
     pub fn new(level: u8) -> Self {
-        Self { level, round: None }
+        Self {
+            level,
+            encounter: None,
+        }
     }
 
-    pub fn round(mut self, round: RoundSortKeyBuilder) -> Self {
-        self.round = Some(round);
+    pub fn encounter(mut self, encounter: EncounterSortKeyBuilder) -> Self {
+        self.encounter = Some(encounter);
         self
     }
 }
@@ -31,8 +33,8 @@ impl LevelSortKeyBuilder {
 impl SortKeyBuildable for LevelSortKeyBuilder {
     fn build(&self) -> String {
         let mut result = format!("Level#{}#", self.level);
-        if let Some(round) = self.round {
-            result.push_str(&format!("{}", round.build().to_string()));
+        if let Some(encounter) = self.encounter {
+            result.push_str(&format!("{}", encounter.build().to_string()));
         }
         result
     }

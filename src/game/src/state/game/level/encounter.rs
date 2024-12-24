@@ -1,4 +1,4 @@
-use crate::state::buildable::SortKeyBuildable;
+use crate::state::{buildable::SortKeyBuildable, game::map::encounter};
 use std::any::Any;
 
 #[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
@@ -13,21 +13,22 @@ pub enum EncounterSortKey {
 
 #[derive(Debug, Clone, Copy)]
 pub struct EncounterSortKeyBuilder {
-    battle: Option<bool>,
-    shop: Option<bool>,
-    rest: Option<bool>,
+    round: u8,
+    encounter: EncounterSortKey,
+}
+impl EncounterSortKeyBuilder {
+    pub fn new(round: u8, encounter: EncounterSortKey) -> Self {
+        Self { round, encounter }
+    }
 }
 
 impl SortKeyBuildable for EncounterSortKeyBuilder {
     fn build(&self) -> String {
-        let mut result = String::from(format!("Ecounter#"));
-        if let Some(_) = self.battle {
-            result.push_str(&format!("{}", EncounterSortKey::Battle.to_string()));
-        } else if let Some(_) = self.shop {
-            result.push_str(&format!("{}", EncounterSortKey::Shop.to_string()));
-        } else if let Some(_) = self.rest {
-            result.push_str(&format!("{}", EncounterSortKey::Rest.to_string()));
-        }
+        let mut result = String::from(format!("Encounter#"));
+        result.push_str(&format!("{}#", self.encounter.to_string()));
+
+        result.push_str(&format!("Round#{}", self.round));
+
         result
     }
     fn as_any(&self) -> &dyn Any {

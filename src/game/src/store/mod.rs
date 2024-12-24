@@ -1,3 +1,10 @@
+use crate::state::game::{
+    level::{
+        encounter::{EncounterSortKey, EncounterSortKeyBuilder},
+        LevelSortKeyBuilder,
+    },
+    map::encounter,
+};
 pub use crate::state::{
     buildable::SortKeyBuildable,
     builder::RootSortKeyBuilder,
@@ -155,10 +162,68 @@ impl Store {
         Ok(())
     }
 
+    pub async fn try_save_active_game_id(
+        &self,
+        user_id: &str,
+        game_id: &str,
+    ) -> anyhow::Result<()> {
+        let active_game_sk = RootSortKeyBuilder::new()
+            .id(user_id)
+            .user(UserSortKey::ActiveGameId)
+            .build();
+
+        let active_game_id = serde_dynamo::to_item(StateComponent {
+            user_id: user_id.to_string(),
+            state_component: active_game_sk,
+            state: Some(game_id),
+            ..Default::default()
+        })?;
+
+        self.try_generic_put(active_game_id).await?;
+
+        Ok(())
+    }
+
+    pub async fn try_save_encounter(
+        &self,
+        user_id: &str,
+        game_id: &str,
+        encounter: EncounterSortKey,
+        level: u8,
+        round: u8,
+        state: Value,
+    ) -> anyhow::Result<()> {
+        let encounter_sk = EncounterSortKeyBuilder::new(round, encounter);
+        let level_sk = LevelSortKeyBuilder::new(level).encounter(encounter_sk);
+        let game_sk = GameSortKeyBuilder::new().level(level_sk);
+        let encounter = serde_dynamo::to_item(StateComponent {
+            user_id: user_id.to_string(),
+            state_component: RootSortKeyBuilder::new().id(game_id).game(game_sk).build(),
+            state: Some(state),
+            ..Default::default()
+        })?;
+
+        self.try_generic_put(encounter).await?;
+
+        Ok(())
+    }
+
     pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
         let sort_key = RootSortKeyBuilder::new()
             .id(user_id)
             .message(MessageSortKey::LastMessageToken)
+            .build();
+
+        let res = self
+            .try_generic_query(user_id.to_string(), sort_key)
+            .await?;
+
+        Ok(res)
+    }
+    pub async fn try_get_active_game_id(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
+        let sort_key = RootSortKeyBuilder::new()
+            .id(user_id)
+            .user(UserSortKey::ActiveGameId)
             .build();
 
         let res = self
@@ -181,6 +246,8 @@ impl Store {
 
         self.try_generic_batch_write_root_sks(user_id, sort_keys)
             .await?;
+
+        self.try_save_active_game_id(user_id, &game_id).await?;
 
         Ok(())
     }

@@ -11,6 +11,8 @@ use axum_macros::debug_handler;
 use game::generators::battle::BattleGenerator;
 use game::generators::battle::BattleJsonGeneratorConfig;
 use game::generators::JsonResponseGenerator;
+use game::state::game::level::encounter::EncounterSortKey;
+use game::store::Store;
 use lambda_http::tracing::info;
 use llm::llm::*;
 use llm::tool::*;
@@ -81,7 +83,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
     text_vars.insert("theme".to_string(), payload.theme);
 
-    json_vars.insert("level".to_string(), payload.level);
+    json_vars.insert("level".to_string(), payload.level.clone());
     json_vars.insert(
         "example".to_string(),
         serde_json::to_string(&BattleToolOutput::mock())?,
@@ -104,7 +106,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
             Ok(_) => {
                 info!("JSON Created");
 
-                let json = Json(json!({"data": generator.output.unwrap()}));
+                let json = Json(json!({"data": generator.output.clone().unwrap()}));
 
                 info!("Response: {:?}", json);
 
@@ -129,6 +131,20 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     };
 
     if let Some(res) = response {
+        let store = Store::new().await;
+        let value = json!({"text": generator.text, "json": generator.output.clone().unwrap()});
+        let state = serde_json::to_value(value)?;
+        let encounter = EncounterSortKey::Battle;
+        store
+            .try_save_encounter(
+                &payload.user_id,
+                &payload.game_id,
+                encounter,
+                payload.level.clone().parse()?,
+                payload.round.clone().parse()?,
+                state,
+            )
+            .await?;
         return Ok(res);
     } else {
         // this could potential be a cache fetch for a previous successful response.

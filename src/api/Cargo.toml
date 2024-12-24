@@ -16,10 +16,11 @@ edition = "2021"
 
 [dependencies]
 llm = { path = "../llm/" }
+game = { path = "../game/" }
+
 anyhow = "1.0.94"
 axum = { version = "0.7.7" }
 axum-macros = "0.4.2"
-game = { path = "../game/" }
 lambda_http = "0.13.0"
 serde = { version = "1.0.213", features = ["derive"] }
 aws-sdk-bedrockruntime = { version = "1.64.0", features = [

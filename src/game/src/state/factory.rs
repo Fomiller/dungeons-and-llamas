@@ -1,4 +1,5 @@
 use crate::state::{
+    buildable::SortKeyBuildable,
     builder::RootSortKeyBuilder,
     game::{
         entity::{
@@ -34,6 +35,8 @@ use crate::state::{
 
 use strum::IntoEnumIterator;
 
+use super::user::UserSortKey;
+
 #[derive(Clone, Debug)]
 pub struct SortKeyFactory {
     pub user_id: String,
@@ -47,6 +50,19 @@ impl SortKeyFactory {
         Self {
             user_id: user_id.to_string(),
         }
+    }
+
+    pub fn create_user_active_game_sk(
+        &self,
+        user_id: &str,
+        game_id: &str,
+    ) -> Vec<RootSortKeyBuilder> {
+        let entities = vec![Entity::Player, Entity::Enemy];
+
+        entities
+            .iter()
+            .flat_map(|e| self.create_entity_sks(*e, EntitySortKey::Inventory, game_id))
+            .collect::<Vec<RootSortKeyBuilder>>()
     }
 
     pub fn create_all_entity_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {
