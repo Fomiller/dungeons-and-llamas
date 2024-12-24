@@ -106,10 +106,13 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
             Ok(_) => {
                 info!("JSON Created");
 
-                let json = Json(json!({"data": generator.output.clone().unwrap()}));
+                let json = Json(
+                    json!({"data": generator.output.clone().expect("No generator output found. This should not happen")}),
+                );
 
                 info!("Response: {:?}", json);
 
+                // maybe return just json and create response object in statement below
                 break Some((StatusCode::OK, json).into_response());
             }
             Err(err) => {
@@ -132,19 +135,32 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
     if let Some(res) = response {
         let store = Store::new().await;
-        let value = json!({"text": generator.text, "json": generator.output.clone().unwrap()});
+
+        // :NOTE: im not sold on data field name, but I like it better than "json"
+        let text = generator.text;
+        let data = generator
+            .output
+            .expect("No generator output found. This should not happen");
+
+        let value = json!({"text": text, "data": data});
+
         let state = serde_json::to_value(value)?;
+
         let encounter = EncounterSortKey::Battle;
+        let level = payload.level.clone().parse::<u8>()?;
+        let round = payload.round.clone().parse::<u8>()?;
+
         store
             .try_save_encounter(
                 &payload.user_id,
                 &payload.game_id,
                 encounter,
-                payload.level.clone().parse()?,
-                payload.round.clone().parse()?,
+                level,
+                round,
                 state,
             )
             .await?;
+
         return Ok(res);
     } else {
         // this could potential be a cache fetch for a previous successful response.

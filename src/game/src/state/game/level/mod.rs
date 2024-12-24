@@ -1,8 +1,8 @@
+pub mod encounter;
+use encounter::*;
+
 use super::super::buildable::SortKeyBuildable;
 use std::any::Any;
-pub mod encounter;
-pub mod round;
-use encounter::*;
 
 #[derive(strum::Display, strum::EnumIter)]
 pub enum LevelSortKey {

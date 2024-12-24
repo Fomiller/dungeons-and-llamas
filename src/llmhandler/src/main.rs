@@ -9,7 +9,6 @@ use std::env;
 #[derive(Deserialize)]
 struct Request {
     pub prompt: String,
-    pub instructions: String,
     pub user_id: String,
     pub game_id: String,
 }

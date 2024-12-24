@@ -8,7 +8,7 @@ use aws_sdk_bedrockruntime::{
     },
     Client as BedrockClient,
 };
-use lambda_runtime::tracing::{debug, info};
+use lambda_runtime::tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct LlmHandler {

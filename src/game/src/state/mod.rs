@@ -43,8 +43,7 @@ mod tests {
 
     use super::buildable::SortKeyBuildable;
     use super::builder::RootSortKeyBuilder;
-    use super::game::level::encounter::{EncounterSortKey, EncounterSortKeyBuilder};
-    use super::game::level::LevelSortKeyBuilder;
+    use super::game::level::encounter::EncounterSortKey;
     use super::game::{
         entity::{
             inventory::items::equipped::EquippedStateSortKey,
@@ -511,16 +510,18 @@ mod tests {
     fn test_sort_key_builder_level() {
         // maybe use EnumIter here, initial exploration did not work b/c of
         // having to use a default
+        let factory = SortKeyFactory::new("12345");
+
         let game_id = "12345";
 
         let battle_sk_expected = "12345#Game#Level#1#Encounter#Battle#Round#1";
 
-        let encounter_sk = EncounterSortKeyBuilder::new(1, EncounterSortKey::Battle);
-        let level_skb = LevelSortKeyBuilder::new(1).encounter(encounter_sk);
+        let round = 1;
+        let level = 1;
+        let encounter = EncounterSortKey::Battle;
 
-        let game_sk = GameSortKeyBuilder::new().level(level_skb);
-        let root_sk = RootSortKeyBuilder::new().id(game_id).game(game_sk);
+        let sk = factory.create_encounter_sk(game_id, level, round, encounter);
 
-        assert_eq!(battle_sk_expected, root_sk.build());
+        assert_eq!(battle_sk_expected, sk.build());
     }
 }

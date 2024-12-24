@@ -1,4 +1,4 @@
-use crate::state::{buildable::SortKeyBuildable, game::map::encounter};
+use crate::state::buildable::SortKeyBuildable;
 use std::any::Any;
 
 #[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
@@ -11,23 +11,38 @@ pub enum EncounterSortKey {
     Rest,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct EncounterSortKeyBuilder {
-    round: u8,
-    encounter: EncounterSortKey,
+    round: Option<u8>,
+    encounter: Option<EncounterSortKey>,
 }
+
 impl EncounterSortKeyBuilder {
-    pub fn new(round: u8, encounter: EncounterSortKey) -> Self {
-        Self { round, encounter }
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn round(mut self, round: u8) -> Self {
+        self.round = Some(round);
+        self
+    }
+
+    pub fn encounter(mut self, encounter: EncounterSortKey) -> Self {
+        self.encounter = Some(encounter);
+        self
     }
 }
 
 impl SortKeyBuildable for EncounterSortKeyBuilder {
     fn build(&self) -> String {
         let mut result = String::from(format!("Encounter#"));
-        result.push_str(&format!("{}#", self.encounter.to_string()));
+        if let Some(encounter) = self.encounter {
+            result.push_str(&format!("{}#", encounter.to_string()));
+        }
 
-        result.push_str(&format!("Round#{}", self.round));
+        if let Some(round) = self.round {
+            result.push_str(&format!("Round#{}", round));
+        }
 
         result
     }

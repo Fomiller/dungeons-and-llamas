@@ -1,5 +1,4 @@
 use crate::state::{
-    buildable::SortKeyBuildable,
     builder::RootSortKeyBuilder,
     game::{
         entity::{
@@ -29,13 +28,15 @@ use crate::state::{
             },
             Entity, EntitySortKey, EntitySortKeyBuilder,
         },
+        level::encounter::*,
+        level::LevelSortKeyBuilder,
         GameSortKeyBuilder,
     },
 };
 
 use strum::IntoEnumIterator;
 
-use super::user::UserSortKey;
+use super::{game::level::encounter::EncounterSortKey, user::UserSortKey};
 
 #[derive(Clone, Debug)]
 pub struct SortKeyFactory {
@@ -52,17 +53,26 @@ impl SortKeyFactory {
         }
     }
 
-    pub fn create_user_active_game_sk(
-        &self,
-        user_id: &str,
-        game_id: &str,
-    ) -> Vec<RootSortKeyBuilder> {
-        let entities = vec![Entity::Player, Entity::Enemy];
+    pub fn create_user_active_game_sk(&self) -> RootSortKeyBuilder {
+        RootSortKeyBuilder::new()
+            .id(&self.user_id)
+            .user(UserSortKey::ActiveGameId)
+    }
 
-        entities
-            .iter()
-            .flat_map(|e| self.create_entity_sks(*e, EntitySortKey::Inventory, game_id))
-            .collect::<Vec<RootSortKeyBuilder>>()
+    pub fn create_encounter_sk(
+        &self,
+        game_id: &str,
+        round: u8,
+        level: u8,
+        encounter: EncounterSortKey,
+    ) -> RootSortKeyBuilder {
+        let encounter_sk = EncounterSortKeyBuilder::new()
+            .round(round)
+            .encounter(encounter);
+        let level_sk = LevelSortKeyBuilder::new(level).encounter(encounter_sk);
+        let game_sk = GameSortKeyBuilder::new().level(level_sk);
+
+        RootSortKeyBuilder::new().id(game_id).game(game_sk)
     }
 
     pub fn create_all_entity_inventory_sks(&self, game_id: &str) -> Vec<RootSortKeyBuilder> {

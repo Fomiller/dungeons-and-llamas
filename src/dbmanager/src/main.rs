@@ -47,7 +47,7 @@ async fn function_handler(_event: LambdaEvent<Request>) -> anyhow::Result<Respon
 }
 
 fn try_create_database_url() -> anyhow::Result<String> {
-    //TODO read user,pass,endpoint all from secrets manager
+    // :TODO: read user,pass,endpoint all from secrets manager
     let port = 5432;
     let rds_user = env::var("RDS_USERNAME").expect("RDS_USERNAME must be set");
     let rds_pass = env::var("RDS_PASSWORD").expect("RDS_PASSWORD must be set");

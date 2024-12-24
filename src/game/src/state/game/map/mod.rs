@@ -305,7 +305,7 @@ impl GameMap {
             id: Uuid::new_v4(),
         };
 
-        // TODO this might need to be looked at since we dont
+        // :TODO: this might need to be looked at since we dont
         // really care about the symbol because we use enums
         // if a path has already started from this point change the symbol
         match self.get_value(p1.row, p1.col) {

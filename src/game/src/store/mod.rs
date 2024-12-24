@@ -1,10 +1,4 @@
-use crate::state::game::{
-    level::{
-        encounter::{EncounterSortKey, EncounterSortKeyBuilder},
-        LevelSortKeyBuilder,
-    },
-    map::encounter,
-};
+use crate::state::game::level::encounter::EncounterSortKey;
 pub use crate::state::{
     buildable::SortKeyBuildable,
     builder::RootSortKeyBuilder,
@@ -167,14 +161,13 @@ impl Store {
         user_id: &str,
         game_id: &str,
     ) -> anyhow::Result<()> {
-        let active_game_sk = RootSortKeyBuilder::new()
-            .id(user_id)
-            .user(UserSortKey::ActiveGameId)
+        let sk = SortKeyFactory::new(user_id)
+            .create_user_active_game_sk()
             .build();
 
         let active_game_id = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: active_game_sk,
+            state_component: sk,
             state: Some(game_id),
             ..Default::default()
         })?;
@@ -193,12 +186,13 @@ impl Store {
         round: u8,
         state: Value,
     ) -> anyhow::Result<()> {
-        let encounter_sk = EncounterSortKeyBuilder::new(round, encounter);
-        let level_sk = LevelSortKeyBuilder::new(level).encounter(encounter_sk);
-        let game_sk = GameSortKeyBuilder::new().level(level_sk);
+        let sk = SortKeyFactory::new(user_id)
+            .create_encounter_sk(game_id, round, level, encounter)
+            .build();
+
         let encounter = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
-            state_component: RootSortKeyBuilder::new().id(game_id).game(game_sk).build(),
+            state_component: sk,
             state: Some(state),
             ..Default::default()
         })?;
@@ -220,17 +214,30 @@ impl Store {
 
         Ok(res)
     }
-    pub async fn try_get_active_game_id(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
-        let sort_key = RootSortKeyBuilder::new()
-            .id(user_id)
-            .user(UserSortKey::ActiveGameId)
+    pub async fn try_get_active_game_id(&self, user_id: &str) -> anyhow::Result<String> {
+        let sk = SortKeyFactory::new(&user_id)
+            .create_user_active_game_sk()
             .build();
 
         let res = self
-            .try_generic_query(user_id.to_string(), sort_key)
+            .try_generic_query(user_id.to_string(), sk.clone())
             .await?;
 
-        Ok(res)
+        let items = res.items.expect(format!("Could not find {}", sk).as_str());
+
+        debug!("QUERY: {:?}", items);
+
+        let game_id = items
+            .first()
+            .unwrap()
+            .get_key_value("State")
+            .expect("State for ActiveGameId not found")
+            .1
+            .as_s()
+            .unwrap()
+            .to_owned();
+
+        Ok(game_id)
     }
 
     pub async fn try_new_game(&self, user_id: &str) -> anyhow::Result<()> {

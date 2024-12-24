@@ -3,7 +3,6 @@ use game::state::buildable::SortKeyBuildable;
 use game::state::builder::RootSortKeyBuilder;
 use game::state::message::MessageSortKey;
 use game::store::Store;
-use game::store::UserSortKey;
 use lambda_http::tracing::debug;
 use lambda_http::tracing::info;
 use llm::tool::BattleToolOutput;
@@ -491,41 +490,20 @@ impl ScenarioCmd {
         let res = cmd.defer(&http).await?;
         info!("DEFER: {:?}", res);
 
-        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
 
-        let query = client.try_get_active_game_id(&user_id).await?;
-        let items = query.items.expect(
-            format!(
-                "Could not find {}",
-                RootSortKeyBuilder::new()
-                    .id(&user_id)
-                    .user(UserSortKey::ActiveGameId)
-                    .build()
-            )
-            .as_str(),
-        );
+        let store = Store::new().await;
 
-        info!("QUERY: {:?}", items);
+        let game_id = store.try_get_active_game_id(&user_id).await?;
 
-        let game_id = items
-            .first()
-            .unwrap()
-            .get_key_value("State")
-            .expect("State for ActiveGameId not found")
-            .1
-            .as_s()
-            .unwrap();
-
+        // :TODO: make this into ApiClient
         let client = reqwest::Client::new();
-        let options = &cmd.data.options;
 
         let mut json = HashMap::<&str, &str>::new();
-        let user_id = cmd.user.id.to_string();
-
         json.insert("user_id", &user_id);
-        json.insert("game_id", game_id);
+        json.insert("game_id", &game_id);
 
+        let options = &cmd.data.options;
         for option in options {
             json.insert(
                 &option.name,
