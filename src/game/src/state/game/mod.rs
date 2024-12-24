@@ -1,3 +1,4 @@
+use crate::state::buildable::SortKeyBuildable;
 pub mod entity;
 pub mod level;
 pub mod map;
@@ -5,6 +6,7 @@ pub mod round;
 
 use entity::EntitySortKeyBuilder;
 
+use level::LevelSortKeyBuilder;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +36,7 @@ pub enum GameSortKey {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct GameSortKeyBuilder {
     entity: Option<EntitySortKeyBuilder>,
-    level: Option<bool>,
+    level: Option<LevelSortKeyBuilder>,
     round: Option<bool>,
 }
 
@@ -48,7 +50,7 @@ impl GameSortKeyBuilder {
         self
     }
 
-    pub fn level(mut self, level: bool) -> Self {
+    pub fn level(mut self, level: LevelSortKeyBuilder) -> Self {
         self.level = Some(level);
         self
     }
@@ -62,7 +64,7 @@ impl GameSortKeyBuilder {
         if let Some(entity) = self.entity {
             result.push_str(&format!("{}", entity.build().to_string()));
         } else if let Some(level) = self.level {
-            result.push_str(&format!("{}", level.to_string()));
+            result.push_str(&format!("{}", level.build().to_string()));
         } else if let Some(round) = self.round {
             result.push_str(&format!("{}", round.to_string()));
         }
