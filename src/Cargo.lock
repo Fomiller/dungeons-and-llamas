@@ -998,21 +998,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "db-manager"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "db",
- "diesel",
- "diesel_migrations",
- "lambda_runtime",
- "openssl-sys",
- "pq-sys",
- "serde",
- "tokio",
-]
-
-[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1139,41 +1124,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "discord-bot"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "dice",
- "ed25519-dalek",
- "game",
- "hex",
- "lambda_http",
- "lazy_static",
- "llm",
- "reqwest 0.12.9",
- "serde",
- "serde_json",
- "serenity",
- "strum",
- "thiserror 2.0.9",
- "tokio",
-]
-
-[[package]]
-name = "discord-command-manager"
-version = "0.1.0"
-dependencies = [
- "aws-config",
- "aws-sdk-s3",
- "aws_lambda_events",
- "lambda_runtime",
- "lazy_static",
- "reqwest 0.12.9",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "displaydoc"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1197,6 +1147,66 @@ dependencies = [
  "llm",
  "serde",
  "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "dnl-db-manager"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "db",
+ "diesel",
+ "diesel_migrations",
+ "lambda_runtime",
+ "openssl-sys",
+ "pq-sys",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "dnl-discord-bot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dice",
+ "ed25519-dalek",
+ "game",
+ "hex",
+ "lambda_http",
+ "lazy_static",
+ "llm",
+ "reqwest 0.12.9",
+ "serde",
+ "serde_json",
+ "serenity",
+ "strum",
+ "thiserror 2.0.9",
+ "tokio",
+]
+
+[[package]]
+name = "dnl-discord-cmd-manager"
+version = "0.1.0"
+dependencies = [
+ "aws-config",
+ "aws-sdk-s3",
+ "aws_lambda_events",
+ "lambda_runtime",
+ "lazy_static",
+ "reqwest 0.12.9",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "dnl-llm-handler"
+version = "0.1.0"
+dependencies = [
+ "lambda_runtime",
+ "llm",
+ "serde",
  "tokio",
 ]
 
@@ -2092,16 +2102,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.9",
-]
-
-[[package]]
-name = "llm-handler"
-version = "0.1.0"
-dependencies = [
- "lambda_runtime",
- "llm",
- "serde",
- "tokio",
 ]
 
 [[package]]

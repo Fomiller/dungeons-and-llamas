@@ -1,5 +1,5 @@
 [package]
-name = "db-manager"
+name = "dnl-db-manager"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 ignored = ["openssl-sys", "pq-sys"]
 
 [dependencies]
-db = { path = "../db/" }
+db = { path = "../../db/" }
 
 anyhow = "1.0.94"
 diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
