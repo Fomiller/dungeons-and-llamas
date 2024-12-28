@@ -1,3 +1,7 @@
+pub mod message;
+pub mod user;
+pub mod weapon;
+
 use anyhow::anyhow;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::operation::query::QueryOutput;

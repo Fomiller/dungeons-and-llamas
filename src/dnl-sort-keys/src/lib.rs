@@ -25,7 +25,6 @@ pub mod root;
 pub mod round;
 pub mod saving_throws;
 pub mod skills;
-pub mod sort_key;
 pub mod spells;
 pub mod stats;
 pub mod tools;

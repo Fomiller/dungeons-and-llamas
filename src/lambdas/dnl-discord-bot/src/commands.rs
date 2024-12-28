@@ -15,11 +15,11 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use strum::EnumString;
 
-#[derive(thiserror::Error, Debug)]
-pub enum DiscordBotError {
-    #[error("Discord Bot process failed.")]
-    BotError,
-}
+// #[derive(thiserror::Error, Debug)]
+// pub enum DiscordBotError {
+//     #[error("Discord Bot process failed.")]
+//     BotError,
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ApiScenarioResponse {

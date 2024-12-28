@@ -1,6 +1,5 @@
 use crate::buildable::SortKeyBuildable;
 use crate::equipped::EquippedStateSortKey;
-use serde::{Deserialize, Serialize};
 use std::any::Any;
 
 #[derive(strum::Display, Debug, Clone, Copy, strum::EnumIter)]
@@ -54,11 +53,4 @@ impl WeaponSortKeyBuilder {
         self.equipped = equipped;
         self
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StateComponentWeapon {
-    pub name: String,
-    pub price: u8,
-    pub damage: u8,
 }
