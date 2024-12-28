@@ -1,11 +1,11 @@
 locals {
   runtime = "provided.al2023"
   filename = {
-    discord_bot             = "${path.module}/bin/discord-bot/bootstrap.zip"
-    discord_command_manager = "${path.module}/bin/discord-command-manager/bootstrap.zip"
+    discord_bot             = "${path.module}/bin/${var.app_prefix}-discord-bot/bootstrap.zip"
+    discord_command_manager = "${path.module}/bin/${var.app_prefix}-discord-cmd-manager/bootstrap.zip"
     dnl_api                 = "${path.module}/bin/${var.app_prefix}-api/bootstrap.zip"
-    llm_handler             = "${path.module}/bin/llm-handler/bootstrap.zip"
-    db_manager              = "${path.module}/bin/db-manager/bootstrap.zip"
+    llm_handler             = "${path.module}/bin/${var.app_prefix}-llm-handler/bootstrap.zip"
+    db_manager              = "${path.module}/bin/${var.app_prefix}-db-manager/bootstrap.zip"
   }
   source_code_hash = {
     discord_bot             = fileexists(local.filename["discord_bot"]) ? filebase64sha256(local.filename["discord_bot"]) : data.aws_lambda_function.discord_bot_exists[0].code_sha256
