@@ -1,0 +1,9 @@
+type Query {
+    classes: [Class!]!
+}
+
+type Class {
+    index: String
+    name: String
+}
+
