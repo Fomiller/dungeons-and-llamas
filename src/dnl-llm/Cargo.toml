@@ -1,0 +1,23 @@
+[package]
+name = "dnl-llm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dnl-db = { path = "../dnl-db/" }
+
+anyhow = "1.0.94"
+aws-config = "1.5.10"
+aws-sdk-bedrockruntime = { version = "1.64.0", features = [
+    "behavior-version-latest",
+] }
+lambda_runtime = "0.13.0"
+pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
+serde_json = "1.0.133"
+aws-smithy-types = { version = "1.2.10", features = [
+    "serde-deserialize",
+    "serde-serialize",
+] }
+serde = { version = "1.0.215", features = ["derive"] }
+lazy_static = "1.5.0"
+thiserror = "2.0.9"

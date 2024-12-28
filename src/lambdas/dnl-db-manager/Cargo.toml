@@ -1,0 +1,19 @@
+[package]
+name = "dnl-db-manager"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.cargo-machete]
+ignored = ["openssl-sys", "pq-sys"]
+
+[dependencies]
+dnl-db = { path = "../../dnl-db/" }
+
+anyhow = "1.0.94"
+diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
+diesel_migrations = { version = "2.2.0", features = ["postgres"] }
+lambda_runtime = { version = "0.13.0", features = ["anyhow"] }
+serde = "1"
+tokio = { version = "1", features = ["macros"] }
+openssl-sys = { version = "0.9.104", features = ["vendored"] }
+pq-sys = { version = "0.6.3", features = ["bundled"] }
