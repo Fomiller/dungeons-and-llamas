@@ -1,8 +1,8 @@
 use anyhow::anyhow;
-use db;
 use diesel::connection::Connection;
 use diesel::pg::PgConnection;
 use diesel_migrations::MigrationHarness;
+use dnl_db as db;
 use lambda_runtime::{
     run, service_fn,
     tracing::{self},

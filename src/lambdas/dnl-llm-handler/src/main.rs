@@ -1,8 +1,8 @@
-use llm::embedding::{EmbeddingConfig, EmbeddingEngine};
-use llm::llm::*;
+use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
+use dnl_llm::llm::*;
+use dnl_llm::rag::RagWorkflow;
 
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
-use llm::rag::RagWorkflow;
 use serde::{Deserialize, Serialize};
 use std::env;
 

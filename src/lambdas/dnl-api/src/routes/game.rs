@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
 use axum::{routing::post, Router};
 use axum_macros::debug_handler;
-use game::store::Store;
+use dnl_store::Store;
 use serde_json::json;
 
 pub fn game_router() -> Router {

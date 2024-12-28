@@ -7,7 +7,7 @@ edition = "2021"
 ignored = ["openssl-sys", "pq-sys"]
 
 [dependencies]
-db = { path = "../../db/" }
+dnl-db = { path = "../../dnl-db/" }
 
 anyhow = "1.0.94"
 diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }

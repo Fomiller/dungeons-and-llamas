@@ -3,8 +3,8 @@ pub mod models;
 pub mod routes;
 pub mod services;
 
-use crate::game::game_router;
-use crate::llm::llm_router;
+use crate::routes::game::game_router;
+use crate::routes::llm::llm_router;
 use axum::{routing::get, Router};
 use lambda_http::{run, tracing, Error};
 use routes::*;

@@ -987,17 +987,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
 
 [[package]]
-name = "db"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "diesel",
- "diesel_migrations",
- "pgvector",
- "serde",
-]
-
-[[package]]
 name = "der"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1056,13 +1045,6 @@ checksum = "ab63b0e2bf4d5928aff72e83a7dace85d7bba5fe12dcc3c5a572d78caffd3f3c"
 dependencies = [
  "derive_builder_core",
  "syn 2.0.90",
-]
-
-[[package]]
-name = "dice"
-version = "0.1.0"
-dependencies = [
- "rand",
 ]
 
 [[package]]
@@ -1142,12 +1124,25 @@ dependencies = [
  "aws-sdk-bedrockruntime",
  "axum",
  "axum-macros",
- "game",
+ "dnl-generators",
+ "dnl-llm",
+ "dnl-sort-keys",
+ "dnl-store",
  "lambda_http",
- "llm",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "dnl-db"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "diesel",
+ "diesel_migrations",
+ "pgvector",
+ "serde",
 ]
 
 [[package]]
@@ -1155,9 +1150,9 @@ name = "dnl-db-manager"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "db",
  "diesel",
  "diesel_migrations",
+ "dnl-db",
  "lambda_runtime",
  "openssl-sys",
  "pq-sys",
@@ -1166,17 +1161,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "dnl-dice"
+version = "0.1.0"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "dnl-discord-bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "dice",
+ "dnl-dice",
+ "dnl-llm",
+ "dnl-sort-keys",
+ "dnl-store",
  "ed25519-dalek",
- "game",
  "hex",
  "lambda_http",
  "lazy_static",
- "llm",
  "reqwest 0.12.9",
  "serde",
  "serde_json",
@@ -1201,13 +1204,119 @@ dependencies = [
 ]
 
 [[package]]
+name = "dnl-generators"
+version = "0.1.0"
+dependencies = [
+ "ansi_term",
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-sdk-dynamodb",
+ "dnl-llm",
+ "lambda_http",
+ "lazy_static",
+ "rand",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
+ "sqids",
+ "strum",
+ "thiserror 2.0.9",
+ "uuid",
+]
+
+[[package]]
+name = "dnl-llm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-smithy-types",
+ "dnl-db",
+ "lambda_runtime",
+ "lazy_static",
+ "pgvector",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.9",
+]
+
+[[package]]
 name = "dnl-llm-handler"
 version = "0.1.0"
 dependencies = [
+ "dnl-llm",
  "lambda_runtime",
- "llm",
  "serde",
  "tokio",
+]
+
+[[package]]
+name = "dnl-map"
+version = "0.1.0"
+dependencies = [
+ "ansi_term",
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-sdk-dynamodb",
+ "dnl-llm",
+ "lambda_http",
+ "lazy_static",
+ "rand",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
+ "sqids",
+ "strum",
+ "thiserror 2.0.9",
+ "uuid",
+]
+
+[[package]]
+name = "dnl-sort-keys"
+version = "0.1.0"
+dependencies = [
+ "ansi_term",
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-sdk-dynamodb",
+ "dnl-llm",
+ "lambda_http",
+ "lazy_static",
+ "rand",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
+ "sqids",
+ "strum",
+ "thiserror 2.0.9",
+ "uuid",
+]
+
+[[package]]
+name = "dnl-store"
+version = "0.1.0"
+dependencies = [
+ "ansi_term",
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-sdk-dynamodb",
+ "dnl-llm",
+ "dnl-sort-keys",
+ "lambda_http",
+ "lazy_static",
+ "rand",
+ "serde",
+ "serde_dynamo",
+ "serde_json",
+ "sqids",
+ "strum",
+ "thiserror 2.0.9",
+ "uuid",
 ]
 
 [[package]]
@@ -1478,28 +1587,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
 dependencies = [
  "byteorder",
-]
-
-[[package]]
-name = "game"
-version = "0.1.0"
-dependencies = [
- "ansi_term",
- "anyhow",
- "aws-config",
- "aws-sdk-bedrockruntime",
- "aws-sdk-dynamodb",
- "lambda_http",
- "lazy_static",
- "llm",
- "rand",
- "serde",
- "serde_dynamo",
- "serde_json",
- "sqids",
- "strum",
- "thiserror 2.0.9",
- "uuid",
 ]
 
 [[package]]
@@ -2086,23 +2173,6 @@ name = "litemap"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
-
-[[package]]
-name = "llm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "aws-config",
- "aws-sdk-bedrockruntime",
- "aws-smithy-types",
- "db",
- "lambda_runtime",
- "lazy_static",
- "pgvector",
- "serde",
- "serde_json",
- "thiserror 2.0.9",
-]
 
 [[package]]
 name = "lock_api"
