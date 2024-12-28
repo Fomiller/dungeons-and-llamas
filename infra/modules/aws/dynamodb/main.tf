@@ -2,7 +2,7 @@ resource "aws_dynamodb_table" "dnl_game_state" {
   name         = "${var.namespace}-${var.app_prefix}-${var.environment}-game-state"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "UserId"
-  range_key    = "StateComponent"
+  range_key    = "SortKey"
 
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
@@ -12,7 +12,7 @@ resource "aws_dynamodb_table" "dnl_game_state" {
     type = "S"
   }
   attribute {
-    name = "StateComponent"
+    name = "SortKey"
     type = "S"
   }
   # attribute {
