@@ -1,7 +1,7 @@
-mod commands;
-mod components;
-mod modals;
-mod verify;
+pub mod commands;
+pub mod components;
+pub mod modals;
+pub mod verify;
 
 use commands::*;
 use components::*;

@@ -1,7 +1,10 @@
 pub mod message;
+pub mod schema;
+pub mod state_component;
 pub mod user;
 pub mod weapon;
 
+use crate::state_component::StateComponent;
 use anyhow::anyhow;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::operation::query::QueryOutput;
@@ -15,29 +18,9 @@ use dnl_sort_keys::game::GameState;
 use dnl_sort_keys::prelude::*;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
-use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, strum::Display)]
-pub enum SchemaVersion {
-    #[strum(to_string = "v1")]
-    #[default]
-    V1,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct StateComponent<T> {
-    #[serde(rename = "UserId")]
-    pub user_id: String,
-    #[serde(rename = "StateComponent")]
-    pub state_component: String,
-    #[serde(rename = "State")]
-    pub state: Option<T>,
-    #[serde(rename = "SchemaVersion")]
-    pub schema_version: SchemaVersion,
-}
 
 pub struct Store {
     client: aws_sdk_dynamodb::Client,
