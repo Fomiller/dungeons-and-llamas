@@ -1,2 +1,2 @@
 [workspace]
-members = ["lambdas/*", "dnl-*", "dnd-5e-client", "dnd-beyond"]
+members = ["lambdas/*", "dnl-*", "dnd-5e-client"]
