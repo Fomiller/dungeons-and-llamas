@@ -132,7 +132,7 @@ fn format_battle_scenario(data: BattleToolOutput) -> String {
     }
 
     format!(
-        "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}",
-        data.name, data.summary, data.terrain, enemy_description
+        "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
+        data.name, data.summary, data.terrain, enemy_description, data.summary
     )
 }

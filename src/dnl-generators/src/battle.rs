@@ -1,4 +1,4 @@
-use crate::*;
+use crate::generators::*;
 use dnl_llm::tool::{BattleToolOutput, Tools};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
@@ -109,12 +109,11 @@ lazy_static! {
                 },
                 "summary":{
                     "type":"string",
-                    "description":"A 1-4 sentence description of the battle scenario"
+                    "description":"A 30 to 50 word summary of the battle scenario. Include the number of enemies and enemy types."
                 },
                 "terrain":{
                     "type":"string",
                     "description":"A description of the terrain the battle is happening in",
-                    "enum": ["Cave", "Desert", "Forest"]
                 },
                 "enemies": {
                     "type": "array",
