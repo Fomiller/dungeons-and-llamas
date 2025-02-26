@@ -109,7 +109,7 @@ lazy_static! {
                 },
                 "summary":{
                     "type":"string",
-                    "description":"A 30 to 50 word summary of the battle scenario. Include the number of enemies and enemy types."
+                    "description":"A 30 to 50 word objective summary of the battle scenario. Make sure to include the number and types of enemies."
                 },
                 "terrain":{
                     "type":"string",
