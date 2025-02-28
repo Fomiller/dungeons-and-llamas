@@ -186,6 +186,12 @@ pub struct BattleToolOutput {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ShopToolOutput { }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RestToolOutput { }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct BattleToolEnemy {
     pub health: String,
     pub enemy_type: String,
@@ -196,4 +202,12 @@ pub struct BattleToolEnemy {
 pub struct BattleToolEnemyAttack {
     pub attack_damage: String,
     pub attack_name: String,
+}
+
+impl MockData for RestToolOutput {
+    fn mock() -> Self { Self{} }
+}
+
+impl MockData for ShopToolOutput {
+    fn mock() -> Self { Self{} }
 }

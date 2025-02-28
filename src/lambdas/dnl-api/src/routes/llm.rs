@@ -1,5 +1,5 @@
 use crate::error::ApiError;
-use crate::models::llm::{BattleToolResponse, LlmConverseInput, ScenarioInput};
+use dnl_llm::llm::{BattleToolResponse, LlmConverseInput, ScenarioInput};
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::InferenceConfigurationBuilder;
 use axum::http::StatusCode;
@@ -11,11 +11,11 @@ use dnl_generators::battle::BattleJsonGeneratorConfig;
 use dnl_generators::JsonResponseGenerator;
 use dnl_llm::llm::*;
 use dnl_llm::tool::*;
-use dnl_sort_keys::encounter::EncounterSortKey;
-use dnl_store::Store;
+use dnl_generators::Scenario;
 use lambda_http::tracing::info;
 use serde_json::json;
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub fn llm_router() -> Router {
     let router: Router = Router::new()
@@ -78,88 +78,35 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let system_vars = HashMap::new();
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
+    
+    let example = match Scenario::from_str(&payload.scenario)? {
+        Scenario::Battle => serde_json::to_string(&BattleToolOutput::mock())?,
+        Scenario::Shop => serde_json::to_string(&BattleToolOutput::mock())?,
+        Scenario::Rest => serde_json::to_string(&RestToolOutput::mock())?,
+    };
 
-    text_vars.insert("theme".to_string(), payload.theme);
+    text_vars.insert("theme".to_string(), payload.theme.clone());
 
     json_vars.insert("level".to_string(), payload.level.clone());
-    json_vars.insert(
-        "example".to_string(),
-        serde_json::to_string(&BattleToolOutput::mock())?,
-    );
+    json_vars.insert("example".to_string(), example);
 
-    let config = BattleJsonGeneratorConfig::new(payload.model, system_vars, text_vars, json_vars);
+    let config = BattleJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars);
 
     let mut generator: BattleGenerator = JsonResponseGenerator::new(config).await;
 
     generator.generate_text().await?;
-
     info!("Text Created");
 
-    let mut ctxs: Vec<String> = vec![];
+    let response = generator.generate_json().await?;
+    info!("Json Created");
 
-    let response = loop {
-        generator.attempts += 1;
-
-        match generator.to_json::<BattleToolOutput>(ctxs.clone()).await {
-            Ok(_) => {
-                info!("JSON Created");
-
-                let json = Json(
-                    json!({"data": generator.output.clone().expect("No generator output found. This should not happen")}),
-                );
-
-                info!("Response: {:?}", json);
-
-                // maybe return just json and create response object in statement below
-                break Some((StatusCode::OK, json).into_response());
-            }
-            Err(err) => {
-                if generator.attempts >= generator.max_retries {
-                    info!("Reached max retry limit of {}", generator.max_retries);
-                    break None;
-                }
-
-                info!("Retrying creating JSON output");
-                info!("Attempt {} failed: {}", generator.attempts, err);
-
-                let ctx = format!(
-                    "The previous attempt to deserialize your response failed with the error: {}",
-                    err.to_string()
-                );
-                ctxs.push(ctx)
-            }
-        }
-    };
-
-    if let Some(res) = response {
-        let store = Store::new().await;
-
-        // :NOTE: im not sold on data field name, but I like it better than "json"
-        let text = generator.text;
-        let data = generator
-            .output
-            .expect("No generator output found. This should not happen");
-
-        let value = json!({"text": text, "data": data});
-
-        let state = serde_json::to_value(value)?;
-
-        let encounter = EncounterSortKey::Battle;
-        let level = payload.level.clone().parse::<u8>()?;
-        let round = payload.round.clone().parse::<u8>()?;
-
-        store
-            .try_save_encounter(
-                &payload.user_id,
-                &payload.game_id,
-                encounter,
-                level,
-                round,
-                state,
-            )
-            .await?;
-
-        return Ok(res);
+    if let Some(data) = response {
+        generator.save_json(&data).await?;
+        
+        info!("Response: {:?}", data);
+        
+        let res =Some((StatusCode::OK, Json(json!({"data": data})))).expect("this should never happen").into_response();
+        return Ok(res)
     } else {
         // this could potential be a cache fetch for a previous successful response.
         let err = format!("Reached max retry limit of {}", generator.max_retries);

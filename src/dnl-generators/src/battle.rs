@@ -1,5 +1,6 @@
 use crate::*;
 use dnl_llm::tool::{BattleToolOutput, Tools};
+use dnl_llm::llm::ScenarioInput;
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
@@ -35,16 +36,19 @@ Create a random {{theme}} battle scenario for the player.
 pub type BattleGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig, BattleToolOutput>;
 
 pub struct BattleJsonGeneratorConfig {
+    pub scenario_input: ScenarioInput,
     pub tool: Tools,
-    pub model: String, //can be and enum probably
     pub system_prompt: Prompt,
     pub json_prompt: Prompt,
     pub text_prompt: Prompt,
 }
 
 impl JsonResponseGeneratorConfig for BattleJsonGeneratorConfig {
+    fn scenario_input(&self) -> ScenarioInput {
+        self.scenario_input.clone()
+    }
     fn model(&self) -> String {
-        self.model.clone()
+        self.scenario_input.model.clone()
     }
     fn system_prompt(&self) -> String {
         self.system_prompt.format()
@@ -65,7 +69,7 @@ impl JsonResponseGeneratorConfig for BattleJsonGeneratorConfig {
 
 impl BattleJsonGeneratorConfig {
     pub fn new(
-        model: String,
+        scenario_input: ScenarioInput,
         system_vars: HashMap<String, String>,
         text_vars: HashMap<String, String>,
         json_vars: HashMap<String, String>,
@@ -88,7 +92,7 @@ impl BattleJsonGeneratorConfig {
         let tool = Tools::Battle;
 
         Self {
-            model,
+            scenario_input,
             system_prompt,
             tool,
             json_prompt,

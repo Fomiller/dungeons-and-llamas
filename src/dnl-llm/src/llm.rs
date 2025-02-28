@@ -10,12 +10,47 @@ use aws_sdk_bedrockruntime::{
 };
 use lambda_runtime::tracing::debug;
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct LlmConverseInput {
+    pub model: String,
+    pub prompt: String,
+    pub system: String,
+    pub instructions: Option<String>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ScenarioInput {
+    pub user_id: String,
+    pub game_id: String,
+    pub model: String,
+    pub scenario: String,
+    pub theme: String,
+    pub level: String,
+    pub round: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct BattleToolResponse {
+    pub enemies: Vec<Enemy>,
+    pub summary: String,
+    pub name: String,
+    pub terrain: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct LlmHandler {
     pub client: aws_sdk_bedrockruntime::Client,
     pub model: String,
     pub system: String,
     pub messages: Vec<Message>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Enemy {
+    pub health: u8,
+    pub enemy_type: String,
+    pub attack_damage: String,
+    pub attack_name: String,
 }
 
 impl LlmHandler {

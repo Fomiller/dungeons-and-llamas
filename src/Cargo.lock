@@ -1234,6 +1234,8 @@ dependencies = [
  "aws-sdk-bedrockruntime",
  "aws-sdk-dynamodb",
  "dnl-llm",
+ "dnl-sort-keys",
+ "dnl-store",
  "lambda_http",
  "lazy_static",
  "rand",

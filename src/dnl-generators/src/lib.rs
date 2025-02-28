@@ -1,10 +1,27 @@
 pub mod battle;
+use std::marker::PhantomData;
+use dnl_store::Store;
+use dnl_sort_keys::encounter::EncounterSortKey;
+use dnl_llm::llm::ScenarioInput;
 
 use aws_sdk_bedrockruntime::types::builders::*;
-use dnl_llm::llm::{LlmHandler, ParseConverseOuput};
+use dnl_llm::llm::ParseConverseOuput;
+use dnl_llm::llm::LlmHandler;
 use dnl_llm::tool::Tools;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use lambda_http::tracing::info;
+use serde_json::json;
+use serde::Serialize;
+use serde::Deserialize;
+use strum::EnumString;
+
+#[derive(Debug, Deserialize, Serialize, EnumString)]
+pub enum Scenario {
+    Battle,
+    Shop,
+    Rest
+}
 
 pub trait Generator {
     fn generate(&self) -> String;
@@ -28,6 +45,7 @@ impl Prompt {
 }
 
 pub trait JsonResponseGeneratorConfig {
+    fn scenario_input(&self) -> ScenarioInput;
     fn json_prompt(&self) -> String;
     fn model(&self) -> String;
     fn schema(&self) -> serde_json::Value;
@@ -36,24 +54,27 @@ pub trait JsonResponseGeneratorConfig {
     fn tool(&self) -> Tools;
 }
 
-#[derive(Debug, Clone)]
-pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig, T: DeserializeOwned> {
+#[derive(Debug)]
+pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig, D:DeserializeOwned + Serialize> {
     pub config: C,
     pub context: Option<Vec<String>>,
     pub model: LlmHandler,
-    pub output: Option<T>,
     pub text: Option<String>,
     pub max_retries: u8,
     pub attempts: u8,
+    _phantom_data: PhantomData<D>,
 }
 
-impl<C: JsonResponseGeneratorConfig, T: DeserializeOwned> JsonResponseGenerator<C, T> {
+impl<C, D> JsonResponseGenerator<C, D> 
+where 
+    C: JsonResponseGeneratorConfig,
+    D: DeserializeOwned + Serialize
+{
     pub async fn new(config: C) -> Self {
         let model = LlmHandler::new(config.model(), config.system_prompt()).await;
 
         let context = None;
         let text = None;
-        let output = None;
         let max_retries = 5;
         let attempts = 0;
 
@@ -61,10 +82,10 @@ impl<C: JsonResponseGeneratorConfig, T: DeserializeOwned> JsonResponseGenerator<
             config,
             context,
             model,
-            output,
             text,
             max_retries,
             attempts,
+            _phantom_data: PhantomData
         }
     }
 
@@ -94,9 +115,7 @@ impl<C: JsonResponseGeneratorConfig, T: DeserializeOwned> JsonResponseGenerator<
         Ok(())
     }
 
-    pub async fn to_json<V>(&mut self, ctxs: Vec<String>) -> anyhow::Result<()>
-    where
-        V: DeserializeOwned,
+    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<D>
     {
         let mut contexts: Vec<String> = Vec::new();
 
@@ -146,11 +165,73 @@ impl<C: JsonResponseGeneratorConfig, T: DeserializeOwned> JsonResponseGenerator<
         println!("TOOL VALUE: {:?}", value);
 
         match serde_json::from_value(value) {
-            Ok(output) => {
-                self.output = Some(output);
-                Ok(())
-            }
+            Ok(output) =>  Ok(output),
             Err(err) => Err(err.into()),
         }
+    }
+    
+    pub async fn generate_json(&mut self) -> anyhow::Result<Option<serde_json::Value>>
+    {
+        let mut ctxs: Vec<String> = vec![];
+        let response = loop {
+            self.attempts += 1;
+
+            match self.to_json(ctxs.clone()).await {
+                Ok(data) => {
+                    info!("JSON Created");
+
+                    let json = json!({"data": data});
+ 
+                    info!("Response: {:?}", json);
+
+                    break Some(json);
+                }
+                Err(err) => {
+                    // early return if max_retries exceeded
+                    if self.attempts >= self.max_retries {
+                        info!("Reached max retry limit of {}", self.max_retries);
+                        break None;
+                    }
+
+                    info!("Retrying creating JSON output");
+                    info!("Attempt {} failed: {}", self.attempts, err);
+
+                    let ctx = format!(
+                        "The previous attempt to deserialize your response failed with the error: {}",
+                        err.to_string()
+                    );
+                    ctxs.push(ctx)
+                }
+            }
+        };
+        Ok(response)
+    }
+    
+    pub async fn save_json(&mut self, data: &serde_json::Value) -> anyhow::Result<()> {
+        let store = Store::new().await;
+
+        let value = json!({"text": self.text, "data": data});
+
+        let state = serde_json::to_value(value)?;
+
+        let encounter = EncounterSortKey::Battle;
+        
+        let scenario_input = self.config.scenario_input();
+        
+        let level = scenario_input.level.parse::<u8>()?;
+        let round = scenario_input.round.parse::<u8>()?;
+        let user_id = &scenario_input.user_id;
+        let game_id = &scenario_input.game_id;
+
+        store
+            .try_save_encounter(
+                user_id,
+                game_id,
+                encounter,
+                level,
+                round,
+                state,
+            )
+            .await
     }
 }
