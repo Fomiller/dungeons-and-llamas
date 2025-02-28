@@ -78,10 +78,9 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let system_vars = HashMap::new();
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
-    
     let example = match Scenario::from_str(&payload.scenario)? {
         Scenario::Battle => serde_json::to_string(&BattleToolOutput::mock())?,
-        Scenario::Shop => serde_json::to_string(&BattleToolOutput::mock())?,
+        Scenario::Shop => serde_json::to_string(&ShopToolOutput::mock())?,
         Scenario::Rest => serde_json::to_string(&RestToolOutput::mock())?,
     };
 
@@ -91,8 +90,10 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     json_vars.insert("example".to_string(), example);
 
     let config = BattleJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars);
+    println!("Here1");
 
     let mut generator: BattleGenerator = JsonResponseGenerator::new(config).await;
+    println!("Here2");
 
     generator.generate_text().await?;
     info!("Text Created");
@@ -101,11 +102,13 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     info!("Json Created");
 
     if let Some(data) = response {
-        generator.save_json(&data).await?;
+        let value = serde_json::to_value(data.clone())?;
+        generator.save_json(&value).await?;
         
-        info!("Response: {:?}", data);
+        let res = (StatusCode::OK, Json(json!({"data": data}))).into_response();
         
-        let res =Some((StatusCode::OK, Json(json!({"data": data})))).expect("this should never happen").into_response();
+        info!("Response: {:?}", res);
+        
         return Ok(res)
     } else {
         // this could potential be a cache fetch for a previous successful response.

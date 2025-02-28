@@ -97,7 +97,10 @@ pub async fn handle_sucessful_response(
 ) -> anyhow::Result<()> {
     match res.status() {
         reqwest::StatusCode::OK => {
-            let data = res.json::<ApiScenarioResponse>().await?.data;
+            info!("RES: {:?}", res);
+            let x = res.json::<ApiScenarioResponse>().await;
+            info!("X: {:?}", x);
+            let data = x.unwrap().data;
 
             info!("Data: {:?}", data);
 

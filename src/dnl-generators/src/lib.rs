@@ -17,6 +17,7 @@ use serde::Deserialize;
 use strum::EnumString;
 
 #[derive(Debug, Deserialize, Serialize, EnumString)]
+#[strum(ascii_case_insensitive)]
 pub enum Scenario {
     Battle,
     Shop,
@@ -170,7 +171,7 @@ where
         }
     }
     
-    pub async fn generate_json(&mut self) -> anyhow::Result<Option<serde_json::Value>>
+    pub async fn generate_json(&mut self) -> anyhow::Result<Option<D>>
     {
         let mut ctxs: Vec<String> = vec![];
         let response = loop {
@@ -178,13 +179,7 @@ where
 
             match self.to_json(ctxs.clone()).await {
                 Ok(data) => {
-                    info!("JSON Created");
-
-                    let json = json!({"data": data});
- 
-                    info!("Response: {:?}", json);
-
-                    break Some(json);
+                    break Some(data);
                 }
                 Err(err) => {
                     // early return if max_retries exceeded
