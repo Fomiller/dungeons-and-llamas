@@ -1,2 +1,3 @@
 [workspace]
+resolver = "2"
 members = ["lambdas/*", "dnl-*", "dnd-5e-client"]

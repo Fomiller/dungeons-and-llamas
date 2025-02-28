@@ -90,10 +90,8 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     json_vars.insert("example".to_string(), example);
 
     let config = BattleJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars);
-    println!("Here1");
 
     let mut generator: BattleGenerator = JsonResponseGenerator::new(config).await;
-    println!("Here2");
 
     generator.generate_text().await?;
     info!("Text Created");

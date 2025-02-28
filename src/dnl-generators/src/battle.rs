@@ -30,7 +30,9 @@ The responses should be json with the following structure:
 ";
 
 pub static BATTLE_TEXT_PROMPT: &str = "
-Create a random {{theme}} battle scenario for the player.
+Create a random {{theme}} battle scenario for the player. Make sure that the scenario is truely unique
+to the previous examples provided in the context if there are any. The player constantly wants to feel like they are 
+being presented with brand new scenarios every time.
 ";
 
 pub type BattleGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig, BattleToolOutput>;

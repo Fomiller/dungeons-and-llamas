@@ -91,9 +91,23 @@ where
     }
 
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
+        let store = Store::new().await;
+        // mpQtCe0qleQ#Game#Level#5#Encounter#Battle#Round#6
+        let scenario_input = self.config.scenario_input();
+        let user_id = scenario_input.user_id; 
+        let game_id = scenario_input.game_id;
+        let level = scenario_input.level;
+        let scenario = scenario_input.scenario;
+        let resp = store.try_get_encounters(&user_id, &game_id, &level, &scenario).await?;
+        
+        let ctxs: Vec<String> = resp.iter().map(|v| format!("name: {}\ntext: {}\n\n", v.state.data.name, v.state.text)).collect();
+        
+        info!("Ctx Count: {:?}", ctxs.len());
+        info!("CTXS: {:?}", ctxs);
+        
         let prompt = self
             .model
-            .create_prompt(self.context.clone(), &self.config.text_prompt());
+            .create_prompt(Some(ctxs), &self.config.text_prompt());
 
         let message = self.model.create_user_message(&prompt);
 
@@ -114,6 +128,37 @@ where
         self.text = Some(text);
 
         Ok(())
+    }
+    
+    pub async fn generate_json(&mut self) -> anyhow::Result<Option<D>>
+    {
+        let mut ctxs: Vec<String> = vec![];
+        let response = loop {
+            self.attempts += 1;
+
+            match self.to_json(ctxs.clone()).await {
+                Ok(data) => {
+                    break Some(data);
+                }
+                Err(err) => {
+                    // early return if max_retries exceeded
+                    if self.attempts >= self.max_retries {
+                        info!("Reached max retry limit of {}", self.max_retries);
+                        break None;
+                    }
+
+                    info!("Retrying creating JSON output");
+                    info!("Attempt {} failed: {}", self.attempts, err);
+
+                    let ctx = format!(
+                        "The previous attempt to deserialize your response failed with the error: {}",
+                        err.to_string()
+                    );
+                    ctxs.push(ctx)
+                }
+            }
+        };
+        Ok(response)
     }
 
     pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<D>
@@ -163,44 +208,12 @@ where
 
         let value = serde_json::to_value(tool_value)?;
 
-        println!("TOOL VALUE: {:?}", value);
-
         match serde_json::from_value(value) {
             Ok(output) =>  Ok(output),
             Err(err) => Err(err.into()),
         }
     }
     
-    pub async fn generate_json(&mut self) -> anyhow::Result<Option<D>>
-    {
-        let mut ctxs: Vec<String> = vec![];
-        let response = loop {
-            self.attempts += 1;
-
-            match self.to_json(ctxs.clone()).await {
-                Ok(data) => {
-                    break Some(data);
-                }
-                Err(err) => {
-                    // early return if max_retries exceeded
-                    if self.attempts >= self.max_retries {
-                        info!("Reached max retry limit of {}", self.max_retries);
-                        break None;
-                    }
-
-                    info!("Retrying creating JSON output");
-                    info!("Attempt {} failed: {}", self.attempts, err);
-
-                    let ctx = format!(
-                        "The previous attempt to deserialize your response failed with the error: {}",
-                        err.to_string()
-                    );
-                    ctxs.push(ctx)
-                }
-            }
-        };
-        Ok(response)
-    }
     
     pub async fn save_json(&mut self, data: &serde_json::Value) -> anyhow::Result<()> {
         let store = Store::new().await;

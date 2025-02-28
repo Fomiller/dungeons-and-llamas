@@ -3,8 +3,10 @@ pub mod schema;
 pub mod state_component;
 pub mod user;
 pub mod weapon;
+pub mod encounter;
 
 use crate::state_component::StateComponent;
+use crate::encounter::EncounterQuery;
 use anyhow::anyhow;
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::operation::query::QueryOutput;
@@ -56,6 +58,26 @@ impl Store {
             .expression_attribute_names("#sk", "StateComponent")
             .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
             .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
+            .send()
+            .await?;
+        Ok(res)
+    }
+    pub async fn try_generic_begins_with_query(
+        &self,
+        primary_key: String,
+        sk_prefix: String,
+    ) -> anyhow::Result<QueryOutput> {
+        let res = self
+            .client
+            .query()
+            .table_name(GAME_STATE_TABLE.to_string())
+            .key_condition_expression("#pk = :user_id AND begins_with(#sk, :sk_prefix)")
+            .expression_attribute_names("#pk", "UserId")
+            .expression_attribute_names("#sk", "StateComponent")
+            .expression_attribute_names("#state", "State")
+            .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
+            .expression_attribute_values(":sk_prefix", AttributeValue::S(sk_prefix))
+            .projection_expression("#state")
             .send()
             .await?;
         Ok(res)
@@ -199,6 +221,25 @@ impl Store {
 
         Ok(res)
     }
+
+    pub async fn try_get_encounters(&self, user_id: &str, game_id: &str, level: &str, encounter: &str) -> anyhow::Result<Vec<EncounterQuery>> {
+        let mut chars = encounter.chars();
+        let encounter = match chars.next() {
+            Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
+            None => String::new(), // Return empty string if input is empty
+        };
+        let sk = format!("{}#Game#Level#{}#Encounter#{}#Round#",game_id, level, encounter);
+        let res = self
+            .try_generic_begins_with_query(user_id.to_string(), sk)
+            .await?;
+        
+        let items = res.items.unwrap();
+        debug!("Items: {:?}", items);
+        
+        let ctxs: Vec<EncounterQuery> = serde_dynamo::from_items(items)?;
+        Ok(ctxs)
+    }
+    
     pub async fn try_get_active_game_id(&self, user_id: &str) -> anyhow::Result<String> {
         let sk = SortKeyFactory::new(&user_id)
             .create_user_active_game_sk()
