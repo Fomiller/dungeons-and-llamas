@@ -16,6 +16,7 @@ edition = "2021"
 
 [dependencies]
 dnl-llm = { path = "../../dnl-llm/" }
+dnl-types = { path = "../../dnl-types/" }
 lambda_runtime = "0.13.0"
 tokio = { version = "1", features = ["macros"] }
 serde = { version = "1.0.215", features = ["derive"] }

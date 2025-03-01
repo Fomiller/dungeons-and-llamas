@@ -20,6 +20,7 @@ dnl-dice = { path = "../../dnl-dice/" }
 dnl-sort-keys = { path = "../../dnl-sort-keys/" }
 dnl-llm = { path = "../../dnl-llm/" }
 dnl-store = { path = "../../dnl-store/" }
+dnl-types = { path = "../../dnl-types/" }
 
 anyhow = "1.0.89"
 ed25519-dalek = "2.1.1"

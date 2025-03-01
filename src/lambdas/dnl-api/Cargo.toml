@@ -16,6 +16,7 @@ edition = "2021"
 
 [dependencies]
 dnl-llm = { path = "../../dnl-llm/" }
+dnl-types = { path = "../../dnl-types/" }
 dnl-generators = { path = "../../dnl-generators/" }
 dnl-store = { path = "../../dnl-store/" }
 dnl-sort-keys = { path = "../../dnl-sort-keys/" }

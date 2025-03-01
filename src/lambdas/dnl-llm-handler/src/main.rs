@@ -1,6 +1,6 @@
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
-use dnl_llm::llm::*;
 use dnl_llm::rag::RagWorkflow;
+use dnl_types::llm::LlmHandler;
 
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
 use serde::{Deserialize, Serialize};

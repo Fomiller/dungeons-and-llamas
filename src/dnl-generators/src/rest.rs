@@ -8,7 +8,7 @@ use dnl_types::scenario::ScenarioInput;
 
 use lazy_static::lazy_static;
 
-pub static BATTLE_SYSTEM_PROMPT: &str = "
+pub static REST_SYSTEM_PROMPT: &str = "
 You are a DM for a single player dungeons and dragons style text adventure game.
 It is important that you always create unique and fun scenarios with a wide variety of
 situations, enemies, items, and settings to keep the player engaged.
@@ -18,7 +18,7 @@ You are able to create 3 different scenario types.
 - Shop 
 - Rest
 
-Rules for creating battle scenarios:
+Rules for creating rest scenarios:
 - Keep the scenarios inline with the theme provided
 - Make sure that the scenario is appropriate for the players level
 
@@ -27,14 +27,14 @@ You always keep your scenarios to single 2-4 sentence paragraphs, without bullet
 
 ";
 
-pub static BATTLE_JSON_PROMPT: &str = "
-Using the context provided use the 'battle' tool to create a level {{level}} battle scenario.
+pub static REST_JSON_PROMPT: &str = "
+Using the context provided use the 'rest' tool to create a level {{level}} rest scenario.
 The responses should be json with the following structure:
 {{example}}
 ";
 
-pub static BATTLE_TEXT_PROMPT: &str = "
-Create a random {{theme}} battle scenario for the player. Make sure that the scenario is truely unique
+pub static REST_TEXT_PROMPT: &str = "
+Create a random {{theme}} rest scenario for the player. Make sure that the scenario is truely unique
 to the previous examples provided in the context if there are any. The player constantly wants to feel like they are 
 being presented with brand new scenarios every time.
 ";
@@ -81,17 +81,17 @@ impl BattleJsonGeneratorConfig {
         json_vars: HashMap<String, String>,
     ) -> Self {
         let system_prompt = Prompt {
-            text: BATTLE_SYSTEM_PROMPT.to_string(),
+            text: REST_SYSTEM_PROMPT.to_string(),
             variables: system_vars,
         };
 
         let json_prompt = Prompt {
-            text: BATTLE_JSON_PROMPT.to_string(),
+            text: REST_JSON_PROMPT.to_string(),
             variables: json_vars,
         };
 
         let text_prompt = Prompt {
-            text: BATTLE_TEXT_PROMPT.to_string(),
+            text: REST_TEXT_PROMPT.to_string(),
             variables: text_vars,
         };
 
@@ -108,22 +108,22 @@ impl BattleJsonGeneratorConfig {
 }
 
 lazy_static! {
-    pub static ref BATTLE_TOOL_SCHEMA: serde_json::Value = {
+    pub static ref REST_TOOL_SCHEMA: serde_json::Value = {
         serde_json::json!({
             "type": "object",
             "required": ["name", "summary", "terrain", "enemies", "enemy_type", "health", "attack", "attack_name", "attack_damage"],
             "properties":{
                 "name": {
                     "type":"string",
-                    "description":"A name for the battle encounter"
+                    "description":"A name for the rest encounter"
                 },
                 "summary":{
                     "type":"string",
-                    "description":"A 30 to 50 word objective summary of the battle scenario. Make sure to include the number and types of enemies."
+                    "description":"A 30 to 50 word objective summary of the rest scenario. Make sure to include the number and types of enemies."
                 },
                 "terrain":{
                     "type":"string",
-                    "description":"A description of the terrain the battle is happening in",
+                    "description":"A description of the terrain the rest is happening in",
                 },
                 "enemies": {
                     "type": "array",

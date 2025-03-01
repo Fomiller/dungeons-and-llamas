@@ -1,21 +1,26 @@
 use crate::error::ApiError;
-use dnl_llm::llm::{BattleToolResponse, LlmConverseInput, ScenarioInput};
+
+use std::collections::HashMap;
+use std::str::FromStr;
+
+use dnl_generators::battle::BattleGenerator;
+use dnl_generators::battle::BattleJsonGeneratorConfig;
+use dnl_generators::JsonResponseGenerator;
+use dnl_types::llm::*;
+use dnl_types::tools::*;
+use dnl_types::tools::battle::BattleToolOutput;
+use dnl_types::tools::shop::ShopToolOutput;
+use dnl_types::tools::rest::RestToolOutput;
+use dnl_types::scenario::*;
+
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::InferenceConfigurationBuilder;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json, Response};
 use axum::{routing::post, Router};
 use axum_macros::debug_handler;
-use dnl_generators::battle::BattleGenerator;
-use dnl_generators::battle::BattleJsonGeneratorConfig;
-use dnl_generators::JsonResponseGenerator;
-use dnl_llm::llm::*;
-use dnl_llm::tool::*;
-use dnl_generators::Scenario;
 use lambda_http::tracing::info;
 use serde_json::json;
-use std::collections::HashMap;
-use std::str::FromStr;
 
 pub fn llm_router() -> Router {
     let router: Router = Router::new()
@@ -54,8 +59,8 @@ pub async fn post_llm_converse(
             let value = serde_json::to_value(input)?;
             info!("Value: {}", value);
 
-            let res: BattleToolResponse = serde_json::from_value(value.clone())
-                .context("Could not convert to BattleToolResponse")?;
+            let res: BattleToolOutput = serde_json::from_value(value.clone())
+                .context("Could not convert to BattleToolOutput")?;
             info!("BTR: {:?}", res);
 
             let json = Json(json!({"detail": res}));

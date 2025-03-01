@@ -20,7 +20,7 @@ use roll::*;
 use scenario::*;
 use text::*;
 
-use dnl_llm::tool::BattleToolOutput;
+use dnl_types::tools::battle::BattleToolOutput;
 use lambda_http::tracing::info;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};

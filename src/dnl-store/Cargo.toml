@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 dnl-llm = { path = "../dnl-llm/" }
+dnl-types = { path = "../dnl-types/" }
 dnl-sort-keys = { path = "../dnl-sort-keys/" }
 
 ansi_term = "0.12.1"

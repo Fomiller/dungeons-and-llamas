@@ -1149,6 +1149,7 @@ dependencies = [
  "dnl-llm",
  "dnl-sort-keys",
  "dnl-store",
+ "dnl-types",
  "lambda_http",
  "serde",
  "serde_json",
@@ -1197,6 +1198,7 @@ dependencies = [
  "dnl-llm",
  "dnl-sort-keys",
  "dnl-store",
+ "dnl-types",
  "ed25519-dalek",
  "hex",
  "lambda_http",
@@ -1236,6 +1238,7 @@ dependencies = [
  "dnl-llm",
  "dnl-sort-keys",
  "dnl-store",
+ "dnl-types",
  "lambda_http",
  "lazy_static",
  "rand",
@@ -1257,6 +1260,7 @@ dependencies = [
  "aws-sdk-bedrockruntime",
  "aws-smithy-types",
  "dnl-db",
+ "dnl-types",
  "lambda_runtime",
  "lazy_static",
  "pgvector",
@@ -1270,6 +1274,7 @@ name = "dnl-llm-handler"
 version = "0.1.0"
 dependencies = [
  "dnl-llm",
+ "dnl-types",
  "lambda_runtime",
  "serde",
  "tokio",
@@ -1330,6 +1335,7 @@ dependencies = [
  "aws-sdk-dynamodb",
  "dnl-llm",
  "dnl-sort-keys",
+ "dnl-types",
  "lambda_http",
  "lazy_static",
  "rand",
@@ -1340,6 +1346,24 @@ dependencies = [
  "strum",
  "thiserror 2.0.9",
  "uuid",
+]
+
+[[package]]
+name = "dnl-types"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aws-config",
+ "aws-sdk-bedrockruntime",
+ "aws-smithy-types",
+ "dnl-db",
+ "lambda_runtime",
+ "lazy_static",
+ "pgvector",
+ "serde",
+ "serde_json",
+ "strum",
+ "thiserror 2.0.9",
 ]
 
 [[package]]

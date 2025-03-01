@@ -1,5 +1,5 @@
 use serde::*;
-use dnl_llm::tool::BattleToolOutput;
+use dnl_types::tools::battle::BattleToolOutput;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EncounterQuery {

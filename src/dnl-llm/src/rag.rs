@@ -1,8 +1,8 @@
 use super::embedding::*;
-use super::llm::*;
 use aws_sdk_bedrockruntime::types::*;
 use dnl_db::*;
 use lambda_runtime::tracing;
+use dnl_types::llm::{ParseConverseOutput, LlmHandler};
 
 pub struct RagWorkflow {
     pub database: VectorDatabase,

@@ -1,28 +1,22 @@
 pub mod battle;
+pub mod shop;
+pub mod rest;
+
 use std::marker::PhantomData;
+use std::collections::HashMap;
+
 use dnl_store::Store;
 use dnl_sort_keys::encounter::EncounterSortKey;
-use dnl_llm::llm::ScenarioInput;
+use dnl_types::scenario::ScenarioInput;
+use dnl_types::llm::ParseConverseOutput;
+use dnl_types::llm::LlmHandler;
+use dnl_types::tools::Tools;
 
 use aws_sdk_bedrockruntime::types::builders::*;
-use dnl_llm::llm::ParseConverseOuput;
-use dnl_llm::llm::LlmHandler;
-use dnl_llm::tool::Tools;
-use serde::de::DeserializeOwned;
-use std::collections::HashMap;
 use lambda_http::tracing::info;
-use serde_json::json;
 use serde::Serialize;
-use serde::Deserialize;
-use strum::EnumString;
-
-#[derive(Debug, Deserialize, Serialize, EnumString)]
-#[strum(ascii_case_insensitive)]
-pub enum Scenario {
-    Battle,
-    Shop,
-    Rest
-}
+use serde::de::DeserializeOwned;
+use serde_json::json;
 
 pub trait Generator {
     fn generate(&self) -> String;
