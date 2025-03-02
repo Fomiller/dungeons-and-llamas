@@ -16,7 +16,6 @@ use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
-use serde_json::json;
 
 pub trait Generator {
     fn generate(&self) -> String;
@@ -94,7 +93,7 @@ where
         let scenario = scenario_input.scenario;
         let resp = store.try_get_encounters(&user_id, &game_id, &level, &scenario).await?;
         
-        let ctxs: Vec<String> = resp.iter().map(|v| format!("name: {}\ntext: {}\n\n", v.state.data.name, v.state.text)).collect();
+        let ctxs: Vec<String> = resp.iter().map(|v| format!("name: {}\ntext: {}\n\n", v.name, v.text)).collect();
         
         info!("Ctx Count: {:?}", ctxs.len());
         info!("CTXS: {:?}", ctxs);
@@ -209,12 +208,12 @@ where
     }
     
     
-    pub async fn save_json(&mut self, data: &serde_json::Value) -> anyhow::Result<()> {
+    pub async fn save_json(&mut self, data: serde_json::Value) -> anyhow::Result<()> {
         let store = Store::new().await;
 
-        let value = json!({"text": self.text, "data": data});
-
-        let state = serde_json::to_value(value)?;
+        // let value = json!({"text": self.text, "data": data});
+        //
+        // // let state = serde_json::to_value(value)?;
 
         let encounter = EncounterSortKey::Battle;
         
@@ -224,7 +223,18 @@ where
         let round = scenario_input.round.parse::<u8>()?;
         let user_id = &scenario_input.user_id;
         let game_id = &scenario_input.game_id;
-
+        // 
+        // Convert serde_json::Value to HashMap<String, Value>
+ 
+        let mut state = HashMap::new();
+        
+        state.insert("text".to_string(), aws_sdk_dynamodb::types::AttributeValue::S(self.text.clone().unwrap_or("".to_string())));
+        
+        let x: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = serde_dynamo::to_item(data)?;
+        
+        state.extend(x);
+        
+        
         store
             .try_save_encounter(
                 user_id,

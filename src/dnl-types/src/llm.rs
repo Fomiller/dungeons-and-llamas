@@ -21,7 +21,7 @@ pub struct LlmHandler {
 
 impl LlmHandler {
     pub async fn new(model: String, system: String) -> Self {
-        let config = aws_config::load_from_env().await;
+        let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
         let client = BedrockClient::new(&config);
         Self {
             client,

@@ -38,7 +38,7 @@ impl EditCmd {
         let token = items
             .first()
             .unwrap()
-            .get_key_value("State")
+            .get_key_value("last_message_token")
             .expect("State for LastMessageToken not found")
             .1
             .as_s()

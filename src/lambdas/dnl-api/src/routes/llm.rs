@@ -106,7 +106,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
     if let Some(data) = response {
         let value = serde_json::to_value(data.clone())?;
-        generator.save_json(&value).await?;
+        generator.save_json(value).await?;
         
         let res = (StatusCode::OK, Json(json!({"data": data}))).into_response();
         

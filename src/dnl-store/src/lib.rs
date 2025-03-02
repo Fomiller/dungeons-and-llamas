@@ -20,9 +20,10 @@ use dnl_sort_keys::game::GameState;
 use dnl_sort_keys::prelude::*;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::env;
+
+type Item = HashMap<String, AttributeValue>;
 
 pub struct Store {
     client: aws_sdk_dynamodb::Client,
@@ -48,6 +49,7 @@ impl Store {
         &self,
         primary_key: String,
         sort_key: String,
+        attributes: &str,
     ) -> anyhow::Result<QueryOutput> {
         let res = self
             .client
@@ -58,6 +60,7 @@ impl Store {
             .expression_attribute_names("#sk", "StateComponent")
             .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
             .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
+            .projection_expression(attributes)
             .send()
             .await?;
         Ok(res)
@@ -66,18 +69,35 @@ impl Store {
         &self,
         primary_key: String,
         sk_prefix: String,
+        attributes: Vec<&str>,
     ) -> anyhow::Result<QueryOutput> {
+        let mut expression_attribute_names = HashMap::new();
+        
+        expression_attribute_names.insert("#pk".to_string(), "UserId".to_string());
+        expression_attribute_names.insert("#sk".to_string(), "StateComponent".to_string());
+
+        let mut aliased_attributes = Vec::new();
+        for (i, attr) in attributes.iter().enumerate() {
+            let alias = format!("#attr{}", i);
+            expression_attribute_names.insert(alias.to_string(), attr.to_string());
+            aliased_attributes.push(alias);
+        }
+
+         let projection_expression = if aliased_attributes.is_empty() {
+             None
+        } else {
+            Some(aliased_attributes.join(", "))
+        };
+        
         let res = self
             .client
             .query()
             .table_name(GAME_STATE_TABLE.to_string())
             .key_condition_expression("#pk = :user_id AND begins_with(#sk, :sk_prefix)")
-            .expression_attribute_names("#pk", "UserId")
-            .expression_attribute_names("#sk", "StateComponent")
-            .expression_attribute_names("#state", "State")
+            .set_expression_attribute_names(Some(expression_attribute_names))
             .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
             .expression_attribute_values(":sk_prefix", AttributeValue::S(sk_prefix))
-            .projection_expression("#state")
+            .set_projection_expression(projection_expression)
             .send()
             .await?;
         Ok(res)
@@ -98,6 +118,7 @@ impl Store {
         &self,
         item: HashMap<String, AttributeValue>,
     ) -> anyhow::Result<PutItemOutput> {
+        info!("GEN-PUT: {:?}", item);
         let res = self
             .client
             .put_item()
@@ -138,9 +159,9 @@ impl Store {
     }
 
     pub async fn try_create_user(&self, user_id: &str) -> anyhow::Result<()> {
-        let item = serde_dynamo::to_item(GameState {
-            user_id: user_id.to_string(),
-        })?;
+        let mut map = HashMap::new();
+        map.insert("user_id", user_id);
+        let item = serde_dynamo::to_item(map)?; 
 
         self.try_generic_put(item).await?;
 
@@ -148,17 +169,23 @@ impl Store {
     }
 
     pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
-        let last_message_token = serde_dynamo::to_item(StateComponent {
+        
+        let mut state_component: Item = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
             state_component: RootSortKeyBuilder::new()
                 .id(user_id)
                 .message(MessageSortKey::LastMessageToken)
                 .build(),
-            state: Some(token),
             ..Default::default()
         })?;
+        
+        let mut map = HashMap::new();
+        map.insert("last_message_token", token);
+        let item: Item = serde_dynamo::to_item(map)?;
 
-        self.try_generic_put(last_message_token).await?;
+        state_component.extend(item);
+
+        self.try_generic_put(state_component).await?;
 
         Ok(())
     }
@@ -172,14 +199,20 @@ impl Store {
             .create_user_active_game_sk()
             .build();
 
-        let active_game_id = serde_dynamo::to_item(StateComponent {
+        let mut state_component: Item = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
             state_component: sk,
-            state: Some(game_id),
             ..Default::default()
         })?;
+        
+        // let _game_id = AttributeValue::S(game_id.to_string());
+        let mut map = HashMap::new();
+        map.insert("game_id".to_string(), game_id);
+        let item: Item = serde_dynamo::to_item(map)?;
+         
+        state_component.extend(item);
 
-        self.try_generic_put(active_game_id).await?;
+        self.try_generic_put(state_component).await?;
 
         Ok(())
     }
@@ -191,20 +224,22 @@ impl Store {
         encounter: EncounterSortKey,
         level: u8,
         round: u8,
-        state: Value,
+        state: HashMap<String, AttributeValue>,
     ) -> anyhow::Result<()> {
         let sk = SortKeyFactory::new(user_id)
             .create_encounter_sk(game_id, round, level, encounter)
             .build();
 
-        let encounter = serde_dynamo::to_item(StateComponent {
+        let mut state_component: Item = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
             state_component: sk,
-            state: Some(state),
             ..Default::default()
         })?;
+        
+        
+        state_component.extend(state);
 
-        self.try_generic_put(encounter).await?;
+        self.try_generic_put(state_component).await?;
 
         Ok(())
     }
@@ -216,7 +251,7 @@ impl Store {
             .build();
 
         let res = self
-            .try_generic_query(user_id.to_string(), sort_key)
+            .try_generic_query(user_id.to_string(), sort_key, "last_message_token")
             .await?;
 
         Ok(res)
@@ -228,13 +263,17 @@ impl Store {
             Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
             None => String::new(), // Return empty string if input is empty
         };
+        info!("GET ENCOUNT");
         let sk = format!("{}#Game#Level#{}#Encounter#{}#Round#",game_id, level, encounter);
         let res = self
-            .try_generic_begins_with_query(user_id.to_string(), sk)
-            .await?;
+            .try_generic_begins_with_query(user_id.to_string(), sk, vec!["text", "name"])
+            .await;
+
+        info!("RESSS: {:?}", res);
         
-        let items = res.items.unwrap();
-        debug!("Items: {:?}", items);
+        
+        
+        let items = res?.items.unwrap();
         
         let ctxs: Vec<EncounterQuery> = serde_dynamo::from_items(items)?;
         Ok(ctxs)
@@ -246,7 +285,7 @@ impl Store {
             .build();
 
         let res = self
-            .try_generic_query(user_id.to_string(), sk.clone())
+            .try_generic_query(user_id.to_string(), sk.clone(), "game_id")
             .await?;
 
         let items = res.items.expect(format!("Could not find {}", sk).as_str());
@@ -256,8 +295,8 @@ impl Store {
         let game_id = items
             .first()
             .unwrap()
-            .get_key_value("State")
-            .expect("State for ActiveGameId not found")
+            .get_key_value("game_id")
+            .expect("game_id not found")
             .1
             .as_s()
             .unwrap()
@@ -294,12 +333,11 @@ impl Store {
 
         let mut items: Vec<HashMap<String, AttributeValue>> = Vec::new();
 
-        let components: Vec<StateComponent<HashMap<String, Value>>> = sort_keys
+        let components: Vec<StateComponent> = sort_keys
             .iter()
             .map(|sk| StateComponent {
                 user_id: user_id.to_string(),
                 state_component: sk.build(),
-                state: None,
                 ..Default::default()
             })
             .collect();
