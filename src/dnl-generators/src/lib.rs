@@ -12,6 +12,7 @@ use dnl_types::llm::ParseConverseOutput;
 use dnl_types::llm::LlmHandler;
 use dnl_types::tools::Tools;
 
+use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
 use serde::Serialize;
@@ -91,7 +92,7 @@ where
         let game_id = scenario_input.game_id;
         let level = scenario_input.level;
         let scenario = scenario_input.scenario;
-        let resp = store.try_get_encounters(&user_id, &game_id, &level, &scenario).await?;
+        let resp = store.try_get_encounters(&user_id, &game_id, &level, &scenario).await.context("try_get_encounters failed")?;
         
         let ctxs: Vec<String> = resp.iter().map(|v| format!("name: {}\ntext: {}\n\n", v.name, v.text)).collect();
         
@@ -116,28 +117,27 @@ where
 
         let res = self.model.converse(None, inference_cfg).await?;
 
-        let text = res.get_text_output()?;
+        let text = res.get_text_output().context("get_text_output failed")?;
 
         self.text = Some(text);
 
         Ok(())
     }
     
-    pub async fn generate_json(&mut self) -> anyhow::Result<Option<D>>
+    pub async fn generate_json(&mut self) -> anyhow::Result<D>
     {
         let mut ctxs: Vec<String> = vec![];
-        let response = loop {
+        loop {
             self.attempts += 1;
 
             match self.to_json(ctxs.clone()).await {
                 Ok(data) => {
-                    break Some(data);
+                    return Ok(data);
                 }
                 Err(err) => {
-                    // early return if max_retries exceeded
                     if self.attempts >= self.max_retries {
                         info!("Reached max retry limit of {}", self.max_retries);
-                        break None;
+                        return Err(anyhow::anyhow!("Exceeded max retry limit of {} when trying to create json", self.max_retries))
                     }
 
                     info!("Retrying creating JSON output");
@@ -151,7 +151,6 @@ where
                 }
             }
         };
-        Ok(response)
     }
 
     pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<D>
@@ -189,9 +188,9 @@ where
         let res = self
             .model
             .converse(Some(self.config.tool()), inference_cfg)
-            .await?;
+            .await.context("Failed to call converse api")?;
 
-        let tool_output = res.get_tool_output()?;
+        let tool_output = res.get_tool_output().context("Failed to get tool output")?;
 
         let tool_value = tool_output
             .first()
@@ -199,7 +198,7 @@ where
             .input
             .clone();
 
-        let value = serde_json::to_value(tool_value)?;
+        let value = serde_json::to_value(tool_value).context("Failed to parese tool value to serde_json::Value")?;
 
         match serde_json::from_value(value) {
             Ok(output) =>  Ok(output),
@@ -211,10 +210,6 @@ where
     pub async fn save_json(&mut self, data: serde_json::Value) -> anyhow::Result<()> {
         let store = Store::new().await;
 
-        // let value = json!({"text": self.text, "data": data});
-        //
-        // // let state = serde_json::to_value(value)?;
-
         let encounter = EncounterSortKey::Battle;
         
         let scenario_input = self.config.scenario_input();
@@ -223,8 +218,6 @@ where
         let round = scenario_input.round.parse::<u8>()?;
         let user_id = &scenario_input.user_id;
         let game_id = &scenario_input.game_id;
-        // 
-        // Convert serde_json::Value to HashMap<String, Value>
  
         let mut state = HashMap::new();
         
@@ -233,7 +226,6 @@ where
         let x: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = serde_dynamo::to_item(data)?;
         
         state.extend(x);
-        
         
         store
             .try_save_encounter(

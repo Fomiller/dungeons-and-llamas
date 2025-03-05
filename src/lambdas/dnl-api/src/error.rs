@@ -28,3 +28,9 @@ where
         Self(err.into())
     }
 }
+
+pub fn handle_error(msg: String) -> Response {
+    let json = Json(json!({"error": msg}));
+    let res = (StatusCode::SERVICE_UNAVAILABLE, json).into_response();
+    res
+}

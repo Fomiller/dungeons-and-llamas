@@ -1,4 +1,4 @@
-use crate::error::ApiError;
+use crate::error::{ApiError, handle_error};
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -78,46 +78,45 @@ pub async fn post_llm_converse(
 
 #[debug_handler]
 pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Response, ApiError> {
-    println!("Payload: {:?}", payload);
+    info!("Payload: {:?}", payload);
 
     let system_vars = HashMap::new();
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
-    let example = match Scenario::from_str(&payload.scenario)? {
+    let example = match Scenario::from_str(&payload.scenario).context("Unable to match scenario")? {
         Scenario::Battle => serde_json::to_string(&BattleToolOutput::mock())?,
         Scenario::Shop => serde_json::to_string(&ShopToolOutput::mock())?,
         Scenario::Rest => serde_json::to_string(&RestToolOutput::mock())?,
     };
 
     text_vars.insert("theme".to_string(), payload.theme.clone());
-
     json_vars.insert("level".to_string(), payload.level.clone());
     json_vars.insert("example".to_string(), example);
 
     let config = BattleJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars);
-
+    
     let mut generator: BattleGenerator = JsonResponseGenerator::new(config).await;
 
-    generator.generate_text().await?;
-    info!("Text Created");
+    match generator.generate_text().await.context("Failed to generate text") {
+        Ok(_) => {
+            info!("Text Created");
+        },
+        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string())))
+    };
 
-    let response = generator.generate_json().await?;
-    info!("Json Created");
-
-    if let Some(data) = response {
-        let value = serde_json::to_value(data.clone())?;
-        generator.save_json(value).await?;
-        
-        let res = (StatusCode::OK, Json(json!({"data": data}))).into_response();
-        
-        info!("Response: {:?}", res);
-        
-        return Ok(res)
-    } else {
-        // this could potential be a cache fetch for a previous successful response.
-        let err = format!("Reached max retry limit of {}", generator.max_retries);
-        let json = Json(json!({"error": err}));
-        let res = (StatusCode::SERVICE_UNAVAILABLE, json).into_response();
-        return Ok(res);
-    }
+    match generator.generate_json().await.context("Failed to generate json") {
+        Ok(data) => {
+            let value = serde_json::to_value(data.clone())?;
+            
+            generator.save_json(value).await?;
+            
+            let res = (StatusCode::OK, Json(json!({"data": data}))).into_response();
+            
+            info!("Response: {:?}", res);
+            
+            return Ok(res)
+        },
+        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string())))
+    };
 }
+

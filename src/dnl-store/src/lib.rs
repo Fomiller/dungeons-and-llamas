@@ -5,9 +5,15 @@ pub mod user;
 pub mod weapon;
 pub mod encounter;
 
+use std::env;
+use std::collections::HashMap;
+
 use crate::state_component::StateComponent;
 use crate::encounter::EncounterQuery;
-use anyhow::anyhow;
+use dnl_sort_keys::game::GameState;
+use dnl_sort_keys::prelude::*;
+
+use anyhow::{anyhow, Context};
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::operation::query::QueryOutput;
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -16,12 +22,8 @@ use aws_sdk_dynamodb::{
     operation::{batch_write_item::BatchWriteItemInput, get_item::GetItemOutput},
     types::WriteRequest,
 };
-use dnl_sort_keys::game::GameState;
-use dnl_sort_keys::prelude::*;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
-use std::collections::HashMap;
-use std::env;
 
 type Item = HashMap<String, AttributeValue>;
 
@@ -49,20 +51,38 @@ impl Store {
         &self,
         primary_key: String,
         sort_key: String,
-        attributes: &str,
+        attributes: Vec<&str>,
     ) -> anyhow::Result<QueryOutput> {
+        let mut expression_attribute_names = HashMap::new();
+        
+        expression_attribute_names.insert("#pk".to_string(), "UserId".to_string());
+        expression_attribute_names.insert("#sk".to_string(), "StateComponent".to_string());
+
+        let mut aliased_attributes = Vec::new();
+        for (i, attr) in attributes.iter().enumerate() {
+            let alias = format!("#attr{}", i);
+            expression_attribute_names.insert(alias.to_string(), attr.to_string());
+            aliased_attributes.push(alias);
+        }
+
+         let projection_expression = if aliased_attributes.is_empty() {
+             None
+        } else {
+            Some(aliased_attributes.join(", "))
+        };
+         
         let res = self
             .client
             .query()
             .table_name(GAME_STATE_TABLE.to_string())
             .key_condition_expression("#pk = :user_id AND #sk = :sort_key")
-            .expression_attribute_names("#pk", "UserId")
-            .expression_attribute_names("#sk", "StateComponent")
+            .set_expression_attribute_names(Some(expression_attribute_names))
             .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
             .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
-            .projection_expression(attributes)
+            .set_projection_expression(projection_expression)
             .send()
-            .await?;
+            .await.context("aws dynamodb client query failed")?;
+        
         Ok(res)
     }
     pub async fn try_generic_begins_with_query(
@@ -251,7 +271,7 @@ impl Store {
             .build();
 
         let res = self
-            .try_generic_query(user_id.to_string(), sort_key, "last_message_token")
+            .try_generic_query(user_id.to_string(), sort_key, vec!["last_message_token"])
             .await?;
 
         Ok(res)
@@ -263,19 +283,17 @@ impl Store {
             Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
             None => String::new(), // Return empty string if input is empty
         };
-        info!("GET ENCOUNT");
+        
         let sk = format!("{}#Game#Level#{}#Encounter#{}#Round#",game_id, level, encounter);
         let res = self
             .try_generic_begins_with_query(user_id.to_string(), sk, vec!["text", "name"])
-            .await;
-
-        info!("RESSS: {:?}", res);
+            .await.context("try_generic_begins_with_query failed")?;
         
+        debug!("Begins with query response: {:?}", res);
         
+        let items = res.items.unwrap();
         
-        let items = res?.items.unwrap();
-        
-        let ctxs: Vec<EncounterQuery> = serde_dynamo::from_items(items)?;
+        let ctxs: Vec<EncounterQuery> = serde_dynamo::from_items(items).context("serde_dynamo::from_items failed")?;
         Ok(ctxs)
     }
     
@@ -285,8 +303,8 @@ impl Store {
             .build();
 
         let res = self
-            .try_generic_query(user_id.to_string(), sk.clone(), "game_id")
-            .await?;
+            .try_generic_query(user_id.to_string(), sk.clone(), vec!["game_id"])
+            .await.context(format!("Generic query failed with args; user_id: {}, sk: {}, attrs: {}", user_id, sk, "game_id"))?;
 
         let items = res.items.expect(format!("Could not find {}", sk).as_str());
 
