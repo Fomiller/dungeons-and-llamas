@@ -10,6 +10,8 @@ pub mod roll;
 pub mod scenario;
 pub mod text;
 
+use std::str::FromStr;
+
 use buttons::*;
 use class::*;
 use list_games::*;
@@ -20,20 +22,10 @@ use roll::*;
 use scenario::*;
 use text::*;
 
-use dnl_types::tools::battle::BattleToolOutput;
 use lambda_http::tracing::info;
-use reqwest::Response;
-use serde::{Deserialize, Serialize};
 use serenity::builder::*;
-use serenity::http::Http;
 use serenity::model::application::*;
-use std::str::FromStr;
 use strum::EnumString;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ApiScenarioResponse {
-    data: BattleToolOutput,
-}
 
 lazy_static::lazy_static! {
     pub static ref DNL_API_URL: String = format!("https://dnl-api.{}.aws.fomillercloud.com", std::env::var("ENVIRONMENT").unwrap());
@@ -90,52 +82,3 @@ pub fn format_interaction_response(content: String) -> CreateInteractionResponse
     CreateInteractionResponse::Message(message)
 }
 
-pub async fn handle_sucessful_response(
-    res: Response,
-    cmd: CommandInteraction,
-    http: Http,
-) -> anyhow::Result<()> {
-    match res.status() {
-        reqwest::StatusCode::OK => {
-            info!("RES: {:?}", res);
-            let x = res.json::<ApiScenarioResponse>().await;
-            info!("X: {:?}", x);
-            let data = x.unwrap().data;
-
-            info!("Data: {:?}", data);
-
-            let content = format_battle_scenario(data);
-
-            let message = CreateInteractionResponseFollowup::new().content(content);
-
-            let res = cmd.create_followup(&http, message).await;
-
-            info!("FOLLOW: {:?}", res);
-            Ok(())
-        }
-        reqwest::StatusCode::SERVICE_UNAVAILABLE => {
-            let followup = CreateInteractionResponseFollowup::new();
-            let message = followup.content("Server error, Try again.");
-            cmd.create_followup(&http, message).await?;
-            Ok(())
-        }
-        _ => Ok(()),
-    }
-}
-
-fn format_battle_scenario(data: BattleToolOutput) -> String {
-    let mut enemy_description = String::new();
-
-    for enemy in data.enemies {
-        let description = format!(
-            "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
-            enemy.enemy_type, enemy.attack.attack_name, enemy.attack.attack_damage, enemy.health
-        );
-        enemy_description.push_str(&description);
-    }
-
-    format!(
-        "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
-        data.name, data.summary, data.terrain, enemy_description, data.summary
-    )
-}

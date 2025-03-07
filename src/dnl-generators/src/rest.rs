@@ -2,7 +2,7 @@ use crate::*;
 
 use std::collections::HashMap;
 
-use dnl_types::tools::battle::BattleToolOutput;
+use dnl_types::tools::rest::RestToolOutput;
 use dnl_types::tools::Tools;
 use dnl_types::scenario::ScenarioInput;
 
@@ -14,7 +14,7 @@ It is important that you always create unique and fun scenarios with a wide vari
 situations, enemies, items, and settings to keep the player engaged.
 
 You are able to create 3 different scenario types. 
-- Battle 
+- Rest 
 - Shop 
 - Rest
 
@@ -39,9 +39,9 @@ to the previous examples provided in the context if there are any. The player co
 being presented with brand new scenarios every time.
 ";
 
-pub type BattleGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig, BattleToolOutput>;
+pub type RestGenerator = JsonResponseGenerator<RestJsonGeneratorConfig, RestToolOutput>;
 
-pub struct BattleJsonGeneratorConfig {
+pub struct RestJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
     pub tool: Tools,
     pub system_prompt: Prompt,
@@ -49,7 +49,7 @@ pub struct BattleJsonGeneratorConfig {
     pub text_prompt: Prompt,
 }
 
-impl JsonResponseGeneratorConfig for BattleJsonGeneratorConfig {
+impl JsonResponseGeneratorConfig for RestJsonGeneratorConfig {
     fn scenario_input(&self) -> ScenarioInput {
         self.scenario_input.clone()
     }
@@ -73,7 +73,7 @@ impl JsonResponseGeneratorConfig for BattleJsonGeneratorConfig {
     }
 }
 
-impl BattleJsonGeneratorConfig {
+impl RestJsonGeneratorConfig {
     pub fn new(
         scenario_input: ScenarioInput,
         system_vars: HashMap<String, String>,
@@ -95,7 +95,7 @@ impl BattleJsonGeneratorConfig {
             variables: text_vars,
         };
 
-        let tool = Tools::Battle;
+        let tool = Tools::Rest;
 
         Self {
             scenario_input,

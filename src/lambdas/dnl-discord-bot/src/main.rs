@@ -2,6 +2,7 @@ pub mod commands;
 pub mod components;
 pub mod modals;
 pub mod verify;
+pub mod error;
 
 use commands::*;
 use components::*;

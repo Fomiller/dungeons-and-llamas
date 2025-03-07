@@ -1,12 +1,19 @@
 use crate::*;
+use crate::error::handle_error;
 use std::collections::HashMap;
 
 use dnl_store::Store;
+use dnl_types::tools::battle::BattleToolOutput;
+use dnl_types::tools::shop::ShopToolOutput;
+use dnl_types::tools::rest::RestToolOutput;
+use dnl_types::api::*;
 
-use anyhow::Context;
 use lambda_http::tracing::info;
+use reqwest::Response;
 use serenity::builder::*;
 use serenity::http::Http;
+
+use anyhow::Context;
 use serenity::model::application::*;
 
 #[derive(Debug, PartialEq, Default)]
@@ -21,10 +28,10 @@ impl ScenarioCmd {
             std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
 
         let http = Http::new(&token);
+        
         http.set_application_id(cmd.application_id);
 
-        let res = cmd.defer(&http).await?;
-        info!("DEFER: {:?}", res);
+        cmd.defer(&http).await.context("Failed to defer command")?;
 
         let user_id = cmd.user.id.to_string();
 
@@ -53,21 +60,52 @@ impl ScenarioCmd {
 
         match client.post(url).json(&json).send().await {
             Ok(response) => {
-                handle_sucessful_response(response, cmd, http).await?;
+                Self::handle_sucessful_response(response, cmd, http).await?;
                 Ok(None)
             }
-            Err(err) => return handle_error(&http, &cmd, err.into()).await
+            Err(err) => return error::handle_error(&http, &cmd, err.into()).await
         }
     }
+    
+    pub async fn handle_sucessful_response(
+        res: Response,
+        cmd: CommandInteraction,
+        http: Http,
+    ) -> anyhow::Result<()> {
+        let res: ApiScenarioResponse = res.json().await?;
+        
+        let content = match res.data {
+            ApiScenarioResponseData::Battle(data) => Self::format_battle_scenario(data),
+            ApiScenarioResponseData::Shop(data) => Self::format_shop_scenario(data),
+            ApiScenarioResponseData::Rest(data) => Self::format_rest_scenario(data),
+        };
+
+        let message = CreateInteractionResponseFollowup::new().content(content);
+
+        let res = cmd.create_followup(&http, message).await;
+        info!("Follow up: {:?}", res);
+
+        Ok(())
+    }
+
+    fn format_battle_scenario(data: BattleToolOutput) -> String {
+        let mut enemy_description = String::new();
+
+        for enemy in data.enemies {
+            let description = format!(
+                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
+                enemy.enemy_type, enemy.attack.attack_name, enemy.attack.attack_damage, enemy.health
+            );
+            enemy_description.push_str(&description);
+        }
+
+        format!(
+            "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
+            data.name, data.summary, data.terrain, enemy_description, data.summary
+        )
+    }
+
+    fn format_shop_scenario(_data: ShopToolOutput) -> String {"".to_string()}
+    fn format_rest_scenario(_data: RestToolOutput) -> String {"".to_string()}
 }
 
-async fn handle_error<T>(
-    http: &Http,
-    cmd: &CommandInteraction,
-    err: anyhow::Error,
-) -> anyhow::Result<T> {
-    info!("EEERRROORR: {:?}", err);
-    let message = CreateInteractionResponseFollowup::new().content(format!("Error: {:?}",err));
-    let _ = cmd.create_followup(http, message).await;
-    Err(anyhow::anyhow!(err))
-}

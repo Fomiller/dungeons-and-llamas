@@ -11,15 +11,95 @@ use dnl_types::scenario::ScenarioInput;
 use dnl_types::llm::ParseConverseOutput;
 use dnl_types::llm::LlmHandler;
 use dnl_types::tools::Tools;
+use dnl_types::tools::battle::BattleToolOutput;
+use dnl_types::tools::shop::ShopToolOutput;
+use dnl_types::tools::rest::RestToolOutput;
+use battle::{BattleGenerator, BattleJsonGeneratorConfig};
+use shop::{ShopGenerator, ShopJsonGeneratorConfig};
+use rest::{RestGenerator, RestJsonGeneratorConfig};
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
-use serde::Serialize;
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::DeserializeOwned;
 
 pub trait Generator {
     fn generate(&self) -> String;
+}
+
+pub enum GeneratorConfig {
+    Battle(BattleJsonGeneratorConfig),
+    Shop(ShopJsonGeneratorConfig),
+    Rest(RestJsonGeneratorConfig),
+}
+
+pub enum JsonGenerator {
+    Battle(BattleGenerator),
+    Shop(ShopGenerator),
+    Rest(RestGenerator),
+}
+
+#[derive(Clone)]
+pub enum ToolOutput {
+    Battle(BattleToolOutput),
+    Shop(ShopToolOutput),
+    Rest(RestToolOutput),
+}
+
+impl Serialize for ToolOutput {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ToolOutput::Battle(inner) => inner.serialize(serializer),
+            ToolOutput::Shop(inner) => inner.serialize(serializer),
+            ToolOutput::Rest(inner) => inner.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ToolOutput {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let inner: BattleToolOutput = Deserialize::deserialize(deserializer)?;
+        Ok(ToolOutput::Battle(inner))
+    }
+}
+
+impl JsonGenerator 
+    {
+    pub async fn generate_text(&mut self) -> anyhow::Result<()> {
+        match self {
+            JsonGenerator::Battle(gen) => gen.generate_text().await,
+            JsonGenerator::Shop(gen) => gen.generate_text().await,
+            JsonGenerator::Rest(gen) => gen.generate_text().await,
+        }
+    }
+    pub async fn generate_json(&mut self) -> anyhow::Result<()> {
+        match self {
+            JsonGenerator::Battle(gen) => gen.generate_json().await,
+            JsonGenerator::Shop(gen) => gen.generate_json().await,
+            JsonGenerator::Rest(gen) => gen.generate_json().await,
+        }
+    }
+    pub async fn save_json(&mut self) -> anyhow::Result<()> {
+        match self {
+            JsonGenerator::Battle(gen) => gen.save_json().await,
+            JsonGenerator::Shop(gen) => gen.save_json().await,
+            JsonGenerator::Rest(gen) => gen.save_json().await,
+        }
+    }
+    pub fn data(&mut self) -> Option<ToolOutput> {
+        match self {
+            JsonGenerator::Battle(gen) => gen.data(),
+            JsonGenerator::Shop(gen) => gen.data(),
+            JsonGenerator::Rest(gen) => gen.data(),
+        }
+    }
 }
 
 pub struct Prompt {
@@ -49,12 +129,12 @@ pub trait JsonResponseGeneratorConfig {
     fn tool(&self) -> Tools;
 }
 
-#[derive(Debug)]
-pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig, D:DeserializeOwned + Serialize> {
+pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig, D: DeserializeOwned + Serialize> {
     pub config: C,
     pub context: Option<Vec<String>>,
     pub model: LlmHandler,
     pub text: Option<String>,
+    pub data: Option<ToolOutput>,
     pub max_retries: u8,
     pub attempts: u8,
     _phantom_data: PhantomData<D>,
@@ -63,13 +143,18 @@ pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig, D:DeserializeOw
 impl<C, D> JsonResponseGenerator<C, D> 
 where 
     C: JsonResponseGeneratorConfig,
-    D: DeserializeOwned + Serialize
+    D: DeserializeOwned + Serialize + Clone
 {
+    pub fn data(&mut self) -> Option<ToolOutput> {
+        self.data.clone()
+    }
+    
     pub async fn new(config: C) -> Self {
         let model = LlmHandler::new(config.model(), config.system_prompt()).await;
 
         let context = None;
         let text = None;
+        let data = None;
         let max_retries = 5;
         let attempts = 0;
 
@@ -78,9 +163,10 @@ where
             context,
             model,
             text,
+            data,
             max_retries,
             attempts,
-            _phantom_data: PhantomData
+            _phantom_data: PhantomData,
         }
     }
 
@@ -124,7 +210,7 @@ where
         Ok(())
     }
     
-    pub async fn generate_json(&mut self) -> anyhow::Result<D>
+    pub async fn generate_json(&mut self) -> anyhow::Result<()>
     {
         let mut ctxs: Vec<String> = vec![];
         loop {
@@ -132,7 +218,8 @@ where
 
             match self.to_json(ctxs.clone()).await {
                 Ok(data) => {
-                    return Ok(data);
+                    self.data = Some(data);
+                    return Ok(());
                 }
                 Err(err) => {
                     if self.attempts >= self.max_retries {
@@ -153,8 +240,7 @@ where
         };
     }
 
-    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<D>
-    {
+    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutput> {
         let mut contexts: Vec<String> = Vec::new();
 
         // using the text in generate_text as context
@@ -200,14 +286,36 @@ where
 
         let value = serde_json::to_value(tool_value).context("Failed to parese tool value to serde_json::Value")?;
 
-        match serde_json::from_value(value) {
-            Ok(output) =>  Ok(output),
-            Err(err) => Err(err.into()),
+        match self.config.tool() {
+            Tools::Shop => {
+                serde_json::from_value::<ShopToolOutput>(value)
+                    .map(ToolOutput::Shop)
+                    .map_err(Into::into) // Convert serde_json error into your custom error type
+            }
+            Tools::Battle => {
+                serde_json::from_value::<BattleToolOutput>(value)
+                    .map(ToolOutput::Battle)
+                    .map_err(Into::into)
+            }
+            Tools::Rest => {
+                serde_json::from_value::<RestToolOutput>(value)
+                    .map(ToolOutput::Rest)
+                    .map_err(Into::into)
+            }
         }
+        // let output = serde_json::from_value(value);
+        // match output {
+        //     Ok(output) =>  match &self.config.tool() {
+        //         Tools::Shop => Ok(ToolOutput::Shop(output)),
+        //         Tools::Battle =>Ok(ToolOutput::Battle(output)),
+        //         Tools::Rest => Ok(ToolOutput::Rest(output)),
+        //     }
+        //     Err(err) => Err(err.into()),
+        // }
     }
     
     
-    pub async fn save_json(&mut self, data: serde_json::Value) -> anyhow::Result<()> {
+    pub async fn save_json(&mut self) -> anyhow::Result<()> {
         let store = Store::new().await;
 
         let encounter = EncounterSortKey::Battle;
@@ -223,9 +331,21 @@ where
         
         state.insert("text".to_string(), aws_sdk_dynamodb::types::AttributeValue::S(self.text.clone().unwrap_or("".to_string())));
         
-        let x: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = serde_dynamo::to_item(data)?;
+        let data = self.data.clone().unwrap();
         
-        state.extend(x);
+        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = match data {
+            ToolOutput::Battle(item) => {
+                serde_dynamo::to_item(item)?
+            }
+            ToolOutput::Shop(item) => {
+                serde_dynamo::to_item(item)?
+            }
+            ToolOutput::Rest(item) => {
+                serde_dynamo::to_item(item)?
+            }
+        };
+        
+        state.extend(map);
         
         store
             .try_save_encounter(
