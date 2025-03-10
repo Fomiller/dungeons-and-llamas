@@ -285,6 +285,7 @@ impl Store {
         };
         
         let sk = format!("{}#Game#Level#{}#Encounter#{}#Round#",game_id, level, encounter);
+        info!("Sk: {}", sk);
         let res = self
             .try_generic_begins_with_query(user_id.to_string(), sk, vec!["text", "name"])
             .await.context("try_generic_begins_with_query failed")?;

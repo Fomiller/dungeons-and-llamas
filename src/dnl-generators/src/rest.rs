@@ -14,11 +14,11 @@ It is important that you always create unique and fun scenarios with a wide vari
 situations, enemies, items, and settings to keep the player engaged.
 
 You are able to create 3 different scenario types. 
-- Rest 
+- Battle 
 - Shop 
 - Rest
 
-Rules for creating rest scenarios:
+Rules for creating scenarios:
 - Keep the scenarios inline with the theme provided
 - Make sure that the scenario is appropriate for the players level
 
@@ -39,8 +39,9 @@ to the previous examples provided in the context if there are any. The player co
 being presented with brand new scenarios every time.
 ";
 
-pub type RestGenerator = JsonResponseGenerator<RestJsonGeneratorConfig, RestToolOutput>;
+pub type RestJsonGenerator = JsonResponseGenerator<RestJsonGeneratorConfig>;
 
+#[derive(Clone)]
 pub struct RestJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
     pub tool: Tools,

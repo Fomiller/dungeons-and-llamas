@@ -72,7 +72,7 @@ impl ScenarioCmd {
         cmd: CommandInteraction,
         http: Http,
     ) -> anyhow::Result<()> {
-        let res: ApiScenarioResponse = res.json().await?;
+        let res: ApiScenarioResponse = res.json().await.context("Failed to parse into ApiScenarioResponse")?;
         
         let content = match res.data {
             ApiScenarioResponseData::Battle(data) => Self::format_battle_scenario(data),
@@ -104,8 +104,24 @@ impl ScenarioCmd {
             data.name, data.summary, data.terrain, enemy_description, data.summary
         )
     }
+    
+    fn format_shop_scenario(data: ShopToolOutput) -> String {
+        let mut item_descriptions = String::new();
 
-    fn format_shop_scenario(_data: ShopToolOutput) -> String {"".to_string()}
+        for item in data.items {
+            let description = format!(
+                "- **{}**\n{}\n - Stats: {}\n  - Price: {}\n",
+                item.name, item.description, item.stats, item.price
+            );
+            item_descriptions.push_str(&description);
+        }
+
+        format!(
+            "# *{}*\n## Description:\n{}\n\n## Items:\n{}",
+            data.merchant.name, data.merchant.description, item_descriptions
+        )
+    }
+
     fn format_rest_scenario(_data: RestToolOutput) -> String {"".to_string()}
 }
 

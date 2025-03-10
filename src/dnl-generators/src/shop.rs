@@ -14,11 +14,11 @@ It is important that you always create unique and fun scenarios with a wide vari
 situations, enemies, items, and settings to keep the player engaged.
 
 You are able to create 3 different scenario types. 
-- Shop 
+- Battle 
 - Shop 
 - Rest
 
-Rules for creating shop scenarios:
+Rules for creating scenarios:
 - Keep the scenarios inline with the theme provided
 - Make sure that the scenario is appropriate for the players level
 
@@ -39,8 +39,9 @@ to the previous examples provided in the context if there are any. The player co
 being presented with brand new scenarios every time.
 ";
 
-pub type ShopGenerator = JsonResponseGenerator<ShopJsonGeneratorConfig, ShopToolOutput>;
+pub type ShopJsonGenerator = JsonResponseGenerator<ShopJsonGeneratorConfig>;
 
+#[derive(Clone)]
 pub struct ShopJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
     pub tool: Tools,
@@ -111,50 +112,48 @@ lazy_static! {
     pub static ref SHOP_TOOL_SCHEMA: serde_json::Value = {
         serde_json::json!({
             "type": "object",
-            "required": ["name", "summary", "terrain", "enemies", "enemy_type", "health", "attack", "attack_name", "attack_damage"],
+            "required": ["name", "merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
             "properties":{
                 "name": {
                     "type":"string",
                     "description":"A name for the shop encounter"
                 },
-                "summary":{
-                    "type":"string",
-                    "description":"A 30 to 50 word objective summary of the shop scenario. Make sure to include the number and types of enemies."
+                "merchant":{
+                    "type": "object",
+                    "description": "An Object that defines merchant",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name of the Merchant"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "A 30-50 word description of the merchant and his surroundings",
+                        }
+                    }
                 },
-                "terrain":{
-                    "type":"string",
-                    "description":"A description of the terrain the shop is happening in",
-                },
-                "enemies": {
+                "items": {
                     "type": "array",
-                    "description": "A list of enemies to fight",
+                    "description": "A list of items to purchase",
                     "items": {
                         "type": "object",
-                        "description": "An Object that defines an Enemy",
+                        "description": "An Object that defines an item to purchase, items could be anything useful to a DnD player",
                         "properties": {
-                            "enemy_type":{
+                            "name":{
                                 "type": "string",
-                                "description": "Type of enemy"
+                                "description": "Name of the item"
                             },
-                            "health":{
-                                "type": "integer",
-                                "description": "Total health of the enemy",
-                                "minimum": 1,
-                                "maximum": 20
+                            "description":{
+                                "type": "string",
+                                "description": "1 sentence description of the item"
                             },
-                            "attack":{
-                                "type": "object",
-                                "description": "An Object that defines an enemies attack",
-                                "properties": {
-                                    "attack_name": {
-                                        "type": "string",
-                                        "description": "Name of the attack"
-                                    },
-                                    "attack_damage": {
-                                        "type": "string",
-                                        "description": "Damage value of attack as a integer value",
-                                    }
-                                }
+                            "stats":{
+                                "type": "string",
+                                "description": "The stats of item."
+                            },
+                            "price":{
+                                "type": "string",
+                                "description": "Cost of item for sale"
                             }
                         }
                     }

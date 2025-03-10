@@ -18,7 +18,7 @@ You are able to create 3 different scenario types.
 - Shop 
 - Rest
 
-Rules for creating battle scenarios:
+Rules for creating scenarios:
 - Keep the scenarios inline with the theme provided
 - Make sure that the scenario is appropriate for the players level
 
@@ -39,8 +39,9 @@ to the previous examples provided in the context if there are any. The player co
 being presented with brand new scenarios every time.
 ";
 
-pub type BattleGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig, BattleToolOutput>;
+pub type BattleJsonGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig>;
 
+#[derive(Clone)]
 pub struct BattleJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
     pub tool: Tools,

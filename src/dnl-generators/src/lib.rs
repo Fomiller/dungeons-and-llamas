@@ -2,7 +2,6 @@ pub mod battle;
 pub mod shop;
 pub mod rest;
 
-use std::marker::PhantomData;
 use std::collections::HashMap;
 
 use dnl_store::Store;
@@ -14,94 +13,91 @@ use dnl_types::tools::Tools;
 use dnl_types::tools::battle::BattleToolOutput;
 use dnl_types::tools::shop::ShopToolOutput;
 use dnl_types::tools::rest::RestToolOutput;
-use battle::{BattleGenerator, BattleJsonGeneratorConfig};
-use shop::{ShopGenerator, ShopJsonGeneratorConfig};
-use rest::{RestGenerator, RestJsonGeneratorConfig};
+use battle::{BattleJsonGenerator, BattleJsonGeneratorConfig};
+use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
+use rest::{RestJsonGenerator, RestJsonGeneratorConfig};
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use serde::de::DeserializeOwned;
 
-pub trait Generator {
-    fn generate(&self) -> String;
-}
-
-pub enum GeneratorConfig {
+pub enum JsonGeneratorConfigEnum {
     Battle(BattleJsonGeneratorConfig),
     Shop(ShopJsonGeneratorConfig),
     Rest(RestJsonGeneratorConfig),
 }
 
-pub enum JsonGenerator {
-    Battle(BattleGenerator),
-    Shop(ShopGenerator),
-    Rest(RestGenerator),
+#[derive(Clone)]
+pub enum JsonGeneratorEnum {
+    Battle(BattleJsonGenerator),
+    Shop(ShopJsonGenerator),
+    Rest(RestJsonGenerator),
 }
 
-#[derive(Clone)]
-pub enum ToolOutput {
+#[derive(Clone, Debug)]
+pub enum ToolOutputEnum {
     Battle(BattleToolOutput),
     Shop(ShopToolOutput),
     Rest(RestToolOutput),
 }
 
-impl Serialize for ToolOutput {
+impl Serialize for ToolOutputEnum {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         match self {
-            ToolOutput::Battle(inner) => inner.serialize(serializer),
-            ToolOutput::Shop(inner) => inner.serialize(serializer),
-            ToolOutput::Rest(inner) => inner.serialize(serializer),
+            ToolOutputEnum::Battle(inner) => inner.serialize(serializer),
+            ToolOutputEnum::Shop(inner) => inner.serialize(serializer),
+            ToolOutputEnum::Rest(inner) => inner.serialize(serializer),
         }
     }
 }
 
-impl<'de> Deserialize<'de> for ToolOutput {
+impl<'de> Deserialize<'de> for ToolOutputEnum {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let inner: BattleToolOutput = Deserialize::deserialize(deserializer)?;
-        Ok(ToolOutput::Battle(inner))
+        Ok(ToolOutputEnum::Battle(inner))
     }
 }
 
-impl JsonGenerator 
+impl JsonGeneratorEnum 
     {
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
         match self {
-            JsonGenerator::Battle(gen) => gen.generate_text().await,
-            JsonGenerator::Shop(gen) => gen.generate_text().await,
-            JsonGenerator::Rest(gen) => gen.generate_text().await,
+            JsonGeneratorEnum::Battle(gen) => gen.generate_text().await,
+            JsonGeneratorEnum::Shop(gen) => gen.generate_text().await,
+            JsonGeneratorEnum::Rest(gen) => gen.generate_text().await,
         }
     }
     pub async fn generate_json(&mut self) -> anyhow::Result<()> {
         match self {
-            JsonGenerator::Battle(gen) => gen.generate_json().await,
-            JsonGenerator::Shop(gen) => gen.generate_json().await,
-            JsonGenerator::Rest(gen) => gen.generate_json().await,
+            JsonGeneratorEnum::Battle(gen) => gen.generate_json().await,
+            JsonGeneratorEnum::Shop(gen) => gen.generate_json().await,
+            JsonGeneratorEnum::Rest(gen) => gen.generate_json().await,
         }
     }
     pub async fn save_json(&mut self) -> anyhow::Result<()> {
         match self {
-            JsonGenerator::Battle(gen) => gen.save_json().await,
-            JsonGenerator::Shop(gen) => gen.save_json().await,
-            JsonGenerator::Rest(gen) => gen.save_json().await,
+            JsonGeneratorEnum::Battle(gen) => gen.save_json().await,
+            JsonGeneratorEnum::Shop(gen) => gen.save_json().await,
+            JsonGeneratorEnum::Rest(gen) => gen.save_json().await,
         }
     }
-    pub fn data(&mut self) -> Option<ToolOutput> {
+    pub fn data(&mut self) -> Option<ToolOutputEnum> {
         match self {
-            JsonGenerator::Battle(gen) => gen.data(),
-            JsonGenerator::Shop(gen) => gen.data(),
-            JsonGenerator::Rest(gen) => gen.data(),
+            JsonGeneratorEnum::Battle(gen) => gen.data(),
+            JsonGeneratorEnum::Shop(gen) => gen.data(),
+            JsonGeneratorEnum::Rest(gen) => gen.data(),
         }
     }
 }
 
+#[derive(Clone)]
 pub struct Prompt {
     text: String,
     variables: HashMap<String, String>,
@@ -129,23 +125,22 @@ pub trait JsonResponseGeneratorConfig {
     fn tool(&self) -> Tools;
 }
 
-pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig, D: DeserializeOwned + Serialize> {
+#[derive(Clone)]
+pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig> {
     pub config: C,
     pub context: Option<Vec<String>>,
     pub model: LlmHandler,
     pub text: Option<String>,
-    pub data: Option<ToolOutput>,
+    pub data: Option<ToolOutputEnum>,
     pub max_retries: u8,
     pub attempts: u8,
-    _phantom_data: PhantomData<D>,
 }
 
-impl<C, D> JsonResponseGenerator<C, D> 
+impl<C> JsonResponseGenerator<C> 
 where 
     C: JsonResponseGeneratorConfig,
-    D: DeserializeOwned + Serialize + Clone
 {
-    pub fn data(&mut self) -> Option<ToolOutput> {
+    pub fn data(&mut self) -> Option<ToolOutputEnum> {
         self.data.clone()
     }
     
@@ -166,13 +161,11 @@ where
             data,
             max_retries,
             attempts,
-            _phantom_data: PhantomData,
         }
     }
 
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
         let store = Store::new().await;
-        // mpQtCe0qleQ#Game#Level#5#Encounter#Battle#Round#6
         let scenario_input = self.config.scenario_input();
         let user_id = scenario_input.user_id; 
         let game_id = scenario_input.game_id;
@@ -240,7 +233,7 @@ where
         };
     }
 
-    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutput> {
+    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutputEnum> {
         let mut contexts: Vec<String> = Vec::new();
 
         // using the text in generate_text as context
@@ -289,36 +282,31 @@ where
         match self.config.tool() {
             Tools::Shop => {
                 serde_json::from_value::<ShopToolOutput>(value)
-                    .map(ToolOutput::Shop)
+                    .map(ToolOutputEnum::Shop)
                     .map_err(Into::into) // Convert serde_json error into your custom error type
             }
             Tools::Battle => {
                 serde_json::from_value::<BattleToolOutput>(value)
-                    .map(ToolOutput::Battle)
+                    .map(ToolOutputEnum::Battle)
                     .map_err(Into::into)
             }
             Tools::Rest => {
                 serde_json::from_value::<RestToolOutput>(value)
-                    .map(ToolOutput::Rest)
+                    .map(ToolOutputEnum::Rest)
                     .map_err(Into::into)
             }
         }
-        // let output = serde_json::from_value(value);
-        // match output {
-        //     Ok(output) =>  match &self.config.tool() {
-        //         Tools::Shop => Ok(ToolOutput::Shop(output)),
-        //         Tools::Battle =>Ok(ToolOutput::Battle(output)),
-        //         Tools::Rest => Ok(ToolOutput::Rest(output)),
-        //     }
-        //     Err(err) => Err(err.into()),
-        // }
     }
     
     
     pub async fn save_json(&mut self) -> anyhow::Result<()> {
         let store = Store::new().await;
 
-        let encounter = EncounterSortKey::Battle;
+        let encounter = match self.config.tool() {
+            Tools::Battle => EncounterSortKey::Battle,
+            Tools::Shop => EncounterSortKey::Shop,
+            Tools::Rest => EncounterSortKey::Rest,
+        };
         
         let scenario_input = self.config.scenario_input();
         
@@ -334,13 +322,13 @@ where
         let data = self.data.clone().unwrap();
         
         let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = match data {
-            ToolOutput::Battle(item) => {
+            ToolOutputEnum::Battle(item) => {
                 serde_dynamo::to_item(item)?
             }
-            ToolOutput::Shop(item) => {
+            ToolOutputEnum::Shop(item) => {
                 serde_dynamo::to_item(item)?
             }
-            ToolOutput::Rest(item) => {
+            ToolOutputEnum::Rest(item) => {
                 serde_dynamo::to_item(item)?
             }
         };
