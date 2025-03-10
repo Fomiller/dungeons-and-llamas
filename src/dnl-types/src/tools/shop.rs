@@ -7,6 +7,7 @@ pub struct ShopToolOutput {
     pub items: Vec<ShopToolItem>,
     pub merchant: ShopToolMerchant,
     pub name: String,
+    pub summary: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,10 +53,13 @@ impl MockData for ShopToolOutput {
 
         let name = "Dirty wares".to_string();
 
+        let summary = "This is summary Text".to_string();
+
         Self {
             name,
             merchant,
-            items
+            items,
+            summary
         }
     }
 }

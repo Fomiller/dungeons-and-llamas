@@ -2,7 +2,6 @@ use crate::*;
 
 use std::collections::HashMap;
 
-use dnl_types::tools::shop::ShopToolOutput;
 use dnl_types::tools::Tools;
 use dnl_types::scenario::ScenarioInput;
 
@@ -114,6 +113,10 @@ lazy_static! {
             "type": "object",
             "required": ["name", "merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
             "properties":{
+                "summary":{
+                    "type":"string",
+                    "description":"A 30 to 50 word objective summary of the shop scenario."
+                },
                 "name": {
                     "type":"string",
                     "description":"A name for the shop encounter"

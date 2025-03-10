@@ -60,7 +60,9 @@ impl ScenarioCmd {
 
         match client.post(url).json(&json).send().await {
             Ok(response) => {
-                Self::handle_sucessful_response(response, cmd, http).await?;
+                if let Err(err) = Self::handle_sucessful_response(response, &cmd, &http).await {
+                    return error::handle_error(&http, &cmd, err).await;
+                }
                 Ok(None)
             }
             Err(err) => return error::handle_error(&http, &cmd, err.into()).await
@@ -69,9 +71,10 @@ impl ScenarioCmd {
     
     pub async fn handle_sucessful_response(
         res: Response,
-        cmd: CommandInteraction,
-        http: Http,
+        cmd: &CommandInteraction,
+        http: &Http,
     ) -> anyhow::Result<()> {
+        info!("API Res: {:?}", res);
         let res: ApiScenarioResponse = res.json().await.context("Failed to parse into ApiScenarioResponse")?;
         
         let content = match res.data {
@@ -110,15 +113,15 @@ impl ScenarioCmd {
 
         for item in data.items {
             let description = format!(
-                "- **{}**\n{}\n - Stats: {}\n  - Price: {}\n",
+                "**{}**\n{}\n - Stats: {}\n - Price: {}\n\n",
                 item.name, item.description, item.stats, item.price
             );
             item_descriptions.push_str(&description);
         }
 
         format!(
-            "# *{}*\n## Description:\n{}\n\n## Items:\n{}",
-            data.merchant.name, data.merchant.description, item_descriptions
+            "*{}*\n# {}\n*{}*\n## Items:\n{}",
+            data.summary, data.merchant.name, data.merchant.description, item_descriptions
         )
     }
 

@@ -124,8 +124,9 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
             info!("DATA: {:?}", data);
             let value = serde_json::to_value(data)?;
             info!("Value: {:?}", value);
-            let res = (StatusCode::OK, Json(json!({"data": value}))).into_response();
-            
+            let json = json!({"data": value});
+            info!("JSON: {:?}", json);
+            let res = (StatusCode::OK, Json(json)).into_response();
             info!("Response: {:?}", res);
             
             return Ok(res)
