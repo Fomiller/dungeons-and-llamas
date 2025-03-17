@@ -1,18 +1,18 @@
-use crate::error::{ApiError, handle_error};
+use crate::error::{handle_error, ApiError};
 
 use std::collections::HashMap;
 use std::str::FromStr;
 
 use dnl_generators::battle::BattleJsonGeneratorConfig;
-use dnl_generators::shop::ShopJsonGeneratorConfig;
 use dnl_generators::rest::RestJsonGeneratorConfig;
-use dnl_generators::{JsonResponseGenerator, JsonGeneratorEnum, JsonGeneratorConfigEnum};
+use dnl_generators::shop::ShopJsonGeneratorConfig;
+use dnl_generators::{JsonGeneratorConfigEnum, JsonGeneratorEnum, JsonResponseGenerator};
 use dnl_types::llm::*;
-use dnl_types::tools::*;
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
 use dnl_types::scenario::*;
+use dnl_types::tools::battle::BattleToolOutput;
+use dnl_types::tools::rest::RestToolOutput;
+use dnl_types::tools::shop::ShopToolOutput;
+use dnl_types::tools::*;
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::InferenceConfigurationBuilder;
@@ -84,54 +84,82 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let system_vars = HashMap::new();
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
-    
+
     let scenario = Scenario::from_str(&payload.scenario).context("Unable to match scenario")?;
-    
+
     let example = match scenario {
         Scenario::Battle => serde_json::to_string(&BattleToolOutput::mock())?,
         Scenario::Shop => serde_json::to_string(&ShopToolOutput::mock())?,
         Scenario::Rest => serde_json::to_string(&RestToolOutput::mock())?,
     };
-    
+
     text_vars.insert("theme".to_string(), payload.theme.clone());
     json_vars.insert("level".to_string(), payload.level.clone());
     json_vars.insert("example".to_string(), example);
-    
+
     let config = match Scenario::from_str(&payload.scenario).context("Unable to match scenario")? {
-        Scenario::Battle => JsonGeneratorConfigEnum::Battle(BattleJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars)),
-        Scenario::Shop => JsonGeneratorConfigEnum::Shop(ShopJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars)),
-        Scenario::Rest => JsonGeneratorConfigEnum::Rest(RestJsonGeneratorConfig::new(payload, system_vars, text_vars, json_vars)),
-    };
-    
-    let mut generator = match config {
-        JsonGeneratorConfigEnum::Battle(config) => JsonGeneratorEnum::Battle(JsonResponseGenerator::new(config).await),
-        JsonGeneratorConfigEnum::Shop(config) => JsonGeneratorEnum::Shop(JsonResponseGenerator::new(config).await),
-        JsonGeneratorConfigEnum::Rest(config) => JsonGeneratorEnum::Rest(JsonResponseGenerator::new(config).await),
+        Scenario::Battle => JsonGeneratorConfigEnum::Battle(BattleJsonGeneratorConfig::new(
+            payload,
+            system_vars,
+            text_vars,
+            json_vars,
+        )),
+        Scenario::Shop => JsonGeneratorConfigEnum::Shop(ShopJsonGeneratorConfig::new(
+            payload,
+            system_vars,
+            text_vars,
+            json_vars,
+        )),
+        Scenario::Rest => JsonGeneratorConfigEnum::Rest(RestJsonGeneratorConfig::new(
+            payload,
+            system_vars,
+            text_vars,
+            json_vars,
+        )),
     };
 
-    match generator.generate_text().await.context("Failed to generate text") {
+    let mut generator = match config {
+        JsonGeneratorConfigEnum::Battle(config) => {
+            JsonGeneratorEnum::Battle(JsonResponseGenerator::new(config).await)
+        }
+        JsonGeneratorConfigEnum::Shop(config) => {
+            JsonGeneratorEnum::Shop(JsonResponseGenerator::new(config).await)
+        }
+        JsonGeneratorConfigEnum::Rest(config) => {
+            JsonGeneratorEnum::Rest(JsonResponseGenerator::new(config).await)
+        }
+    };
+
+    match generator
+        .generate_text()
+        .await
+        .context("Failed to generate text")
+    {
         Ok(_) => {
             info!("Text Created");
-        },
-        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string())))
+        }
+        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 
-    match generator.generate_json().await.context("Failed to generate json") {
+    match generator
+        .generate_json()
+        .await
+        .context("Failed to generate json")
+    {
         Ok(_) => {
             generator.save_json().await.context("Failed to save_json")?;
-            
+
             let data = generator.data().unwrap().clone();
             info!("DATA: {:?}", data);
             let value = serde_json::to_value(data)?;
             info!("Value: {:?}", value);
-            let json = json!({"data": value});
-            info!("JSON: {:?}", json);
-            let res = (StatusCode::OK, Json(json)).into_response();
+            // let json = json!({"data": value});
+            // info!("JSON: {:?}", json);
+            let res = (StatusCode::OK, Json(value)).into_response();
             info!("Response: {:?}", res);
-            
-            return Ok(res)
-        },
-        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string())))
+
+            return Ok(res);
+        }
+        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 }
-

@@ -2,9 +2,8 @@ use crate::*;
 
 use std::collections::HashMap;
 
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::Tools;
 use dnl_types::scenario::ScenarioInput;
+use dnl_types::tools::Tools;
 
 use lazy_static::lazy_static;
 

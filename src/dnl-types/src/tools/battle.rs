@@ -1,6 +1,7 @@
 use super::MockData;
+use crate::traits::DiscordMsg;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolOutput {
@@ -59,3 +60,24 @@ impl MockData for BattleToolOutput {
     }
 }
 
+impl DiscordMsg for BattleToolOutput {
+    fn to_message(&self) -> String {
+        let mut enemy_description = String::new();
+
+        for enemy in &self.enemies {
+            let description = format!(
+                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
+                enemy.enemy_type,
+                enemy.attack.attack_name,
+                enemy.attack.attack_damage,
+                enemy.health
+            );
+            enemy_description.push_str(&description);
+        }
+
+        format!(
+            "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
+            self.name, self.summary, self.terrain, enemy_description, self.summary
+        )
+    }
+}

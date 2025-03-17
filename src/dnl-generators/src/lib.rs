@@ -1,26 +1,26 @@
 pub mod battle;
-pub mod shop;
 pub mod rest;
+pub mod shop;
 
 use std::collections::HashMap;
 
-use dnl_store::Store;
-use dnl_sort_keys::encounter::EncounterSortKey;
-use dnl_types::scenario::ScenarioInput;
-use dnl_types::llm::ParseConverseOutput;
-use dnl_types::llm::LlmHandler;
-use dnl_types::tools::Tools;
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
 use battle::{BattleJsonGenerator, BattleJsonGeneratorConfig};
-use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
+use dnl_sort_keys::encounter::EncounterSortKey;
+use dnl_store::Store;
+use dnl_types::llm::LlmHandler;
+use dnl_types::llm::ParseConverseOutput;
+use dnl_types::scenario::ScenarioInput;
+use dnl_types::tools::battle::BattleToolOutput;
+use dnl_types::tools::rest::RestToolOutput;
+use dnl_types::tools::shop::ShopToolOutput;
+use dnl_types::tools::ToolOutputEnum;
+use dnl_types::tools::Tools;
 use rest::{RestJsonGenerator, RestJsonGeneratorConfig};
+use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
 
 pub enum JsonGeneratorConfigEnum {
     Battle(BattleJsonGeneratorConfig),
@@ -35,38 +35,7 @@ pub enum JsonGeneratorEnum {
     Rest(RestJsonGenerator),
 }
 
-#[derive(Clone, Debug)]
-pub enum ToolOutputEnum {
-    Battle(BattleToolOutput),
-    Shop(ShopToolOutput),
-    Rest(RestToolOutput),
-}
-
-impl Serialize for ToolOutputEnum {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            ToolOutputEnum::Battle(inner) => inner.serialize(serializer),
-            ToolOutputEnum::Shop(inner) => inner.serialize(serializer),
-            ToolOutputEnum::Rest(inner) => inner.serialize(serializer),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for ToolOutputEnum {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let inner: BattleToolOutput = Deserialize::deserialize(deserializer)?;
-        Ok(ToolOutputEnum::Battle(inner))
-    }
-}
-
-impl JsonGeneratorEnum 
-    {
+impl JsonGeneratorEnum {
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
         match self {
             JsonGeneratorEnum::Battle(gen) => gen.generate_text().await,
@@ -136,14 +105,14 @@ pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig> {
     pub attempts: u8,
 }
 
-impl<C> JsonResponseGenerator<C> 
-where 
+impl<C> JsonResponseGenerator<C>
+where
     C: JsonResponseGeneratorConfig,
 {
     pub fn data(&mut self) -> Option<ToolOutputEnum> {
         self.data.clone()
     }
-    
+
     pub async fn new(config: C) -> Self {
         let model = LlmHandler::new(config.model(), config.system_prompt()).await;
 
@@ -167,17 +136,23 @@ where
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
         let store = Store::new().await;
         let scenario_input = self.config.scenario_input();
-        let user_id = scenario_input.user_id; 
+        let user_id = scenario_input.user_id;
         let game_id = scenario_input.game_id;
         let level = scenario_input.level;
         let scenario = scenario_input.scenario;
-        let resp = store.try_get_encounters(&user_id, &game_id, &level, &scenario).await.context("try_get_encounters failed")?;
-        
-        let ctxs: Vec<String> = resp.iter().map(|v| format!("name: {}\ntext: {}\n\n", v.name, v.text)).collect();
-        
+        let resp = store
+            .try_get_encounters(&user_id, &game_id, &level, &scenario)
+            .await
+            .context("try_get_encounters failed")?;
+
+        let ctxs: Vec<String> = resp
+            .iter()
+            .map(|v| format!("name: {}\ntext: {}\n\n", v.name, v.text))
+            .collect();
+
         info!("Ctx Count: {:?}", ctxs.len());
         info!("CTXS: {:?}", ctxs);
-        
+
         let prompt = self
             .model
             .create_prompt(Some(ctxs), &self.config.text_prompt());
@@ -202,9 +177,8 @@ where
 
         Ok(())
     }
-    
-    pub async fn generate_json(&mut self) -> anyhow::Result<()>
-    {
+
+    pub async fn generate_json(&mut self) -> anyhow::Result<()> {
         let mut ctxs: Vec<String> = vec![];
         loop {
             self.attempts += 1;
@@ -217,7 +191,10 @@ where
                 Err(err) => {
                     if self.attempts >= self.max_retries {
                         info!("Reached max retry limit of {}", self.max_retries);
-                        return Err(anyhow::anyhow!("Exceeded max retry limit of {} when trying to create json", self.max_retries))
+                        return Err(anyhow::anyhow!(
+                            "Exceeded max retry limit of {} when trying to create json",
+                            self.max_retries
+                        ));
                     }
 
                     info!("Retrying creating JSON output");
@@ -230,7 +207,7 @@ where
                     ctxs.push(ctx)
                 }
             }
-        };
+        }
     }
 
     pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutputEnum> {
@@ -267,7 +244,8 @@ where
         let res = self
             .model
             .converse(Some(self.config.tool()), inference_cfg)
-            .await.context("Failed to call converse api")?;
+            .await
+            .context("Failed to call converse api")?;
 
         let tool_output = res.get_tool_output().context("Failed to get tool output")?;
 
@@ -277,7 +255,8 @@ where
             .input
             .clone();
 
-        let value = serde_json::to_value(tool_value).context("Failed to parese tool value to serde_json::Value")?;
+        let value = serde_json::to_value(tool_value)
+            .context("Failed to parese tool value to serde_json::Value")?;
 
         match self.config.tool() {
             Tools::Shop => {
@@ -285,20 +264,15 @@ where
                     .map(ToolOutputEnum::Shop)
                     .map_err(Into::into) // Convert serde_json error into your custom error type
             }
-            Tools::Battle => {
-                serde_json::from_value::<BattleToolOutput>(value)
-                    .map(ToolOutputEnum::Battle)
-                    .map_err(Into::into)
-            }
-            Tools::Rest => {
-                serde_json::from_value::<RestToolOutput>(value)
-                    .map(ToolOutputEnum::Rest)
-                    .map_err(Into::into)
-            }
+            Tools::Battle => serde_json::from_value::<BattleToolOutput>(value)
+                .map(ToolOutputEnum::Battle)
+                .map_err(Into::into),
+            Tools::Rest => serde_json::from_value::<RestToolOutput>(value)
+                .map(ToolOutputEnum::Rest)
+                .map_err(Into::into),
         }
     }
-    
-    
+
     pub async fn save_json(&mut self) -> anyhow::Result<()> {
         let store = Store::new().await;
 
@@ -307,43 +281,33 @@ where
             Tools::Shop => EncounterSortKey::Shop,
             Tools::Rest => EncounterSortKey::Rest,
         };
-        
+
         let scenario_input = self.config.scenario_input();
-        
+
         let level = scenario_input.level.parse::<u8>()?;
         let round = scenario_input.round.parse::<u8>()?;
         let user_id = &scenario_input.user_id;
         let game_id = &scenario_input.game_id;
- 
+
         let mut state = HashMap::new();
-        
-        state.insert("text".to_string(), aws_sdk_dynamodb::types::AttributeValue::S(self.text.clone().unwrap_or("".to_string())));
-        
+
+        state.insert(
+            "text".to_string(),
+            aws_sdk_dynamodb::types::AttributeValue::S(self.text.clone().unwrap_or("".to_string())),
+        );
+
         let data = self.data.clone().unwrap();
-        
+
         let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = match data {
-            ToolOutputEnum::Battle(item) => {
-                serde_dynamo::to_item(item)?
-            }
-            ToolOutputEnum::Shop(item) => {
-                serde_dynamo::to_item(item)?
-            }
-            ToolOutputEnum::Rest(item) => {
-                serde_dynamo::to_item(item)?
-            }
+            ToolOutputEnum::Battle(item) => serde_dynamo::to_item(item)?,
+            ToolOutputEnum::Shop(item) => serde_dynamo::to_item(item)?,
+            ToolOutputEnum::Rest(item) => serde_dynamo::to_item(item)?,
         };
-        
+
         state.extend(map);
-        
+
         store
-            .try_save_encounter(
-                user_id,
-                game_id,
-                encounter,
-                level,
-                round,
-                state,
-            )
+            .try_save_encounter(user_id, game_id, encounter, level, round, state)
             .await
     }
 }
