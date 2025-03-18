@@ -5,7 +5,6 @@ use anyhow;
 use diesel::debug_query;
 use diesel::prelude::*;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations};
-use models::NewEmbedding;
 use models::*;
 use pgvector::{Vector, VectorExpressionMethods};
 use schema::*;

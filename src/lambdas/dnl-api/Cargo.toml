@@ -20,7 +20,9 @@ dnl-types = { path = "../../dnl-types/" }
 dnl-generators = { path = "../../dnl-generators/" }
 dnl-store = { path = "../../dnl-store/" }
 dnl-sort-keys = { path = "../../dnl-sort-keys/" }
+dnl-db = { path = "../../dnl-db/" }
 
+diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
 anyhow = "1.0.94"
 axum = { version = "0.7.7" }
 axum-macros = "0.4.2"

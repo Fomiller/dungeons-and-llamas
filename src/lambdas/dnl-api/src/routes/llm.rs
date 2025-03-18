@@ -3,10 +3,12 @@ use crate::error::{handle_error, ApiError};
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use dnl_db::*;
 use dnl_generators::battle::BattleJsonGeneratorConfig;
 use dnl_generators::rest::RestJsonGeneratorConfig;
 use dnl_generators::shop::ShopJsonGeneratorConfig;
 use dnl_generators::{JsonGeneratorConfigEnum, JsonGeneratorEnum, JsonResponseGenerator};
+use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
 use dnl_types::llm::*;
 use dnl_types::scenario::*;
 use dnl_types::tools::battle::BattleToolOutput;
@@ -99,19 +101,19 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
     let config = match Scenario::from_str(&payload.scenario).context("Unable to match scenario")? {
         Scenario::Battle => JsonGeneratorConfigEnum::Battle(BattleJsonGeneratorConfig::new(
-            payload,
+            payload.clone(),
             system_vars,
             text_vars,
             json_vars,
         )),
         Scenario::Shop => JsonGeneratorConfigEnum::Shop(ShopJsonGeneratorConfig::new(
-            payload,
+            payload.clone(),
             system_vars,
             text_vars,
             json_vars,
         )),
         Scenario::Rest => JsonGeneratorConfigEnum::Rest(RestJsonGeneratorConfig::new(
-            payload,
+            payload.clone(),
             system_vars,
             text_vars,
             json_vars,
@@ -151,10 +153,33 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
             let data = generator.data().unwrap().clone();
             info!("DATA: {:?}", data);
+
             let value = serde_json::to_value(data)?;
             info!("Value: {:?}", value);
-            // let json = json!({"data": value});
-            // info!("JSON: {:?}", json);
+
+            let mut embedding_engine = EmbeddingEngine::new(EmbeddingConfig::default()).await;
+
+            let db = VectorDatabase::new();
+
+            let text = generator.text().unwrap().clone();
+            let vector = embedding_engine.try_create_vector(&text).await?;
+
+            let embedding = models::NewEmbedding {
+                user_id: &payload.user_id,
+                game_id: &payload.game_id,
+                vector,
+                text: &text,
+                type_: "output".to_string(),
+            };
+
+            let db_res = db
+                .await
+                .try_insert_new_embedding(&embedding)
+                .await
+                .context("failed to insert embedding")?;
+
+            info!("Database NewEmbedding response: {:?}", db_res);
+
             let res = (StatusCode::OK, Json(value)).into_response();
             info!("Response: {:?}", res);
 

@@ -1,11 +1,12 @@
-use crate::tools::Tools;
 use crate::errors::ToolError;
+use crate::tools::Tools;
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::{
     operation::converse::ConverseOutput,
     types::{
-        ContentBlock, ConversationRole, InferenceConfiguration, Message, SystemContentBlock, ToolUseBlock
+        ContentBlock, ConversationRole, InferenceConfiguration, Message, SystemContentBlock,
+        ToolUseBlock,
     },
     Client as BedrockClient,
 };
