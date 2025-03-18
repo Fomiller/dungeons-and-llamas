@@ -1,5 +1,6 @@
 use super::MockData;
 use crate::traits::DiscordMsg;
+use lazy_static::lazy_static;
 
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +8,6 @@ use serde::{Deserialize, Serialize};
 pub struct ShopToolOutput {
     pub items: Vec<ShopToolItem>,
     pub merchant: ShopToolMerchant,
-    pub name: String,
     pub summary: String,
 }
 
@@ -52,12 +52,9 @@ impl MockData for ShopToolOutput {
 
         let merchant = ShopToolMerchant { name: "Dirty Dan".to_string(), description: "A dirty old man who is missing teeth, but you can see a cart full of treasure behind him".to_string()};
 
-        let name = "Dirty wares".to_string();
-
         let summary = "This is summary Text".to_string();
 
         Self {
-            name,
             merchant,
             items,
             summary,
@@ -82,4 +79,59 @@ impl DiscordMsg for ShopToolOutput {
             self.summary, self.merchant.name, self.merchant.description, item_descriptions
         )
     }
+}
+
+lazy_static! {
+    pub static ref SHOP_TOOL_SCHEMA: serde_json::Value = {
+        serde_json::json!({
+            "type": "object",
+            "required": ["merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
+            "properties":{
+                "summary":{
+                    "type":"string",
+                    "description":"A 30 to 50 word objective summary of the shop scenario."
+                },
+                "merchant":{
+                    "type": "object",
+                    "description": "An Object that defines merchant",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "description": "Name of the Merchant"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "A 30-50 word description of the merchant and his surroundings",
+                        }
+                    }
+                },
+                "items": {
+                    "type": "array",
+                    "description": "A list of items to purchase",
+                    "items": {
+                        "type": "object",
+                        "description": "An Object that defines an item to purchase, items could be anything useful to a DnD player",
+                        "properties": {
+                            "name":{
+                                "type": "string",
+                                "description": "Name of the item"
+                            },
+                            "description":{
+                                "type": "string",
+                                "description": "1 sentence description of the item"
+                            },
+                            "stats":{
+                                "type": "string",
+                                "description": "The stats of item."
+                            },
+                            "price":{
+                                "type": "string",
+                                "description": "Cost of item for sale"
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    };
 }

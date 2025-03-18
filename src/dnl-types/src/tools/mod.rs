@@ -1,19 +1,16 @@
 pub mod battle;
 pub mod rest;
-pub mod schema;
 pub mod shop;
 
-use crate::tools::battle::BattleToolOutput;
-use rest::RestToolOutput;
-use serde::{Deserializer, Serializer};
-use shop::ShopToolOutput;
+use crate::tools::battle::{BattleToolOutput, BATTLE_TOOL_SCHEMA};
+use rest::{RestToolOutput, REST_TOOL_SCHEMA};
+use shop::{ShopToolOutput, SHOP_TOOL_SCHEMA};
 use std::collections::HashMap;
-
-use crate::tools::schema::*;
 
 use aws_sdk_bedrockruntime::types::*;
 use aws_smithy_types::Document;
 use serde::{Deserialize, Serialize};
+use serde::{Deserializer, Serializer};
 use serde_json::Value;
 
 pub trait MockData {

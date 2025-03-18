@@ -147,7 +147,19 @@ where
 
         let ctxs: Vec<String> = resp
             .iter()
-            .map(|v| format!("name: {}\ntext: {}\n\n", v.name, v.text))
+            .map(|v| {
+                let mut ctx = String::new();
+
+                if let Some(name) = &v.name {
+                    ctx.push_str(&format!("name: {}\n", name))
+                };
+
+                let txt_str = &format!("text: {}\n\n", &v.text);
+
+                ctx.push_str(txt_str);
+
+                ctx
+            })
             .collect();
 
         info!("Ctx Count: {:?}", ctxs.len());
