@@ -4,7 +4,7 @@ use serde::*;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EncounterQuery {
     pub text: String,
-    pub name: String,
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

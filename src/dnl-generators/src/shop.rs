@@ -2,8 +2,8 @@ use crate::*;
 
 use std::collections::HashMap;
 
-use dnl_types::tools::Tools;
 use dnl_types::scenario::ScenarioInput;
+use dnl_types::tools::Tools;
 
 use lazy_static::lazy_static;
 
@@ -111,15 +111,11 @@ lazy_static! {
     pub static ref SHOP_TOOL_SCHEMA: serde_json::Value = {
         serde_json::json!({
             "type": "object",
-            "required": ["name", "merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
+            "required": ["merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
             "properties":{
                 "summary":{
                     "type":"string",
                     "description":"A 30 to 50 word objective summary of the shop scenario."
-                },
-                "name": {
-                    "type":"string",
-                    "description":"A name for the shop encounter"
                 },
                 "merchant":{
                     "type": "object",
