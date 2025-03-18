@@ -179,11 +179,19 @@ where
     }
 
     pub async fn generate_json(&mut self) -> anyhow::Result<()> {
-        let mut ctxs: Vec<String> = vec![];
+        let ctxs: Vec<String> = vec![];
+        let mut fail_ctx: Option<String> = None;
+
         loop {
             self.attempts += 1;
 
-            match self.to_json(ctxs.clone()).await {
+            let mut temp_ctxs = ctxs.clone();
+
+            if let Some(fail) = fail_ctx {
+                temp_ctxs.push(fail)
+            }
+
+            match self.to_json(temp_ctxs).await {
                 Ok(data) => {
                     self.data = Some(data);
                     return Ok(());
@@ -200,11 +208,10 @@ where
                     info!("Retrying creating JSON output");
                     info!("Attempt {} failed: {}", self.attempts, err);
 
-                    let ctx = format!(
+                    fail_ctx = Some(format!(
                         "The previous attempt to deserialize your response failed with the error: {}",
                         err.to_string()
-                    );
-                    ctxs.push(ctx)
+                    ));
                 }
             }
         }
