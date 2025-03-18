@@ -1,15 +1,16 @@
 pub mod battle;
-pub mod shop;
 pub mod rest;
-pub mod schema;
+pub mod shop;
 
+use crate::tools::battle::{BattleToolOutput, BATTLE_TOOL_SCHEMA};
+use rest::{RestToolOutput, REST_TOOL_SCHEMA};
+use shop::{ShopToolOutput, SHOP_TOOL_SCHEMA};
 use std::collections::HashMap;
-
-use crate::tools::schema::*;
 
 use aws_sdk_bedrockruntime::types::*;
 use aws_smithy_types::Document;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use serde::{Deserializer, Serializer};
 use serde_json::Value;
 
 pub trait MockData {
@@ -137,5 +138,46 @@ impl ToDocument for Property {
                 Document::String(self.description.to_owned()),
             ),
         ]))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum ToolOutputEnum {
+    Battle(battle::BattleToolOutput),
+    Shop(shop::ShopToolOutput),
+    Rest(rest::RestToolOutput),
+}
+
+impl Serialize for ToolOutputEnum {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            ToolOutputEnum::Battle(inner) => inner.serialize(serializer),
+            ToolOutputEnum::Shop(inner) => inner.serialize(serializer),
+            ToolOutputEnum::Rest(inner) => inner.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ToolOutputEnum {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+
+        if let Ok(inner) = serde_json::from_value::<BattleToolOutput>(value.clone()) {
+            return Ok(ToolOutputEnum::Battle(inner));
+        }
+        if let Ok(inner) = serde_json::from_value::<ShopToolOutput>(value.clone()) {
+            return Ok(ToolOutputEnum::Shop(inner));
+        }
+        if let Ok(inner) = serde_json::from_value::<RestToolOutput>(value.clone()) {
+            return Ok(ToolOutputEnum::Rest(inner));
+        }
+
+        Err(serde::de::Error::custom("Unknown tool output type"))
     }
 }

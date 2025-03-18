@@ -1,12 +1,10 @@
-use crate::*;
 use crate::error::handle_error;
+use crate::*;
 use std::collections::HashMap;
 
 use dnl_store::Store;
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
-use dnl_types::api::*;
+use dnl_types::tools::ToolOutputEnum;
+use dnl_types::traits::DiscordMsg;
 
 use lambda_http::tracing::info;
 use reqwest::Response;
@@ -28,7 +26,7 @@ impl ScenarioCmd {
             std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
 
         let http = Http::new(&token);
-        
+
         http.set_application_id(cmd.application_id);
 
         cmd.defer(&http).await.context("Failed to defer command")?;
@@ -37,9 +35,13 @@ impl ScenarioCmd {
 
         let store = Store::new().await;
 
-        let game_id = match store.try_get_active_game_id(&user_id).await.context("Failed to get active game id") {
+        let game_id = match store
+            .try_get_active_game_id(&user_id)
+            .await
+            .context("Failed to get active game id")
+        {
             Ok(game_id) => game_id,
-            Err(err) => return handle_error(&http, &cmd, err).await
+            Err(err) => return handle_error(&http, &cmd, err).await,
         };
 
         // :TODO: make this into ApiClient
@@ -65,66 +67,33 @@ impl ScenarioCmd {
                 }
                 Ok(None)
             }
-            Err(err) => return error::handle_error(&http, &cmd, err.into()).await
+            Err(err) => return error::handle_error(&http, &cmd, err.into()).await,
         }
     }
-    
+
     pub async fn handle_sucessful_response(
         res: Response,
         cmd: &CommandInteraction,
         http: &Http,
     ) -> anyhow::Result<()> {
         info!("API Res: {:?}", res);
-        let res: ApiScenarioResponse = res.json().await.context("Failed to parse into ApiScenarioResponse")?;
-        
-        let content = match res.data {
-            ApiScenarioResponseData::Battle(data) => Self::format_battle_scenario(data),
-            ApiScenarioResponseData::Shop(data) => Self::format_shop_scenario(data),
-            ApiScenarioResponseData::Rest(data) => Self::format_rest_scenario(data),
+        let res: ToolOutputEnum = res
+            .json()
+            .await
+            .context("Failed to parse into ApiScenarioResponse")?;
+
+        let content: Box<dyn DiscordMsg + Send> = match res {
+            ToolOutputEnum::Battle(data) => Box::new(data),
+            ToolOutputEnum::Shop(data) => Box::new(data),
+            ToolOutputEnum::Rest(data) => Box::new(data),
         };
 
-        let message = CreateInteractionResponseFollowup::new().content(content);
+        let message = CreateInteractionResponseFollowup::new().content(content.to_message());
 
         let res = cmd.create_followup(&http, message).await;
+
         info!("Follow up: {:?}", res);
 
         Ok(())
     }
-
-    fn format_battle_scenario(data: BattleToolOutput) -> String {
-        let mut enemy_description = String::new();
-
-        for enemy in data.enemies {
-            let description = format!(
-                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
-                enemy.enemy_type, enemy.attack.attack_name, enemy.attack.attack_damage, enemy.health
-            );
-            enemy_description.push_str(&description);
-        }
-
-        format!(
-            "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
-            data.name, data.summary, data.terrain, enemy_description, data.summary
-        )
-    }
-    
-    fn format_shop_scenario(data: ShopToolOutput) -> String {
-        let mut item_descriptions = String::new();
-
-        for item in data.items {
-            let description = format!(
-                "**{}**\n{}\n - Stats: {}\n - Price: {}\n\n",
-                item.name, item.description, item.stats, item.price
-            );
-            item_descriptions.push_str(&description);
-        }
-
-        format!(
-            "*{}*\n# {}\n*{}*\n## Items:\n{}",
-            data.summary, data.merchant.name, data.merchant.description, item_descriptions
-        )
-    }
-
-    fn format_rest_scenario(_data: RestToolOutput) -> String {"".to_string()}
 }
-

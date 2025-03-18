@@ -2,10 +2,8 @@ use crate::*;
 
 use std::collections::HashMap;
 
-use dnl_types::tools::Tools;
 use dnl_types::scenario::ScenarioInput;
-
-use lazy_static::lazy_static;
+use dnl_types::tools::Tools;
 
 pub static SHOP_SYSTEM_PROMPT: &str = "
 You are a DM for a single player dungeons and dragons style text adventure game.
@@ -105,63 +103,4 @@ impl ShopJsonGeneratorConfig {
             text_prompt,
         }
     }
-}
-
-lazy_static! {
-    pub static ref SHOP_TOOL_SCHEMA: serde_json::Value = {
-        serde_json::json!({
-            "type": "object",
-            "required": ["name", "merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
-            "properties":{
-                "summary":{
-                    "type":"string",
-                    "description":"A 30 to 50 word objective summary of the shop scenario."
-                },
-                "name": {
-                    "type":"string",
-                    "description":"A name for the shop encounter"
-                },
-                "merchant":{
-                    "type": "object",
-                    "description": "An Object that defines merchant",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "description": "Name of the Merchant"
-                        },
-                        "description": {
-                            "type": "string",
-                            "description": "A 30-50 word description of the merchant and his surroundings",
-                        }
-                    }
-                },
-                "items": {
-                    "type": "array",
-                    "description": "A list of items to purchase",
-                    "items": {
-                        "type": "object",
-                        "description": "An Object that defines an item to purchase, items could be anything useful to a DnD player",
-                        "properties": {
-                            "name":{
-                                "type": "string",
-                                "description": "Name of the item"
-                            },
-                            "description":{
-                                "type": "string",
-                                "description": "1 sentence description of the item"
-                            },
-                            "stats":{
-                                "type": "string",
-                                "description": "The stats of item."
-                            },
-                            "price":{
-                                "type": "string",
-                                "description": "Cost of item for sale"
-                            }
-                        }
-                    }
-                }
-            }
-        })
-    };
 }
