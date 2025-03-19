@@ -7,6 +7,7 @@ pub struct RootSortKeyBuilder {
     game: Option<GameSortKeyBuilder>,
     user: Option<UserSortKey>,
     message: Option<MessageSortKey>,
+    state: Option<StateSortKey>,
 }
 
 impl RootSortKeyBuilder {
@@ -26,6 +27,10 @@ impl RootSortKeyBuilder {
         self.message = Some(message);
         self
     }
+    pub fn state(mut self, state: StateSortKey) -> Self {
+        self.state = Some(state);
+        self
+    }
 
     pub fn id(mut self, id: &str) -> Self {
         self.id = id.to_string();
@@ -36,6 +41,12 @@ impl RootSortKeyBuilder {
         RootSortKeyBuilder::new()
             .id(&id)
             .game(GameSortKeyBuilder::new().entity(entity))
+    }
+
+    pub fn create_state_sk(id: String) -> RootSortKeyBuilder {
+        RootSortKeyBuilder::new()
+            .id(&id)
+            .state(StateSortKey::GameState)
     }
 
     pub fn create_inventory_sk(
@@ -201,6 +212,9 @@ impl SortKeyBuildable for RootSortKeyBuilder {
         }
         if let Some(message) = self.message {
             result.push_str(&format!("{}", message.to_string()));
+        }
+        if let Some(state) = self.state {
+            result.push_str(&format!("{}", state.to_string()));
         }
 
         result
