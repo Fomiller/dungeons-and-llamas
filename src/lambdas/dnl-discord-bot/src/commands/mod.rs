@@ -1,3 +1,4 @@
+pub mod attack;
 pub mod buttons;
 pub mod class;
 pub mod edit;
@@ -12,6 +13,7 @@ pub mod text;
 
 use std::str::FromStr;
 
+use attack::*;
 use buttons::*;
 use class::*;
 use list_games::*;
@@ -22,6 +24,7 @@ use roll::*;
 use scenario::*;
 use text::*;
 
+use anyhow::Context;
 use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;
@@ -49,6 +52,7 @@ pub async fn try_handle_command_interaction(
         SlashCommands::Menu(cmd) => cmd.execute(),
         SlashCommands::Text(cmd) => cmd.execute(interaction).await,
         SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
+        SlashCommands::Attack(cmd) => cmd.execute(interaction).await,
     }?;
 
     Ok(res)
@@ -74,6 +78,8 @@ pub enum SlashCommands {
     Text(TextCmd),
     #[strum(serialize = "scenario", ascii_case_insensitive)]
     Scenario(ScenarioCmd),
+    #[strum(serialize = "attack", ascii_case_insensitive)]
+    Attack(AttackCmd),
 }
 
 pub fn format_interaction_response(content: String) -> CreateInteractionResponse {
@@ -81,4 +87,3 @@ pub fn format_interaction_response(content: String) -> CreateInteractionResponse
 
     CreateInteractionResponse::Message(message)
 }
-

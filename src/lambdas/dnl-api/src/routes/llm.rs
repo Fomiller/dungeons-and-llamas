@@ -3,12 +3,14 @@ use crate::error::{handle_error, ApiError};
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use aws_sdk_dynamodb::types::AttributeValue;
 use dnl_db::*;
 use dnl_generators::battle::BattleJsonGeneratorConfig;
 use dnl_generators::rest::RestJsonGeneratorConfig;
 use dnl_generators::shop::ShopJsonGeneratorConfig;
 use dnl_generators::{JsonGeneratorConfigEnum, JsonGeneratorEnum, JsonResponseGenerator};
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
+use dnl_store::Store;
 use dnl_types::llm::*;
 use dnl_types::scenario::*;
 use dnl_types::tools::battle::BattleToolOutput;
@@ -171,6 +173,18 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
                 text: &text,
                 type_: "output".to_string(),
             };
+
+            let store = Store::new().await;
+
+            let mut state = HashMap::new();
+            state.insert("round".to_string(), AttributeValue::N(payload.round));
+            state.insert("level".to_string(), AttributeValue::N(payload.level));
+            state.insert(
+                "curr_encounter".to_string(),
+                AttributeValue::S(payload.scenario),
+            );
+
+            let _ = store.try_update_state(&payload.user_id, state).await?;
 
             let db_res = db
                 .await

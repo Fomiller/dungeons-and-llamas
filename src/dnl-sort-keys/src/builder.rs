@@ -43,9 +43,9 @@ impl RootSortKeyBuilder {
             .game(GameSortKeyBuilder::new().entity(entity))
     }
 
-    pub fn create_state_sk(id: String) -> RootSortKeyBuilder {
+    pub fn create_state_sk(id: &str) -> RootSortKeyBuilder {
         RootSortKeyBuilder::new()
-            .id(&id)
+            .id(id)
             .state(StateSortKey::GameState)
     }
 

@@ -22,14 +22,13 @@ dnl-store = { path = "../../dnl-store/" }
 dnl-sort-keys = { path = "../../dnl-sort-keys/" }
 dnl-db = { path = "../../dnl-db/" }
 
-diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
 anyhow = "1.0.94"
+aws-sdk-bedrockruntime = { version = "1.64.0", features = [ "behavior-version-latest", ] }
+aws-sdk-dynamodb = "1.49.0"
 axum = { version = "0.7.7" }
 axum-macros = "0.4.2"
+diesel = { version = "2.2.6", features = ["postgres", "serde_json"] }
 lambda_http = "0.13.0"
 serde = { version = "1.0.213", features = ["derive"] }
-aws-sdk-bedrockruntime = { version = "1.64.0", features = [
-    "behavior-version-latest",
-] }
 serde_json = "1.0.132"
 tokio = { version = "1", features = ["macros"] }

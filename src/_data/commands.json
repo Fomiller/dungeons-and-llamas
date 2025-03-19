@@ -112,6 +112,11 @@
         "description": "create a text input response"
     },
     {
+        "name": "attack",
+        "type": 1,
+        "description": "attack and enemy"
+    },
+    {
         "name": "menu",
         "type": 1,
         "description": "Create a menu response"

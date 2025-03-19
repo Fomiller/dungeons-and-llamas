@@ -1,3 +1,4 @@
+use crate::error;
 use dnl_store::Store;
 use lambda_http::tracing::debug;
 use serenity::builder::*;
@@ -79,6 +80,8 @@ impl TextCmd {
                     options: class_options,
                 },
             )
+            .min_values(1)
+            .max_values(3)
             .placeholder("Select a class"),
         );
 
@@ -89,6 +92,8 @@ impl TextCmd {
                     options: background_options,
                 },
             )
+            .min_values(1)
+            .max_values(3)
             .placeholder("Select a background"),
         );
 
@@ -108,6 +113,7 @@ impl TextCmd {
         // debug!("{:?}", modal);
 
         debug!("EMBED {:?}", message);
+
         Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }

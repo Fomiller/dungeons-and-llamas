@@ -1,15 +1,16 @@
+pub mod encounter;
 pub mod message;
 pub mod schema;
 pub mod state_component;
 pub mod user;
 pub mod weapon;
-pub mod encounter;
 
-use std::env;
 use std::collections::HashMap;
+use std::env;
 
-use crate::state_component::StateComponent;
 use crate::encounter::EncounterQuery;
+use crate::state_component::StateComponent;
+use aws_sdk_dynamodb::operation::update_item::UpdateItemOutput;
 use dnl_sort_keys::game::GameState;
 use dnl_sort_keys::prelude::*;
 
@@ -22,6 +23,7 @@ use aws_sdk_dynamodb::{
     operation::{batch_write_item::BatchWriteItemInput, get_item::GetItemOutput},
     types::WriteRequest,
 };
+use dnl_types::tools::battle::BattleToolEnemy;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
 
@@ -47,14 +49,52 @@ impl Store {
         Self { client }
     }
 
+    pub async fn try_generic_update(
+        &self,
+        primary_key: String,
+        sort_key: String,
+        updates: HashMap<String, AttributeValue>,
+    ) -> anyhow::Result<UpdateItemOutput> {
+        let mut expression_attribute_names = HashMap::new();
+        let mut expression_attribute_values = HashMap::new();
+        let mut update_expressions = Vec::new();
+
+        for (field, value) in &updates {
+            let placeholder_name = format!("#{}", field);
+            let placeholder_value = format!(":{}", field);
+
+            expression_attribute_names.insert(placeholder_name.clone(), field.clone());
+            expression_attribute_values.insert(placeholder_value.clone(), value.clone());
+
+            update_expressions.push(format!("{} = {}", placeholder_name, placeholder_value));
+        }
+
+        let update_expression = format!("SET {}", update_expressions.join(", "));
+
+        let res = self
+            .client
+            .update_item()
+            .table_name(GAME_STATE_TABLE.to_string())
+            .key("UserId", AttributeValue::S(primary_key))
+            .key("StateComponent", AttributeValue::S(sort_key))
+            .update_expression(update_expression)
+            .set_expression_attribute_names(Some(expression_attribute_names))
+            .set_expression_attribute_values(Some(expression_attribute_values))
+            .send()
+            .await
+            .context("aws dynamodb update item failed")?;
+
+        Ok(res)
+    }
+
     pub async fn try_generic_query(
         &self,
         primary_key: String,
         sort_key: String,
-        attributes: Vec<&str>,
+        attributes: &Vec<&str>,
     ) -> anyhow::Result<QueryOutput> {
         let mut expression_attribute_names = HashMap::new();
-        
+
         expression_attribute_names.insert("#pk".to_string(), "UserId".to_string());
         expression_attribute_names.insert("#sk".to_string(), "StateComponent".to_string());
 
@@ -65,12 +105,12 @@ impl Store {
             aliased_attributes.push(alias);
         }
 
-         let projection_expression = if aliased_attributes.is_empty() {
-             None
+        let projection_expression = if aliased_attributes.is_empty() {
+            None
         } else {
             Some(aliased_attributes.join(", "))
         };
-         
+
         let res = self
             .client
             .query()
@@ -81,8 +121,9 @@ impl Store {
             .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
             .set_projection_expression(projection_expression)
             .send()
-            .await.context("aws dynamodb client query failed")?;
-        
+            .await
+            .context("aws dynamodb client query failed")?;
+
         Ok(res)
     }
     pub async fn try_generic_begins_with_query(
@@ -92,7 +133,7 @@ impl Store {
         attributes: Vec<&str>,
     ) -> anyhow::Result<QueryOutput> {
         let mut expression_attribute_names = HashMap::new();
-        
+
         expression_attribute_names.insert("#pk".to_string(), "UserId".to_string());
         expression_attribute_names.insert("#sk".to_string(), "StateComponent".to_string());
 
@@ -103,12 +144,12 @@ impl Store {
             aliased_attributes.push(alias);
         }
 
-         let projection_expression = if aliased_attributes.is_empty() {
-             None
+        let projection_expression = if aliased_attributes.is_empty() {
+            None
         } else {
             Some(aliased_attributes.join(", "))
         };
-        
+
         let res = self
             .client
             .query()
@@ -181,7 +222,7 @@ impl Store {
     pub async fn try_create_user(&self, user_id: &str) -> anyhow::Result<()> {
         let mut map = HashMap::new();
         map.insert("user_id", user_id);
-        let item = serde_dynamo::to_item(map)?; 
+        let item = serde_dynamo::to_item(map)?;
 
         self.try_generic_put(item).await?;
 
@@ -189,7 +230,6 @@ impl Store {
     }
 
     pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
-        
         let mut state_component: Item = serde_dynamo::to_item(StateComponent {
             user_id: user_id.to_string(),
             state_component: RootSortKeyBuilder::new()
@@ -198,7 +238,7 @@ impl Store {
                 .build(),
             ..Default::default()
         })?;
-        
+
         let mut map = HashMap::new();
         map.insert("last_message_token", token);
         let item: Item = serde_dynamo::to_item(map)?;
@@ -224,12 +264,12 @@ impl Store {
             state_component: sk,
             ..Default::default()
         })?;
-        
+
         // let _game_id = AttributeValue::S(game_id.to_string());
         let mut map = HashMap::new();
         map.insert("game_id".to_string(), game_id);
         let item: Item = serde_dynamo::to_item(map)?;
-         
+
         state_component.extend(item);
 
         self.try_generic_put(state_component).await?;
@@ -255,8 +295,7 @@ impl Store {
             state_component: sk,
             ..Default::default()
         })?;
-        
-        
+
         state_component.extend(state);
 
         self.try_generic_put(state_component).await?;
@@ -270,42 +309,138 @@ impl Store {
             .message(MessageSortKey::LastMessageToken)
             .build();
 
+        let attributes = vec!["last_message_token"];
+
         let res = self
-            .try_generic_query(user_id.to_string(), sort_key, vec!["last_message_token"])
+            .try_generic_query(user_id.to_string(), sort_key, &attributes)
             .await?;
 
         Ok(res)
     }
 
-    pub async fn try_get_encounters(&self, user_id: &str, game_id: &str, level: &str, encounter: &str) -> anyhow::Result<Vec<EncounterQuery>> {
+    pub async fn try_get_encounters(
+        &self,
+        user_id: &str,
+        game_id: &str,
+        level: &str,
+        encounter: &str,
+    ) -> anyhow::Result<Vec<EncounterQuery>> {
         let mut chars = encounter.chars();
         let encounter = match chars.next() {
             Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
             None => String::new(), // Return empty string if input is empty
         };
-        
-        let sk = format!("{}#Game#Level#{}#Encounter#{}#Round#",game_id, level, encounter);
+
+        let sk = format!(
+            "{}#Game#Level#{}#Encounter#{}#Round#",
+            game_id, level, encounter
+        );
         info!("Sk: {}", sk);
         let res = self
             .try_generic_begins_with_query(user_id.to_string(), sk, vec!["text", "name"])
-            .await.context("try_generic_begins_with_query failed")?;
-        
+            .await
+            .context("try_generic_begins_with_query failed")?;
+
         debug!("Begins with query response: {:?}", res);
-        
+
         let items = res.items.unwrap();
-        
-        let ctxs: Vec<EncounterQuery> = serde_dynamo::from_items(items).context("serde_dynamo::from_items failed")?;
+
+        let ctxs: Vec<EncounterQuery> =
+            serde_dynamo::from_items(items).context("serde_dynamo::from_items failed")?;
         Ok(ctxs)
     }
-    
+
+    pub async fn try_get_state(&self, user_id: &str) -> anyhow::Result<State> {
+        let sk = RootSortKeyBuilder::create_state_sk(user_id).build();
+
+        let attributes = vec!["round", "level", "current_encounter", "previous_encounter"];
+
+        let res = self
+            .try_generic_query(user_id.to_string(), sk.clone(), &attributes)
+            .await
+            .context(format!(
+                "Generic query failed with args; user_id: {}, sk: {}, attrs: {:?}",
+                user_id, sk, attributes
+            ))?;
+
+        let item = res.items.unwrap()[0].clone();
+
+        let state: State =
+            serde_dynamo::from_item(item).context("serde_dynamo::from_items failed")?;
+
+        Ok(state)
+    }
+
+    pub async fn try_update_state(
+        &self,
+        user_id: &str,
+        updates: HashMap<String, AttributeValue>,
+    ) -> anyhow::Result<UpdateItemOutput> {
+        let sk = RootSortKeyBuilder::create_state_sk(&user_id).build();
+
+        let res = self
+            .try_generic_update(user_id.to_string(), sk, updates)
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn try_get_enemies(
+        &self,
+        game_id: &str,
+        user_id: &str,
+        round: u8,
+        level: u8,
+    ) -> anyhow::Result<Vec<BattleToolEnemy>> {
+        let sk = SortKeyFactory::new(&user_id)
+            .create_encounter_sk(game_id, round, level, EncounterSortKey::Battle)
+            .build();
+
+        let attributes = vec!["enemies"];
+
+        let res = self
+            .try_generic_query(user_id.to_string(), sk.clone(), &attributes)
+            .await
+            .context(format!(
+                "Generic query failed with args; user_id: {}, sk: {}, attrs: {:?}",
+                user_id, sk, attributes
+            ))?;
+
+        let items = res.items.expect(format!("Could not find {}", sk).as_str());
+
+        info!("ENEMIES: {:?}", items);
+
+        let x: Vec<_> = items
+            .first()
+            .expect("there should be at least 1 item in the list")
+            .get("enemies")
+            .expect("no enemies key found")
+            .as_l()
+            .expect("could not convert enemies key to hashmap")
+            .to_owned()
+            .into_iter()
+            .filter_map(|v| v.as_m().ok().cloned())
+            .collect();
+
+        let enemies: Vec<BattleToolEnemy> = serde_dynamo::from_items(x)
+            .context("serde_dynamo::from_items failed creating, BattleToolEnemy")?;
+
+        Ok(enemies)
+    }
+
     pub async fn try_get_active_game_id(&self, user_id: &str) -> anyhow::Result<String> {
         let sk = SortKeyFactory::new(&user_id)
             .create_user_active_game_sk()
             .build();
 
+        let attributes = vec!["game_id"];
         let res = self
-            .try_generic_query(user_id.to_string(), sk.clone(), vec!["game_id"])
-            .await.context(format!("Generic query failed with args; user_id: {}, sk: {}, attrs: {}", user_id, sk, "game_id"))?;
+            .try_generic_query(user_id.to_string(), sk.clone(), &attributes)
+            .await
+            .context(format!(
+                "Generic query failed with args; user_id: {}, sk: {}, attrs: {}",
+                user_id, sk, "game_id"
+            ))?;
 
         let items = res.items.expect(format!("Could not find {}", sk).as_str());
 
