@@ -13,15 +13,21 @@ pub struct ShopToolOutput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShopToolMerchant {
+    #[serde(rename = "merchant_name")]
     pub name: String,
+    #[serde(rename = "merchant_description")]
     pub description: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShopToolItem {
+    #[serde(rename = "item_name")]
     pub name: String,
+    #[serde(rename = "item_description")]
     pub description: String,
+    #[serde(rename = "item_stats")]
     pub stats: String,
+    #[serde(rename = "item_price")]
     pub price: String,
 }
 
@@ -85,7 +91,7 @@ lazy_static! {
     pub static ref SHOP_TOOL_SCHEMA: serde_json::Value = {
         serde_json::json!({
             "type": "object",
-            "required": ["merchant", "name", "description", "items", "name", "desciption", "stats", "price"],
+            "required": ["summary", "merchant", "merchant_name", "merchant_description", "items", "item_name", "item_desciption", "item_stats", "item_price"],
             "properties":{
                 "summary":{
                     "type":"string",
@@ -95,11 +101,11 @@ lazy_static! {
                     "type": "object",
                     "description": "An Object that defines merchant",
                     "properties": {
-                        "name": {
+                        "merchant_name": {
                             "type": "string",
                             "description": "Name of the Merchant"
                         },
-                        "description": {
+                        "merchant_description": {
                             "type": "string",
                             "description": "A 30-50 word description of the merchant and his surroundings",
                         }
@@ -112,19 +118,19 @@ lazy_static! {
                         "type": "object",
                         "description": "An Object that defines an item to purchase, items could be anything useful to a DnD player",
                         "properties": {
-                            "name":{
+                            "item_name":{
                                 "type": "string",
                                 "description": "Name of the item"
                             },
-                            "description":{
+                            "item_description":{
                                 "type": "string",
                                 "description": "1 sentence description of the item"
                             },
-                            "stats":{
+                            "item_stats":{
                                 "type": "string",
                                 "description": "The stats of item."
                             },
-                            "price":{
+                            "item_price":{
                                 "type": "string",
                                 "description": "Cost of item for sale"
                             }

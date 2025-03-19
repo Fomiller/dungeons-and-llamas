@@ -64,6 +64,13 @@ impl JsonGeneratorEnum {
             JsonGeneratorEnum::Rest(gen) => gen.data(),
         }
     }
+    pub fn text(&mut self) -> Option<String> {
+        match self {
+            JsonGeneratorEnum::Battle(gen) => gen.text(),
+            JsonGeneratorEnum::Shop(gen) => gen.text(),
+            JsonGeneratorEnum::Rest(gen) => gen.text(),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -111,6 +118,10 @@ where
 {
     pub fn data(&mut self) -> Option<ToolOutputEnum> {
         self.data.clone()
+    }
+
+    pub fn text(&mut self) -> Option<String> {
+        self.text.clone()
     }
 
     pub async fn new(config: C) -> Self {
@@ -191,19 +202,19 @@ where
     }
 
     pub async fn generate_json(&mut self) -> anyhow::Result<()> {
-        let ctxs: Vec<String> = vec![];
-        let mut fail_ctx: Option<String> = None;
+        let mut ctxs: Vec<String> = vec![];
+        // let mut fail_ctx: Option<String> = None;
 
         loop {
             self.attempts += 1;
 
-            let mut temp_ctxs = ctxs.clone();
+            // let mut temp_ctxs = ctxs.clone();
 
-            if let Some(fail) = fail_ctx {
-                temp_ctxs.push(fail)
-            }
+            // if let Some(fail) = fail_ctx {
+            //     temp_ctxs.push(fail)
+            // }
 
-            match self.to_json(temp_ctxs).await {
+            match self.to_json(ctxs.clone()).await {
                 Ok(data) => {
                     self.data = Some(data);
                     return Ok(());
@@ -220,10 +231,11 @@ where
                     info!("Retrying creating JSON output");
                     info!("Attempt {} failed: {}", self.attempts, err);
 
-                    fail_ctx = Some(format!(
+                    let fail_ctx = format!(
                         "The previous attempt to deserialize your response failed with the error: {}",
                         err.to_string()
-                    ));
+                    );
+                    ctxs.push(fail_ctx);
                 }
             }
         }
@@ -260,6 +272,8 @@ where
 
         let inference_cfg = Some(inference_cfg_builder);
 
+        info!("TOOL: {:?}", self.config.tool());
+
         let res = self
             .model
             .converse(Some(self.config.tool()), inference_cfg)
@@ -278,11 +292,9 @@ where
             .context("Failed to parese tool value to serde_json::Value")?;
 
         match self.config.tool() {
-            Tools::Shop => {
-                serde_json::from_value::<ShopToolOutput>(value)
-                    .map(ToolOutputEnum::Shop)
-                    .map_err(Into::into) // Convert serde_json error into your custom error type
-            }
+            Tools::Shop => serde_json::from_value::<ShopToolOutput>(value)
+                .map(ToolOutputEnum::Shop)
+                .map_err(Into::into),
             Tools::Battle => serde_json::from_value::<BattleToolOutput>(value)
                 .map(ToolOutputEnum::Battle)
                 .map_err(Into::into),

@@ -1145,6 +1145,8 @@ dependencies = [
  "aws-sdk-bedrockruntime",
  "axum",
  "axum-macros",
+ "diesel",
+ "dnl-db",
  "dnl-generators",
  "dnl-llm",
  "dnl-sort-keys",

@@ -18,7 +18,7 @@ pub struct EmbeddingEngine {
 
 impl EmbeddingEngine {
     pub async fn new(config: EmbeddingConfig) -> Self {
-        let aws_config = aws_config::load_from_env().await;
+        let aws_config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
         let client = BedrockClient::new(&aws_config);
         Self { client, config }
     }
