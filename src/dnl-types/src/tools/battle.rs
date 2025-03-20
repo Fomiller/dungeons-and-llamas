@@ -14,8 +14,9 @@ pub struct BattleToolOutput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolEnemy {
-    pub health: String,
+    pub health: Health,
     pub enemy_type: String,
+    pub armor_class: u8,
     pub attack: BattleToolEnemyAttack,
 }
 
@@ -25,6 +26,30 @@ pub struct BattleToolEnemyAttack {
     pub attack_name: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Health {
+    pub current: u8,
+    pub max: u8,
+    pub expression: HealthExpression,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HealthExpression {
+    pub die_count: u8,
+    pub die_size: u8,
+    pub modifier: u8,
+}
+
+impl std::fmt::Display for HealthExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut expression = format!("{}d{}", self.die_count, self.die_size);
+        if self.modifier != 0 {
+            let mod_expression = format!("+{}", self.modifier);
+            expression.push_str(&mod_expression)
+        }
+        write!(f, "{}", expression)
+    }
+}
 impl MockData for BattleToolOutput {
     fn mock() -> Self {
         let sword = BattleToolEnemyAttack {
@@ -35,15 +60,27 @@ impl MockData for BattleToolOutput {
             attack_damage: "1d6+2".to_string(),
             attack_name: "ShortBow".to_string(),
         };
+        let health_expression = HealthExpression {
+            die_count: 1,
+            die_size: 6,
+            modifier: 2,
+        };
+        let health = Health {
+            current: 8,
+            max: 8,
+            expression: health_expression.clone(),
+        };
         let enemies = vec![
             BattleToolEnemy {
-                health: "1d6+8".to_string(),
+                health: health.clone(),
                 enemy_type: "Goblin".to_string(),
+                armor_class: 10,
                 attack: sword,
             },
             BattleToolEnemy {
-                health: "1d6+8".to_string(),
+                health: health,
                 enemy_type: "Goblin Archer".to_string(),
+                armor_class: 10,
                 attack: bow,
             },
         ];
@@ -67,11 +104,14 @@ impl DiscordMsg for BattleToolOutput {
 
         for enemy in &self.enemies {
             let description = format!(
-                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
+                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Armor: {}\n  - Health: {}\n  - Current: {}\n  - Max: {}\n",
                 enemy.enemy_type,
                 enemy.attack.attack_name,
                 enemy.attack.attack_damage,
-                enemy.health
+                enemy.armor_class,
+                enemy.health.expression,
+                enemy.health.current,
+                enemy.health.max
             );
             enemy_description.push_str(&description);
         }
@@ -85,9 +125,28 @@ impl DiscordMsg for BattleToolOutput {
 
 lazy_static! {
     pub static ref BATTLE_TOOL_SCHEMA: serde_json::Value = {
+        let required = vec![
+            "name",
+            "summary",
+            "terrain",
+            "enemies",
+            "enemy_type",
+            "armor_class",
+            "health",
+            "current",
+            "max",
+            "expression",
+            "die_count",
+            "die_size",
+            "modifier",
+            "attack",
+            "attack_name",
+            "attack_damage",
+        ];
+
         serde_json::json!({
             "type": "object",
-            "required": ["name", "summary", "terrain", "enemies", "enemy_type", "health", "attack", "attack_name", "attack_damage"],
+            "required": required,
             "properties":{
                 "name": {
                     "type":"string",
@@ -112,11 +171,47 @@ lazy_static! {
                                 "type": "string",
                                 "description": "Type of enemy"
                             },
-                            "health":{
+                            "armor_class":{
                                 "type": "integer",
-                                "description": "Total health of the enemy",
-                                "minimum": 1,
-                                "maximum": 20
+                                "description": "The armor value of the character."
+                            },
+                            "health":{
+                                "type": "object",
+                                "description": "An Object that defines an enemies health",
+                                "properties": {
+                                    "current": {
+                                        "type": "integer",
+                                        "description": "Current HP of enemy, this is always the same as max."
+                                    },
+                                    "max": {
+                                        "type": "integer",
+                                        "description": "Max HP of enemy, calculated through expression as (die_count)d(die_size)+(modifier)",
+                                    },
+                                    "expression": {
+                                        "type": "object",
+                                        "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the enemies health expression, 1d6+2",
+                                        "properties": {
+                                            "die_count": {
+                                                "type": "integer",
+                                                "description": "number of dice from 1-12",
+                                                "minimum": 1,
+                                                "maximum": 12
+                                            },
+                                            "die_size": {
+                                                "type": "integer",
+                                                "description": "size of the dice from 4-12",
+                                                "minimum": 4,
+                                                "maximum": 12
+                                            },
+                                            "modifier": {
+                                                "type": "integer",
+                                                "description": "modifier to the health expression from 0-12",
+                                                "minimum": 0,
+                                                "maximum": 12
+                                            }
+                                        }
+                                    }
+                                }
                             },
                             "attack":{
                                 "type": "object",
