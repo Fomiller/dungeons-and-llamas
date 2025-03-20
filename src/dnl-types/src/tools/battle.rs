@@ -1,6 +1,7 @@
 use super::MockData;
 use crate::traits::DiscordMsg;
 use lazy_static::lazy_static;
+use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
 
@@ -14,10 +15,16 @@ pub struct BattleToolOutput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolEnemy {
+    #[serde(default = "generate_uuid")]
+    pub id: String,
     pub health: Health,
     pub enemy_type: String,
     pub armor_class: u8,
     pub attack: BattleToolEnemyAttack,
+}
+
+fn generate_uuid() -> String {
+    Uuid::new_v4().to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,22 +72,34 @@ impl MockData for BattleToolOutput {
             die_size: 6,
             modifier: 2,
         };
+        let health_expression_2 = HealthExpression {
+            die_count: 2,
+            die_size: 8,
+            modifier: 0,
+        };
         let health = Health {
             current: 8,
             max: 8,
-            expression: health_expression.clone(),
+            expression: health_expression,
+        };
+        let health_2 = Health {
+            current: 8,
+            max: 8,
+            expression: health_expression_2,
         };
         let enemies = vec![
             BattleToolEnemy {
-                health: health.clone(),
+                id: generate_uuid(),
+                health: health,
                 enemy_type: "Goblin".to_string(),
                 armor_class: 10,
                 attack: sword,
             },
             BattleToolEnemy {
-                health: health,
+                id: generate_uuid(),
+                health: health_2,
                 enemy_type: "Goblin Archer".to_string(),
-                armor_class: 10,
+                armor_class: 12,
                 attack: bow,
             },
         ];
@@ -104,8 +123,9 @@ impl DiscordMsg for BattleToolOutput {
 
         for enemy in &self.enemies {
             let description = format!(
-                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Armor: {}\n  - Health: {}\n  - Current: {}\n  - Max: {}\n",
+                "- **{}**\n  - Id: {}\n  - Attack: {}\n  - Damage: {}\n  - Armor: {}\n  - Health: {}\n  - Current: {}\n  - Max: {}\n",
                 enemy.enemy_type,
+                enemy.id,
                 enemy.attack.attack_name,
                 enemy.attack.attack_damage,
                 enemy.armor_class,
@@ -172,7 +192,7 @@ lazy_static! {
                                 "description": "Type of enemy"
                             },
                             "armor_class":{
-                                "type": "integer",
+                                "type": "number",
                                 "description": "The armor value of the character."
                             },
                             "health":{
@@ -180,11 +200,11 @@ lazy_static! {
                                 "description": "An Object that defines an enemies health",
                                 "properties": {
                                     "current": {
-                                        "type": "integer",
+                                        "type": "number",
                                         "description": "Current HP of enemy, this is always the same as max."
                                     },
                                     "max": {
-                                        "type": "integer",
+                                        "type": "number",
                                         "description": "Max HP of enemy, calculated through expression as (die_count)d(die_size)+(modifier)",
                                     },
                                     "expression": {
@@ -192,19 +212,19 @@ lazy_static! {
                                         "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the enemies health expression, 1d6+2",
                                         "properties": {
                                             "die_count": {
-                                                "type": "integer",
+                                                "type": "number",
                                                 "description": "number of dice from 1-12",
                                                 "minimum": 1,
                                                 "maximum": 12
                                             },
                                             "die_size": {
-                                                "type": "integer",
+                                                "type": "number",
                                                 "description": "size of the dice from 4-12",
                                                 "minimum": 4,
                                                 "maximum": 12
                                             },
                                             "modifier": {
-                                                "type": "integer",
+                                                "type": "number",
                                                 "description": "modifier to the health expression from 0-12",
                                                 "minimum": 0,
                                                 "maximum": 12
@@ -223,7 +243,7 @@ lazy_static! {
                                     },
                                     "attack_damage": {
                                         "type": "string",
-                                        "description": "Damage value of attack as a integer value",
+                                        "description": "Damage value of attack as a number value",
                                     }
                                 }
                             }
