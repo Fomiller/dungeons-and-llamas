@@ -20,8 +20,9 @@ pub enum Scenario {
     Rest,
 }
 
-#[derive(Debug, Deserialize, Serialize, strum::Display, strum::EnumString)]
+#[derive(Debug, Clone, Deserialize, Serialize, strum::Display, strum::EnumString)]
 #[strum(ascii_case_insensitive)]
+#[serde(untagged)]
 pub enum ScenarioModel {
     #[strum(to_string = "battle")]
     Battle {

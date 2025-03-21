@@ -79,10 +79,10 @@ impl From<BattleToolEnemy> for BattleScenarioEnemy {
     fn from(source: BattleToolEnemy) -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
-            health: EntityHealth::from(source.health.expression),
+            health: EntityHealth::from(source.enemy_health),
             r#type: source.enemy_type,
-            armor_class: source.armor_class,
-            attacks: BattleScenarioEnemyAttack::from(source.attack),
+            armor_class: source.enemy_armor_class,
+            attacks: BattleScenarioEnemyAttack::from(source.enemy_attack),
         }
     }
 }

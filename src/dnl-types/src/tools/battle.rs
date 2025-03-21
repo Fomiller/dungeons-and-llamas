@@ -1,7 +1,5 @@
 use crate::dice::DiceExpression;
-use crate::traits::DiscordMsg;
 use lazy_static::lazy_static;
-use uuid::Uuid;
 
 use serde::{Deserialize, Serialize};
 
@@ -15,16 +13,10 @@ pub struct BattleToolOutput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolEnemy {
-    #[serde(default = "generate_uuid")]
-    pub id: String,
-    pub health: Health,
+    pub enemy_health: DiceExpression,
     pub enemy_type: String,
-    pub armor_class: u8,
-    pub attack: BattleToolEnemyAttack,
-}
-
-fn generate_uuid() -> String {
-    Uuid::new_v4().to_string()
+    pub enemy_armor_class: u8,
+    pub enemy_attack: BattleToolEnemyAttack,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,58 +25,25 @@ pub struct BattleToolEnemyAttack {
     pub attack_name: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Health {
-    pub current: u8,
-    pub max: u8,
-    pub expression: DiceExpression,
-}
-
-impl DiscordMsg for BattleToolOutput {
-    fn to_message(&self) -> String {
-        let mut enemy_description = String::new();
-
-        for enemy in &self.enemies {
-            let description = format!(
-                "- **{}**\n  - Id: {}\n  - Attack: {}\n  - Damage: {}\n  - Armor: {}\n  - Health: {}\n  - Current: {}\n  - Max: {}\n",
-                enemy.enemy_type,
-                enemy.id,
-                enemy.attack.attack_name,
-                enemy.attack.attack_expression,
-                enemy.armor_class,
-                enemy.health.expression,
-                enemy.health.current,
-                enemy.health.max
-            );
-            enemy_description.push_str(&description);
-        }
-
-        format!(
-            "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
-            self.name, self.summary, self.terrain, enemy_description, self.summary
-        )
-    }
-}
-
 lazy_static! {
     pub static ref BATTLE_TOOL_SCHEMA: serde_json::Value = {
         let required = vec![
+            "attack_expression",
+            "attack_name",
+            "current",
+            "die_count",
+            "die_size",
+            "enemies",
+            "enemy_armor_class",
+            "enemy_attack",
+            "enemy_health",
+            "enemy_type",
+            "health_expression",
+            "max",
+            "modifier",
             "name",
             "summary",
             "terrain",
-            "enemies",
-            "enemy_type",
-            "armor_class",
-            "health",
-            "current",
-            "max",
-            "expression",
-            "die_count",
-            "die_size",
-            "modifier",
-            "attack",
-            "attack_name",
-            "attack_expression",
         ];
 
         serde_json::json!({
@@ -114,49 +73,35 @@ lazy_static! {
                                 "type": "string",
                                 "description": "Type of enemy"
                             },
-                            "armor_class":{
+                            "enemy_armor_class":{
                                 "type": "number",
                                 "description": "The armor value of the character."
                             },
-                            "health":{
+                            "enemy_health":{
                                 "type": "object",
-                                "description": "An Object that defines an enemies health",
+                                "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
                                 "properties": {
-                                    "current": {
+                                    "die_count": {
                                         "type": "number",
-                                        "description": "Current HP of enemy, this is always the same as max."
+                                        "description": "number of dice from 1-12",
+                                        "minimum": 1,
+                                        "maximum": 12
                                     },
-                                    "max": {
+                                    "die_size": {
                                         "type": "number",
-                                        "description": "Max HP of enemy, calculated through expression as (die_count)d(die_size)+(modifier)",
+                                        "description": "size of the dice from 4-12",
+                                        "minimum": 4,
+                                        "maximum": 12
                                     },
-                                    "expression": {
-                                        "type": "object",
-                                        "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
-                                        "properties": {
-                                            "die_count": {
-                                                "type": "number",
-                                                "description": "number of dice from 1-12",
-                                                "minimum": 1,
-                                                "maximum": 12
-                                            },
-                                            "die_size": {
-                                                "type": "number",
-                                                "description": "size of the dice from 4-12",
-                                                "minimum": 4,
-                                                "maximum": 12
-                                            },
-                                            "modifier": {
-                                                "type": "number",
-                                                "description": "modifier to the expression from 0-12",
-                                                "minimum": 0,
-                                                "maximum": 12
-                                            }
-                                        }
+                                    "modifier": {
+                                        "type": "number",
+                                        "description": "modifier to the expression from 0-12",
+                                        "minimum": 0,
+                                        "maximum": 12
                                     }
                                 }
                             },
-                            "attack":{
+                            "enemy_attack":{
                                 "type": "object",
                                 "description": "An Object that defines an enemies attack",
                                 "properties": {

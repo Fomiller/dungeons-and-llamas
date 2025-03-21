@@ -23,7 +23,7 @@ use aws_sdk_dynamodb::{
     operation::{batch_write_item::BatchWriteItemInput, get_item::GetItemOutput},
     types::WriteRequest,
 };
-use dnl_types::tools::battle::BattleToolEnemy;
+use dnl_types::scenarios::battle::BattleScenarioEnemy;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
 
@@ -391,7 +391,7 @@ impl Store {
         user_id: &str,
         round: u8,
         level: u8,
-    ) -> anyhow::Result<Vec<BattleToolEnemy>> {
+    ) -> anyhow::Result<Vec<BattleScenarioEnemy>> {
         let sk = SortKeyFactory::new(&user_id)
             .create_encounter_sk(game_id, round, level, EncounterSortKey::Battle)
             .build();
@@ -422,8 +422,8 @@ impl Store {
             .filter_map(|v| v.as_m().ok().cloned())
             .collect();
 
-        let enemies: Vec<BattleToolEnemy> = serde_dynamo::from_items(x)
-            .context("serde_dynamo::from_items failed creating, BattleToolEnemy")?;
+        let enemies: Vec<BattleScenarioEnemy> = serde_dynamo::from_items(x)
+            .context("serde_dynamo::from_items failed creating, BattleScenarioEnemy")?;
 
         Ok(enemies)
     }

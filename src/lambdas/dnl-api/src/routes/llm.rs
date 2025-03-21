@@ -87,11 +87,14 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
 
+    info!("HERE1: {}", &payload.scenario);
     let scenario = Scenario::from_str(&payload.scenario)?;
 
+    info!("HERE2: {}", scenario);
     let tool_output =
         ToolOutput::from_str(&scenario.to_string()).context("Unable to match scenario")?;
 
+    info!("HERE3: {}", tool_output);
     let example = serde_json::to_string(&tool_output.mock())?;
 
     text_vars.insert("theme".to_string(), payload.theme.clone());
@@ -118,6 +121,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
             json_vars,
         )),
     };
+    info!("HERE4");
 
     let mut generator = match config {
         JsonGeneratorConfigEnum::Battle(config) => {
@@ -150,10 +154,12 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
         Ok(_) => {
             generator.save_json().await.context("Failed to save_json")?;
 
-            let data = generator.data().unwrap().clone();
+            let data = generator.scenario_model().unwrap().clone();
+
             info!("DATA: {:?}", data);
 
             let value = serde_json::to_value(data)?;
+
             info!("Value: {:?}", value);
 
             let mut embedding_engine = EmbeddingEngine::new(EmbeddingConfig::default()).await;
@@ -161,6 +167,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
             let db = VectorDatabase::new();
 
             let text = generator.text().unwrap().clone();
+
             let vector = embedding_engine.try_create_vector(&text).await?;
 
             let embedding = models::NewEmbedding {
@@ -174,6 +181,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
             let store = Store::new().await;
 
             let mut state = HashMap::new();
+
             state.insert("round".to_string(), AttributeValue::N(payload.round));
             state.insert("level".to_string(), AttributeValue::N(payload.level));
             state.insert(

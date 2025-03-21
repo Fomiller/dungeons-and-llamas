@@ -16,7 +16,6 @@ use aws_sdk_bedrockruntime::types::*;
 use aws_smithy_types::Document;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use uuid::Uuid;
 
 pub trait MockData {
     fn mock(self) -> Self;
@@ -24,24 +23,31 @@ pub trait MockData {
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, strum::EnumString, strum::Display)]
 pub enum Tool {
+    #[strum(to_string = "battle")]
     Battle,
+    #[strum(to_string = "shop")]
     Shop,
+    #[strum(to_string = "rest")]
     Rest,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, strum::EnumString, strum::Display)]
+#[serde(untagged)]
 pub enum ToolOutput {
+    #[strum(to_string = "battle")]
     Battle {
         enemies: Vec<BattleToolEnemy>,
         summary: String,
         name: String,
         terrain: String,
     },
+    #[strum(to_string = "shop")]
     Shop {
         items: Vec<ShopToolItem>,
         merchant: ShopToolMerchant,
         summary: String,
     },
+    #[strum(to_string = "rest")]
     Rest {
         summary: String,
         flora: String,
@@ -125,30 +131,19 @@ impl ToolOutput {
             die_size: 8,
             modifier: 0,
         };
-        let health = Health {
-            current: 8,
-            max: 8,
-            expression: health_expression,
-        };
-        let health_2 = Health {
-            current: 8,
-            max: 8,
-            expression: health_expression_2,
-        };
+
         let enemies = vec![
             BattleToolEnemy {
-                id: Uuid::new_v4().to_string(),
-                health: health,
+                enemy_health: health_expression,
                 enemy_type: "Goblin".to_string(),
-                armor_class: 10,
-                attack: sword,
+                enemy_armor_class: 10,
+                enemy_attack: sword,
             },
             BattleToolEnemy {
-                id: Uuid::new_v4().to_string(),
-                health: health_2,
+                enemy_health: health_expression_2,
                 enemy_type: "Goblin Archer".to_string(),
-                armor_class: 12,
-                attack: bow,
+                enemy_armor_class: 12,
+                enemy_attack: bow,
             },
         ];
 

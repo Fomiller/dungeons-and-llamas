@@ -58,10 +58,10 @@ impl AttackCmd {
             enemy_embeds.push(
                 CreateEmbed::new()
                     .color(serenity::model::Colour::BLUE)
-                    .title(enemy.enemy_type)
+                    .title(enemy.r#type)
                     .field("Health", enemy.health.current.to_string(), false)
-                    .field("Attack", enemy.attack.attack_name, true)
-                    .field("Damage", enemy.attack.attack_expression.to_string(), true),
+                    .field("Attack", enemy.attacks.name, true)
+                    .field("Damage", enemy.attacks.expression.to_string(), true),
             )
         }
 

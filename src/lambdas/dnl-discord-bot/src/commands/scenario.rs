@@ -3,6 +3,7 @@ use crate::*;
 use std::collections::HashMap;
 
 use dnl_store::Store;
+use dnl_types::api::ApiScenarioResponse;
 use dnl_types::scenarios::ScenarioModel;
 use dnl_types::traits::DiscordMsg;
 

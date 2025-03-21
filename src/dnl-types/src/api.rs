@@ -1,8 +1,8 @@
-use crate::tools::battle::BattleToolOutput;
-use crate::tools::shop::ShopToolOutput;
-use crate::tools::rest::RestToolOutput;
+use crate::scenarios::battle::BattleScenario;
+use crate::scenarios::rest::RestScenario;
+use crate::scenarios::shop::ShopScenario;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ApiScenarioResponse {
@@ -12,7 +12,7 @@ pub struct ApiScenarioResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ApiScenarioResponseData {
-    Battle(BattleToolOutput),
-    Shop(ShopToolOutput),
-    Rest(RestToolOutput),
+    Battle(BattleScenario),
+    Shop(ShopScenario),
+    Rest(RestScenario),
 }
