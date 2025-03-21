@@ -1,4 +1,5 @@
 use super::MockData;
+use crate::dice::DiceExpression;
 use crate::traits::DiscordMsg;
 use lazy_static::lazy_static;
 use uuid::Uuid;
@@ -29,7 +30,7 @@ fn generate_uuid() -> String {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolEnemyAttack {
-    pub attack_damage: String,
+    pub attack_expression: DiceExpression,
     pub attack_name: String,
 }
 
@@ -37,42 +38,33 @@ pub struct BattleToolEnemyAttack {
 pub struct Health {
     pub current: u8,
     pub max: u8,
-    pub expression: HealthExpression,
+    pub expression: DiceExpression,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HealthExpression {
-    pub die_count: u8,
-    pub die_size: u8,
-    pub modifier: u8,
-}
-
-impl std::fmt::Display for HealthExpression {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let mut expression = format!("{}d{}", self.die_count, self.die_size);
-        if self.modifier != 0 {
-            let mod_expression = format!("+{}", self.modifier);
-            expression.push_str(&mod_expression)
-        }
-        write!(f, "{}", expression)
-    }
-}
 impl MockData for BattleToolOutput {
     fn mock() -> Self {
         let sword = BattleToolEnemyAttack {
-            attack_damage: "1d6+2".to_string(),
+            attack_expression: DiceExpression {
+                die_count: 1,
+                die_size: 6,
+                modifier: 2,
+            },
             attack_name: "Rusted Sword".to_string(),
         };
         let bow = BattleToolEnemyAttack {
-            attack_damage: "1d6+2".to_string(),
+            attack_expression: DiceExpression {
+                die_count: 1,
+                die_size: 6,
+                modifier: 2,
+            },
             attack_name: "ShortBow".to_string(),
         };
-        let health_expression = HealthExpression {
+        let health_expression = DiceExpression {
             die_count: 1,
             die_size: 6,
             modifier: 2,
         };
-        let health_expression_2 = HealthExpression {
+        let health_expression_2 = DiceExpression {
             die_count: 2,
             die_size: 8,
             modifier: 0,
@@ -127,7 +119,7 @@ impl DiscordMsg for BattleToolOutput {
                 enemy.enemy_type,
                 enemy.id,
                 enemy.attack.attack_name,
-                enemy.attack.attack_damage,
+                enemy.attack.attack_expression,
                 enemy.armor_class,
                 enemy.health.expression,
                 enemy.health.current,
@@ -161,7 +153,7 @@ lazy_static! {
             "modifier",
             "attack",
             "attack_name",
-            "attack_damage",
+            "attack_expression",
         ];
 
         serde_json::json!({
@@ -209,7 +201,7 @@ lazy_static! {
                                     },
                                     "expression": {
                                         "type": "object",
-                                        "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the enemies health expression, 1d6+2",
+                                        "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
                                         "properties": {
                                             "die_count": {
                                                 "type": "number",
@@ -225,7 +217,7 @@ lazy_static! {
                                             },
                                             "modifier": {
                                                 "type": "number",
-                                                "description": "modifier to the health expression from 0-12",
+                                                "description": "modifier to the expression from 0-12",
                                                 "minimum": 0,
                                                 "maximum": 12
                                             }
@@ -241,9 +233,29 @@ lazy_static! {
                                         "type": "string",
                                         "description": "Name of the attack"
                                     },
-                                    "attack_damage": {
-                                        "type": "string",
-                                        "description": "Damage value of attack as a number value",
+                                    "attack_expression": {
+                                        "type": "object",
+                                        "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
+                                        "properties": {
+                                            "die_count": {
+                                                "type": "number",
+                                                "description": "number of dice from 1-12",
+                                                "minimum": 1,
+                                                "maximum": 12
+                                            },
+                                            "die_size": {
+                                                "type": "number",
+                                                "description": "size of the dice from 4-12",
+                                                "minimum": 4,
+                                                "maximum": 12
+                                            },
+                                            "modifier": {
+                                                "type": "number",
+                                                "description": "modifier to the expression from 0-12",
+                                                "minimum": 0,
+                                                "maximum": 12
+                                            }
+                                        }
                                     }
                                 }
                             }

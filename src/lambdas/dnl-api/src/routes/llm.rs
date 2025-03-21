@@ -12,7 +12,7 @@ use dnl_generators::{JsonGeneratorConfigEnum, JsonGeneratorEnum, JsonResponseGen
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
 use dnl_store::Store;
 use dnl_types::llm::*;
-use dnl_types::scenario::*;
+use dnl_types::scenarios::*;
 use dnl_types::tools::battle::BattleToolOutput;
 use dnl_types::tools::rest::RestToolOutput;
 use dnl_types::tools::shop::ShopToolOutput;

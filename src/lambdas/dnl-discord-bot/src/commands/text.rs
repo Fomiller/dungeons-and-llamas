@@ -1,4 +1,3 @@
-use crate::error;
 use dnl_store::Store;
 use lambda_http::tracing::debug;
 use serenity::builder::*;

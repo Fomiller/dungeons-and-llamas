@@ -2,7 +2,7 @@ use crate::*;
 
 use std::collections::HashMap;
 
-use dnl_types::scenario::ScenarioInput;
+use dnl_types::scenarios::ScenarioInput;
 use dnl_types::tools::Tools;
 
 pub static BATTLE_SYSTEM_PROMPT: &str = "

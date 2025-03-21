@@ -1,4 +1,6 @@
-use serde::{Serialize, Deserialize};
+pub mod battle;
+
+use serde::{Deserialize, Serialize};
 use strum::EnumString;
 
 #[derive(Debug, Deserialize, Serialize, EnumString)]
@@ -6,7 +8,7 @@ use strum::EnumString;
 pub enum Scenario {
     Battle,
     Shop,
-    Rest
+    Rest,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -61,7 +61,7 @@ impl AttackCmd {
                     .title(enemy.enemy_type)
                     .field("Health", enemy.health.current.to_string(), false)
                     .field("Attack", enemy.attack.attack_name, true)
-                    .field("Damage", enemy.attack.attack_damage, true),
+                    .field("Damage", enemy.attack.attack_expression.to_string(), true),
             )
         }
 

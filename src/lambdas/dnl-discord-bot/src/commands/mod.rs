@@ -24,7 +24,6 @@ use roll::*;
 use scenario::*;
 use text::*;
 
-use anyhow::Context;
 use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;

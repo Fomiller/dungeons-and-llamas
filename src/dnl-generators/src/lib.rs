@@ -9,7 +9,7 @@ use dnl_sort_keys::encounter::EncounterSortKey;
 use dnl_store::Store;
 use dnl_types::llm::LlmHandler;
 use dnl_types::llm::ParseConverseOutput;
-use dnl_types::scenario::ScenarioInput;
+use dnl_types::scenarios::ScenarioInput;
 use dnl_types::tools::battle::BattleToolOutput;
 use dnl_types::tools::rest::RestToolOutput;
 use dnl_types::tools::shop::ShopToolOutput;
