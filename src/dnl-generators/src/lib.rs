@@ -10,11 +10,7 @@ use dnl_store::Store;
 use dnl_types::llm::LlmHandler;
 use dnl_types::llm::ParseConverseOutput;
 use dnl_types::scenarios::ScenarioInput;
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
-use dnl_types::tools::ToolOutputEnum;
-use dnl_types::tools::Tools;
+use dnl_types::tools::{Tool, ToolOutput};
 use rest::{RestJsonGenerator, RestJsonGeneratorConfig};
 use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
 
@@ -57,7 +53,7 @@ impl JsonGeneratorEnum {
             JsonGeneratorEnum::Rest(gen) => gen.save_json().await,
         }
     }
-    pub fn data(&mut self) -> Option<ToolOutputEnum> {
+    pub fn data(&mut self) -> Option<ToolOutput> {
         match self {
             JsonGeneratorEnum::Battle(gen) => gen.data(),
             JsonGeneratorEnum::Shop(gen) => gen.data(),
@@ -98,7 +94,7 @@ pub trait JsonResponseGeneratorConfig {
     fn schema(&self) -> serde_json::Value;
     fn system_prompt(&self) -> String;
     fn text_prompt(&self) -> String;
-    fn tool(&self) -> Tools;
+    fn tool(&self) -> Tool;
 }
 
 #[derive(Clone)]
@@ -107,7 +103,7 @@ pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig> {
     pub context: Option<Vec<String>>,
     pub model: LlmHandler,
     pub text: Option<String>,
-    pub data: Option<ToolOutputEnum>,
+    pub data: Option<ToolOutput>,
     pub max_retries: u8,
     pub attempts: u8,
 }
@@ -116,7 +112,7 @@ impl<C> JsonResponseGenerator<C>
 where
     C: JsonResponseGeneratorConfig,
 {
-    pub fn data(&mut self) -> Option<ToolOutputEnum> {
+    pub fn data(&mut self) -> Option<ToolOutput> {
         self.data.clone()
     }
 
@@ -241,7 +237,7 @@ where
         }
     }
 
-    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutputEnum> {
+    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutput> {
         let mut contexts: Vec<String> = Vec::new();
 
         // using the text in generate_text as context
@@ -291,26 +287,16 @@ where
         let value = serde_json::to_value(tool_value)
             .context("Failed to parese tool value to serde_json::Value")?;
 
-        match self.config.tool() {
-            Tools::Shop => serde_json::from_value::<ShopToolOutput>(value)
-                .map(ToolOutputEnum::Shop)
-                .map_err(Into::into),
-            Tools::Battle => serde_json::from_value::<BattleToolOutput>(value)
-                .map(ToolOutputEnum::Battle)
-                .map_err(Into::into),
-            Tools::Rest => serde_json::from_value::<RestToolOutput>(value)
-                .map(ToolOutputEnum::Rest)
-                .map_err(Into::into),
-        }
+        serde_json::from_value(value).context("Failed serialize ToolOutput")
     }
 
     pub async fn save_json(&mut self) -> anyhow::Result<()> {
         let store = Store::new().await;
 
         let encounter = match self.config.tool() {
-            Tools::Battle => EncounterSortKey::Battle,
-            Tools::Shop => EncounterSortKey::Shop,
-            Tools::Rest => EncounterSortKey::Rest,
+            Tool::Battle => EncounterSortKey::Battle,
+            Tool::Shop => EncounterSortKey::Shop,
+            Tool::Rest => EncounterSortKey::Rest,
         };
 
         let scenario_input = self.config.scenario_input();
@@ -329,11 +315,8 @@ where
 
         let data = self.data.clone().unwrap();
 
-        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = match data {
-            ToolOutputEnum::Battle(item) => serde_dynamo::to_item(item)?,
-            ToolOutputEnum::Shop(item) => serde_dynamo::to_item(item)?,
-            ToolOutputEnum::Rest(item) => serde_dynamo::to_item(item)?,
-        };
+        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> =
+            serde_dynamo::to_item(data)?;
 
         state.extend(map);
 

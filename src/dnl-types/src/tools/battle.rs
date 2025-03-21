@@ -1,4 +1,3 @@
-use super::MockData;
 use crate::dice::DiceExpression;
 use crate::traits::DiscordMsg;
 use lazy_static::lazy_static;
@@ -39,74 +38,6 @@ pub struct Health {
     pub current: u8,
     pub max: u8,
     pub expression: DiceExpression,
-}
-
-impl MockData for BattleToolOutput {
-    fn mock() -> Self {
-        let sword = BattleToolEnemyAttack {
-            attack_expression: DiceExpression {
-                die_count: 1,
-                die_size: 6,
-                modifier: 2,
-            },
-            attack_name: "Rusted Sword".to_string(),
-        };
-        let bow = BattleToolEnemyAttack {
-            attack_expression: DiceExpression {
-                die_count: 1,
-                die_size: 6,
-                modifier: 2,
-            },
-            attack_name: "ShortBow".to_string(),
-        };
-        let health_expression = DiceExpression {
-            die_count: 1,
-            die_size: 6,
-            modifier: 2,
-        };
-        let health_expression_2 = DiceExpression {
-            die_count: 2,
-            die_size: 8,
-            modifier: 0,
-        };
-        let health = Health {
-            current: 8,
-            max: 8,
-            expression: health_expression,
-        };
-        let health_2 = Health {
-            current: 8,
-            max: 8,
-            expression: health_expression_2,
-        };
-        let enemies = vec![
-            BattleToolEnemy {
-                id: generate_uuid(),
-                health: health,
-                enemy_type: "Goblin".to_string(),
-                armor_class: 10,
-                attack: sword,
-            },
-            BattleToolEnemy {
-                id: generate_uuid(),
-                health: health_2,
-                enemy_type: "Goblin Archer".to_string(),
-                armor_class: 12,
-                attack: bow,
-            },
-        ];
-
-        let summary = "summary of the scenario".to_string();
-        let name = "a dangerous encounter".to_string();
-        let terrain = "description of the terrain".to_string();
-
-        Self {
-            enemies,
-            summary,
-            name,
-            terrain,
-        }
-    }
 }
 
 impl DiscordMsg for BattleToolOutput {

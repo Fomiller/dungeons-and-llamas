@@ -3,7 +3,7 @@ use crate::*;
 use std::collections::HashMap;
 
 use dnl_types::scenarios::ScenarioInput;
-use dnl_types::tools::Tools;
+use dnl_types::tools::Tool;
 
 pub static REST_SYSTEM_PROMPT: &str = "
 You are a DM for a single player dungeons and dragons style text adventure game.
@@ -41,7 +41,7 @@ pub type RestJsonGenerator = JsonResponseGenerator<RestJsonGeneratorConfig>;
 #[derive(Clone)]
 pub struct RestJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
-    pub tool: Tools,
+    pub tool: Tool,
     pub system_prompt: Prompt,
     pub json_prompt: Prompt,
     pub text_prompt: Prompt,
@@ -66,7 +66,7 @@ impl JsonResponseGeneratorConfig for RestJsonGeneratorConfig {
     fn text_prompt(&self) -> String {
         self.text_prompt.format()
     }
-    fn tool(&self) -> Tools {
+    fn tool(&self) -> Tool {
         self.tool
     }
 }
@@ -93,7 +93,7 @@ impl RestJsonGeneratorConfig {
             variables: text_vars,
         };
 
-        let tool = Tools::Rest;
+        let tool = Tool::Rest;
 
         Self {
             scenario_input,

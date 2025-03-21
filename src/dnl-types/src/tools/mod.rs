@@ -2,50 +2,68 @@ pub mod battle;
 pub mod rest;
 pub mod shop;
 
-use crate::tools::battle::{BattleToolOutput, BATTLE_TOOL_SCHEMA};
-use rest::{RestToolOutput, REST_TOOL_SCHEMA};
-use shop::{ShopToolOutput, SHOP_TOOL_SCHEMA};
+use crate::dice::DiceExpression;
+use crate::scenarios::shop::*;
+use crate::scenarios::*;
+use crate::tools::battle::*;
+use crate::tools::shop::*;
+use rest::REST_TOOL_SCHEMA;
+use shop::SHOP_TOOL_SCHEMA;
 use std::collections::HashMap;
 
+use aws_sdk_bedrockruntime::types::Tool as BedRockTool;
 use aws_sdk_bedrockruntime::types::*;
 use aws_smithy_types::Document;
 use serde::{Deserialize, Serialize};
-use serde::{Deserializer, Serializer};
 use serde_json::Value;
+use uuid::Uuid;
 
 pub trait MockData {
-    fn mock() -> Self;
+    fn mock(self) -> Self;
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum Tools {
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, strum::EnumString, strum::Display)]
+pub enum Tool {
     Battle,
     Shop,
     Rest,
 }
 
-impl Tools {
-    pub fn name(&self) -> &str {
-        match self {
-            Tools::Battle => "battle",
-            Tools::Shop => "shop",
-            Tools::Rest => "rest",
-        }
-    }
+#[derive(Clone, Debug, Serialize, Deserialize, strum::EnumString, strum::Display)]
+pub enum ToolOutput {
+    Battle {
+        enemies: Vec<BattleToolEnemy>,
+        summary: String,
+        name: String,
+        terrain: String,
+    },
+    Shop {
+        items: Vec<ShopToolItem>,
+        merchant: ShopToolMerchant,
+        summary: String,
+    },
+    Rest {
+        summary: String,
+        flora: String,
+        fauna: String,
+        secret: Option<String>,
+    },
+}
 
+impl Tool {
     pub fn description(&self) -> &str {
         match self {
-            Tools::Battle => "Creates the Battle scenario for a Dungeons and Dragons-style text adventure, in a JSON format.",
-            Tools::Shop => "Defines a shopping scenario where players can purchase items, in a JSON format.",
-            Tools::Rest => "Allows players to rest and regain health, in a JSON format.",
+            Tool::Battle=> "Creates the Battle scenario for a Dungeons and Dragons-style text adventure, in a JSON format.",
+            Tool::Shop=> "Defines a shopping scenario where players can purchase items, in a JSON format.",
+            Tool::Rest=> "Allows players to rest and regain health, in a JSON format.",
         }
     }
 
     pub fn schema(&self) -> Value {
         match self {
-            Tools::Battle => BATTLE_TOOL_SCHEMA.clone(),
-            Tools::Shop => SHOP_TOOL_SCHEMA.clone(),
-            Tools::Rest => REST_TOOL_SCHEMA.clone(),
+            Tool::Battle => BATTLE_TOOL_SCHEMA.clone(),
+            Tool::Shop => SHOP_TOOL_SCHEMA.clone(),
+            Tool::Rest => REST_TOOL_SCHEMA.clone(),
         }
     }
 
@@ -54,7 +72,7 @@ impl Tools {
     }
 
     pub fn config(&self) -> anyhow::Result<ToolConfiguration> {
-        let name = self.name();
+        let name = &self.to_string();
         let description = self.description();
         let document = self.schema_as_document()?;
 
@@ -66,7 +84,7 @@ impl Tools {
             .input_schema(input_schema)
             .build()?;
 
-        let tool = Tool::ToolSpec(tool_spec);
+        let tool = BedRockTool::ToolSpec(tool_spec);
 
         let tool_choice = ToolChoice::Tool(SpecificToolChoice::builder().name(name).build()?);
 
@@ -76,6 +94,193 @@ impl Tools {
             .build()?;
 
         Ok(config)
+    }
+}
+
+impl ToolOutput {
+    pub fn mock_battle() -> ToolOutput {
+        let sword = BattleToolEnemyAttack {
+            attack_expression: DiceExpression {
+                die_count: 1,
+                die_size: 6,
+                modifier: 2,
+            },
+            attack_name: "Rusted Sword".to_string(),
+        };
+        let bow = BattleToolEnemyAttack {
+            attack_expression: DiceExpression {
+                die_count: 1,
+                die_size: 6,
+                modifier: 2,
+            },
+            attack_name: "ShortBow".to_string(),
+        };
+        let health_expression = DiceExpression {
+            die_count: 1,
+            die_size: 6,
+            modifier: 2,
+        };
+        let health_expression_2 = DiceExpression {
+            die_count: 2,
+            die_size: 8,
+            modifier: 0,
+        };
+        let health = Health {
+            current: 8,
+            max: 8,
+            expression: health_expression,
+        };
+        let health_2 = Health {
+            current: 8,
+            max: 8,
+            expression: health_expression_2,
+        };
+        let enemies = vec![
+            BattleToolEnemy {
+                id: Uuid::new_v4().to_string(),
+                health: health,
+                enemy_type: "Goblin".to_string(),
+                armor_class: 10,
+                attack: sword,
+            },
+            BattleToolEnemy {
+                id: Uuid::new_v4().to_string(),
+                health: health_2,
+                enemy_type: "Goblin Archer".to_string(),
+                armor_class: 12,
+                attack: bow,
+            },
+        ];
+
+        let summary = "summary of the scenario".to_string();
+        let name = "a dangerous encounter".to_string();
+        let terrain = "description of the terrain".to_string();
+
+        ToolOutput::Battle {
+            enemies,
+            summary,
+            name,
+            terrain,
+        }
+    }
+    fn mock_rest() -> ToolOutput {
+        let summary = "This is a nice place to rest".to_string();
+        let flora = "plants".to_string();
+        let fauna = "animals".to_string();
+        let secret = None;
+
+        let rest = ToolOutput::Rest {
+            summary,
+            flora,
+            fauna,
+            secret,
+        };
+
+        rest
+    }
+    fn mock_shop() -> ToolOutput {
+        let stats = DiceExpression {
+            die_count: 1,
+            die_size: 6,
+            modifier: 2,
+        };
+
+        let sword = ShopToolItem {
+            item_name: "Magic Sword".to_string(),
+            item_description: "A glowing sword.".to_string(),
+            item_stats: stats.clone(),
+            item_price: "3 gold".to_string(),
+        };
+
+        let bow = ShopToolItem {
+            item_name: "Short Bow".to_string(),
+            item_description: "A short bow, it seems to have some intricate carvings".to_string(),
+            item_stats: stats.clone(),
+            item_price: "2 gold".to_string(),
+        };
+
+        let potion = ShopToolItem {
+            item_name: "Health Potion".to_string(),
+            item_description: "Restores Health".to_string(),
+            item_stats: stats.clone(),
+            item_price: "5 gold".to_string(),
+        };
+
+        let items = vec![sword, bow, potion];
+
+        let merchant = ShopToolMerchant { merchant_name: "Dirty Dan".to_string(), merchant_description: "A dirty old man who is missing teeth, but you can see a cart full of treasure behind him".to_string()};
+
+        let summary = "This is summary Text".to_string();
+
+        let shop = ToolOutput::Shop {
+            merchant,
+            items,
+            summary,
+        };
+
+        shop
+    }
+}
+
+impl From<ToolOutput> for ScenarioModel {
+    fn from(source: ToolOutput) -> Self {
+        match source {
+            ToolOutput::Battle {
+                enemies,
+                summary,
+                name,
+                terrain,
+            } => ScenarioModel::Battle {
+                enemies: enemies.into_iter().map(Into::into).collect(),
+                summary,
+                name,
+                terrain,
+            },
+            ToolOutput::Shop {
+                items,
+                merchant,
+                summary,
+            } => ScenarioModel::Shop {
+                items: items.into_iter().map(Into::into).collect(),
+                merchant: ShopScenarioMerchant::from(merchant),
+                summary,
+            },
+            ToolOutput::Rest {
+                summary,
+                flora,
+                fauna,
+                secret,
+            } => ScenarioModel::Rest {
+                summary,
+                flora,
+                fauna,
+                secret,
+            },
+        }
+    }
+}
+
+impl MockData for ToolOutput {
+    fn mock(self) -> Self {
+        match self {
+            ToolOutput::Battle {
+                enemies: _,
+                summary: _,
+                name: _,
+                terrain: _,
+            } => ToolOutput::mock_battle(),
+            ToolOutput::Shop {
+                items: _,
+                merchant: _,
+                summary: _,
+            } => ToolOutput::mock_shop(),
+            ToolOutput::Rest {
+                summary: _,
+                flora: _,
+                fauna: _,
+                secret: _,
+            } => ToolOutput::mock_rest(),
+        }
     }
 }
 
@@ -138,46 +343,5 @@ impl ToDocument for Property {
                 Document::String(self.description.to_owned()),
             ),
         ]))
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum ToolOutputEnum {
-    Battle(battle::BattleToolOutput),
-    Shop(shop::ShopToolOutput),
-    Rest(rest::RestToolOutput),
-}
-
-impl Serialize for ToolOutputEnum {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            ToolOutputEnum::Battle(inner) => inner.serialize(serializer),
-            ToolOutputEnum::Shop(inner) => inner.serialize(serializer),
-            ToolOutputEnum::Rest(inner) => inner.serialize(serializer),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for ToolOutputEnum {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = serde_json::Value::deserialize(deserializer)?;
-
-        if let Ok(inner) = serde_json::from_value::<BattleToolOutput>(value.clone()) {
-            return Ok(ToolOutputEnum::Battle(inner));
-        }
-        if let Ok(inner) = serde_json::from_value::<ShopToolOutput>(value.clone()) {
-            return Ok(ToolOutputEnum::Shop(inner));
-        }
-        if let Ok(inner) = serde_json::from_value::<RestToolOutput>(value.clone()) {
-            return Ok(ToolOutputEnum::Rest(inner));
-        }
-
-        Err(serde::de::Error::custom("Unknown tool output type"))
     }
 }

@@ -3,7 +3,7 @@ use crate::*;
 use std::collections::HashMap;
 
 use dnl_store::Store;
-use dnl_types::tools::ToolOutputEnum;
+use dnl_types::scenarios::ScenarioModel;
 use dnl_types::traits::DiscordMsg;
 
 use lambda_http::tracing::info;
@@ -77,18 +77,12 @@ impl ScenarioCmd {
         http: &Http,
     ) -> anyhow::Result<()> {
         info!("API Res: {:?}", res);
-        let res: ToolOutputEnum = res
+        let output: ScenarioModel = res
             .json()
             .await
             .context("Failed to parse into ApiScenarioResponse")?;
 
-        let content: Box<dyn DiscordMsg + Send> = match res {
-            ToolOutputEnum::Battle(data) => Box::new(data),
-            ToolOutputEnum::Shop(data) => Box::new(data),
-            ToolOutputEnum::Rest(data) => Box::new(data),
-        };
-
-        let message = CreateInteractionResponseFollowup::new().content(content.to_message());
+        let message = CreateInteractionResponseFollowup::new().content(output.to_message());
 
         let res = cmd.create_followup(&http, message).await;
 

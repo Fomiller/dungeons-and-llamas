@@ -14,8 +14,6 @@ use dnl_store::Store;
 use dnl_types::llm::*;
 use dnl_types::scenarios::*;
 use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
 use dnl_types::tools::*;
 
 use anyhow::Context;
@@ -54,7 +52,7 @@ pub async fn post_llm_converse(
             .build(),
     );
 
-    let con_res = llm.converse(Some(Tools::Battle), cfg).await;
+    let con_res = llm.converse(Some(Tool::Battle), cfg).await;
     info!("CON-RES: {:?}", con_res);
 
     match con_res?.get_tool_output() {
@@ -89,32 +87,31 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
 
-    let scenario = Scenario::from_str(&payload.scenario).context("Unable to match scenario")?;
+    let scenario = Scenario::from_str(&payload.scenario)?;
 
-    let example = match scenario {
-        Scenario::Battle => serde_json::to_string(&BattleToolOutput::mock())?,
-        Scenario::Shop => serde_json::to_string(&ShopToolOutput::mock())?,
-        Scenario::Rest => serde_json::to_string(&RestToolOutput::mock())?,
-    };
+    let tool_output =
+        ToolOutput::from_str(&scenario.to_string()).context("Unable to match scenario")?;
+
+    let example = serde_json::to_string(&tool_output.mock())?;
 
     text_vars.insert("theme".to_string(), payload.theme.clone());
     json_vars.insert("level".to_string(), payload.level.clone());
     json_vars.insert("example".to_string(), example);
 
-    let config = match Scenario::from_str(&payload.scenario).context("Unable to match scenario")? {
-        Scenario::Battle => JsonGeneratorConfigEnum::Battle(BattleJsonGeneratorConfig::new(
+    let config = match Tool::from_str(&scenario.to_string()).context("Unable to match scenario")? {
+        Tool::Battle => JsonGeneratorConfigEnum::Battle(BattleJsonGeneratorConfig::new(
             payload.clone(),
             system_vars,
             text_vars,
             json_vars,
         )),
-        Scenario::Shop => JsonGeneratorConfigEnum::Shop(ShopJsonGeneratorConfig::new(
+        Tool::Shop => JsonGeneratorConfigEnum::Shop(ShopJsonGeneratorConfig::new(
             payload.clone(),
             system_vars,
             text_vars,
             json_vars,
         )),
-        Scenario::Rest => JsonGeneratorConfigEnum::Rest(RestJsonGeneratorConfig::new(
+        Tool::Rest => JsonGeneratorConfigEnum::Rest(RestJsonGeneratorConfig::new(
             payload.clone(),
             system_vars,
             text_vars,
