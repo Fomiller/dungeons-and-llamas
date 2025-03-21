@@ -10,14 +10,12 @@ use dnl_store::Store;
 use dnl_types::llm::LlmHandler;
 use dnl_types::llm::ParseConverseOutput;
 use dnl_types::scenarios::ScenarioInput;
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
-use dnl_types::tools::ToolOutputEnum;
-use dnl_types::tools::Tools;
+use dnl_types::scenarios::ScenarioModel;
+use dnl_types::tools::{Tool, ToolOutput};
 use rest::{RestJsonGenerator, RestJsonGeneratorConfig};
 use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
 
+use anyhow::anyhow;
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
@@ -57,11 +55,11 @@ impl JsonGeneratorEnum {
             JsonGeneratorEnum::Rest(gen) => gen.save_json().await,
         }
     }
-    pub fn data(&mut self) -> Option<ToolOutputEnum> {
+    pub fn tool_output(&mut self) -> Option<ToolOutput> {
         match self {
-            JsonGeneratorEnum::Battle(gen) => gen.data(),
-            JsonGeneratorEnum::Shop(gen) => gen.data(),
-            JsonGeneratorEnum::Rest(gen) => gen.data(),
+            JsonGeneratorEnum::Battle(gen) => gen.tool_output(),
+            JsonGeneratorEnum::Shop(gen) => gen.tool_output(),
+            JsonGeneratorEnum::Rest(gen) => gen.tool_output(),
         }
     }
     pub fn text(&mut self) -> Option<String> {
@@ -69,6 +67,13 @@ impl JsonGeneratorEnum {
             JsonGeneratorEnum::Battle(gen) => gen.text(),
             JsonGeneratorEnum::Shop(gen) => gen.text(),
             JsonGeneratorEnum::Rest(gen) => gen.text(),
+        }
+    }
+    pub fn scenario_model(&mut self) -> Option<ScenarioModel> {
+        match self {
+            JsonGeneratorEnum::Battle(gen) => gen.scenario_model(),
+            JsonGeneratorEnum::Shop(gen) => gen.scenario_model(),
+            JsonGeneratorEnum::Rest(gen) => gen.scenario_model(),
         }
     }
 }
@@ -98,7 +103,7 @@ pub trait JsonResponseGeneratorConfig {
     fn schema(&self) -> serde_json::Value;
     fn system_prompt(&self) -> String;
     fn text_prompt(&self) -> String;
-    fn tool(&self) -> Tools;
+    fn tool(&self) -> Tool;
 }
 
 #[derive(Clone)]
@@ -107,7 +112,8 @@ pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig> {
     pub context: Option<Vec<String>>,
     pub model: LlmHandler,
     pub text: Option<String>,
-    pub data: Option<ToolOutputEnum>,
+    pub tool_output: Option<ToolOutput>,
+    pub scenario_model: Option<ScenarioModel>,
     pub max_retries: u8,
     pub attempts: u8,
 }
@@ -116,8 +122,12 @@ impl<C> JsonResponseGenerator<C>
 where
     C: JsonResponseGeneratorConfig,
 {
-    pub fn data(&mut self) -> Option<ToolOutputEnum> {
-        self.data.clone()
+    pub fn tool_output(&mut self) -> Option<ToolOutput> {
+        self.tool_output.clone()
+    }
+
+    pub fn scenario_model(&mut self) -> Option<ScenarioModel> {
+        self.scenario_model.clone()
     }
 
     pub fn text(&mut self) -> Option<String> {
@@ -129,7 +139,8 @@ where
 
         let context = None;
         let text = None;
-        let data = None;
+        let tool_output = None;
+        let scenario_model = None;
         let max_retries = 5;
         let attempts = 0;
 
@@ -138,7 +149,8 @@ where
             context,
             model,
             text,
-            data,
+            tool_output,
+            scenario_model,
             max_retries,
             attempts,
         }
@@ -216,7 +228,9 @@ where
 
             match self.to_json(ctxs.clone()).await {
                 Ok(data) => {
-                    self.data = Some(data);
+                    self.tool_output = Some(data);
+                    self.scenario_model =
+                        Some(ScenarioModel::from(self.tool_output.clone().unwrap()));
                     return Ok(());
                 }
                 Err(err) => {
@@ -241,7 +255,7 @@ where
         }
     }
 
-    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutputEnum> {
+    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutput> {
         let mut contexts: Vec<String> = Vec::new();
 
         // using the text in generate_text as context
@@ -291,16 +305,11 @@ where
         let value = serde_json::to_value(tool_value)
             .context("Failed to parese tool value to serde_json::Value")?;
 
-        match self.config.tool() {
-            Tools::Shop => serde_json::from_value::<ShopToolOutput>(value)
-                .map(ToolOutputEnum::Shop)
-                .map_err(Into::into),
-            Tools::Battle => serde_json::from_value::<BattleToolOutput>(value)
-                .map(ToolOutputEnum::Battle)
-                .map_err(Into::into),
-            Tools::Rest => serde_json::from_value::<RestToolOutput>(value)
-                .map(ToolOutputEnum::Rest)
-                .map_err(Into::into),
+        info!("VALUE: {:?}", value);
+
+        match serde_json::from_value(value) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(anyhow!("{}", e)),
         }
     }
 
@@ -308,9 +317,9 @@ where
         let store = Store::new().await;
 
         let encounter = match self.config.tool() {
-            Tools::Battle => EncounterSortKey::Battle,
-            Tools::Shop => EncounterSortKey::Shop,
-            Tools::Rest => EncounterSortKey::Rest,
+            Tool::Battle => EncounterSortKey::Battle,
+            Tool::Shop => EncounterSortKey::Shop,
+            Tool::Rest => EncounterSortKey::Rest,
         };
 
         let scenario_input = self.config.scenario_input();
@@ -327,13 +336,10 @@ where
             aws_sdk_dynamodb::types::AttributeValue::S(self.text.clone().unwrap_or("".to_string())),
         );
 
-        let data = self.data.clone().unwrap();
+        let data = self.scenario_model().unwrap();
 
-        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = match data {
-            ToolOutputEnum::Battle(item) => serde_dynamo::to_item(item)?,
-            ToolOutputEnum::Shop(item) => serde_dynamo::to_item(item)?,
-            ToolOutputEnum::Rest(item) => serde_dynamo::to_item(item)?,
-        };
+        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> =
+            serde_dynamo::to_item(data)?;
 
         state.extend(map);
 

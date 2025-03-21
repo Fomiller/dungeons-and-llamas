@@ -3,7 +3,7 @@ use crate::*;
 use std::collections::HashMap;
 
 use dnl_types::scenarios::ScenarioInput;
-use dnl_types::tools::Tools;
+use dnl_types::tools::Tool;
 
 pub static SHOP_SYSTEM_PROMPT: &str = "
 You are a DM for a single player dungeons and dragons style text adventure game.
@@ -41,7 +41,7 @@ pub type ShopJsonGenerator = JsonResponseGenerator<ShopJsonGeneratorConfig>;
 #[derive(Clone)]
 pub struct ShopJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
-    pub tool: Tools,
+    pub tool: Tool,
     pub system_prompt: Prompt,
     pub json_prompt: Prompt,
     pub text_prompt: Prompt,
@@ -66,8 +66,8 @@ impl JsonResponseGeneratorConfig for ShopJsonGeneratorConfig {
     fn text_prompt(&self) -> String {
         self.text_prompt.format()
     }
-    fn tool(&self) -> Tools {
-        self.tool
+    fn tool(&self) -> Tool {
+        self.tool.clone()
     }
 }
 
@@ -93,7 +93,7 @@ impl ShopJsonGeneratorConfig {
             variables: text_vars,
         };
 
-        let tool = Tools::Shop;
+        let tool = Tool::Shop;
 
         Self {
             scenario_input,

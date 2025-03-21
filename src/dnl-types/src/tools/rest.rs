@@ -1,5 +1,3 @@
-use super::MockData;
-use crate::traits::DiscordMsg;
 use lazy_static::lazy_static;
 
 use serde::{Deserialize, Serialize};
@@ -10,34 +8,6 @@ pub struct RestToolOutput {
     pub flora: String,
     pub fauna: String,
     pub secret: Option<String>,
-}
-
-impl MockData for RestToolOutput {
-    fn mock() -> Self {
-        let summary = "This is a nice place to rest".to_string();
-        let flora = "plants".to_string();
-        let fauna = "animals".to_string();
-        let secret = None;
-        Self {
-            summary,
-            flora,
-            fauna,
-            secret,
-        }
-    }
-}
-
-impl DiscordMsg for RestToolOutput {
-    fn to_message(&self) -> String {
-        let mut message = format!("*{}*\n\n*{}*\n\n*{}*", self.summary, self.flora, self.fauna);
-
-        if let Some(secret) = &self.secret {
-            message.push_str(&format!("\n\n||{}||", secret));
-            return message;
-        };
-
-        message
-    }
 }
 
 lazy_static! {
