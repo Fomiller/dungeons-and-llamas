@@ -1,5 +1,5 @@
 use crate::dice::DiceExpression;
-use crate::entity::EntityHealth;
+use crate::entity::health::EntityHealth;
 use crate::tools::battle::*;
 use crate::traits::DiscordMsg;
 use uuid::Uuid;

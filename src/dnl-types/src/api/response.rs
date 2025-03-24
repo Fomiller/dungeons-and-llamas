@@ -5,6 +5,11 @@ use crate::scenarios::shop::ShopScenario;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct NewGameResponse {
+    pub game_id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ApiScenarioResponse {
     pub data: ApiScenarioResponseData,
 }

@@ -1,4 +1,4 @@
-use super::dice::DiceExpression;
+use crate::dice::DiceExpression;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

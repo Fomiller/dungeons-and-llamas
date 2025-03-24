@@ -11,6 +11,66 @@
                 "required": true
             },
             {
+                "name": "class",
+                "description": "Characters class",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "barbarian",
+                        "value": "barbarian"
+                    },
+                    {
+                        "name": "bard",
+                        "value": "bard"
+                    },
+                    {
+                        "name": "cleric",
+                        "value": "cleric"
+                    },
+                    {
+                        "name": "druid",
+                        "value": "druid"
+                    },
+                    {
+                        "name": "fighter",
+                        "value": "fighter"
+                    },
+                    {
+                        "name": "mage",
+                        "value": "mage"
+                    },
+                    {
+                        "name": "monk",
+                        "value": "monk"
+                    },
+                    {
+                        "name": "paladin",
+                        "value": "paladin"
+                    },
+                    {
+                        "name": "ranger",
+                        "value": "ranger"
+                    },
+                    {
+                        "name": "rouge",
+                        "value": "rouge"
+                    },
+                    {
+                        "name": "sorcerer",
+                        "value": "sorcerer"
+                    },
+                    {
+                        "name": "warlock",
+                        "value": "warlock"
+                    },
+                    {
+                        "name": "wizard",
+                        "value": "wizard"
+                    }
+                ]
+            },
+            {
                 "name": "race",
                 "description": "Characters Race",
                 "type": 3,
@@ -54,7 +114,7 @@
                 "name": "background",
                 "description": "Characters background",
                 "type": 3,
-                "required": true,
+                "required": false,
                 "choices": [
                     {
                         "name": "Soldier",

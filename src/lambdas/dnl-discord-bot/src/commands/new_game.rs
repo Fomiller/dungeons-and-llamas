@@ -1,5 +1,8 @@
 use crate::*;
-use dnl_types::api::request::NewGameRequest;
+use anyhow::{anyhow, Context};
+use dnl_types::api::request::NewGameData;
+use dnl_types::api::response::NewGameResponse;
+use reqwest::Response;
 use serenity::builder::*;
 use serenity::model::application::*;
 
@@ -13,16 +16,40 @@ impl NewGameCmd {
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let client = reqwest::Client::new();
 
-        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/game/new");
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "api/game/new");
 
-        let body = NewGameRequest::from(cmd);
+        let body = NewGameData::from(cmd);
 
-        match client.post(url).json(&body).send().await {
-            Ok(_) => {
-                let content = format!("New game created.");
-                Ok(Some(format_interaction_response(content)))
+        let res = client.post(url).json(&body).send().await?;
+
+        match res.error_for_status() {
+            Ok(_res) => Self::handle_sucessful_response(_res).await,
+            Err(err) => {
+                info!("New Game Error: {}", err);
+
+                let content = format!("Error: {}", err);
+
+                let message = CreateInteractionResponseMessage::new().content(content);
+
+                Ok(Some(CreateInteractionResponse::Message(message)))
             }
-            Err(e) => Err(anyhow::anyhow!(e)),
         }
+    }
+
+    pub async fn handle_sucessful_response(
+        res: Response,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        info!("API Res: {:?}", res);
+
+        let output: NewGameResponse = res
+            .json()
+            .await
+            .context("Failed to parse into NewGameResponse")?;
+
+        let content = format!("New game created - {}", output.game_id);
+
+        let message = CreateInteractionResponseMessage::new().content(content);
+
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }

@@ -1,0 +1,159 @@
+[
+    {
+        "name": "Barbarian",
+        "key_ability_modifier": ["Strength", "Constitution"],
+        "base_stats": {
+            "Strength": "2",
+            "Dexterity": "0",
+            "Constitution": "2",
+            "Intelligence": "0",
+            "Wisdom": "0",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Bard",
+        "key_ability_modifier": ["Charisma", "Dexterity"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "2",
+            "Constitution": "0",
+            "Intelligence": "0",
+            "Wisdom": "0",
+            "Charisma": "2"
+        }
+    },
+    {
+        "name": "Cleric",
+        "key_ability_modifier": ["Wisdom", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "0",
+            "Constitution": "1",
+            "Intelligence": "1",
+            "Wisdom": "2",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Druid",
+        "key_ability_modifier": ["Wisdom", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "0",
+            "Constitution": "2",
+            "Intelligence": "0",
+            "Wisdom": "2",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Fighter",
+        "key_ability_modifier": ["Strength or Dexterity", "Constitution"],
+        "base_stats": {
+            "Strength": "1",
+            "Dexterity": "1",
+            "Constitution": "2",
+            "Intelligence": "0",
+            "Wisdom": "0",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Mage (Wizard)",
+        "key_ability_modifier": ["Intelligence", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "0",
+            "Constitution": "2",
+            "Intelligence": "2",
+            "Wisdom": "0",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Monk",
+        "key_ability_modifier": ["Dexterity or Wisdom", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "2",
+            "Constitution": "0",
+            "Intelligence": "0",
+            "Wisdom": "2",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Paladin",
+        "key_ability_modifier": ["Strength", "Charisma"],
+        "base_stats": {
+            "Strength": "2",
+            "Dexterity": "0",
+            "Constitution": "0",
+            "Intelligence": "0",
+            "Wisdom": "0",
+            "Charisma": "2"
+        }
+    },
+    {
+        "name": "Ranger",
+        "key_ability_modifier": ["Dexterity", "Wisdom"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "2",
+            "Constitution": "0",
+            "Intelligence": "0",
+            "Wisdom": "2",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Rogue",
+        "key_ability_modifier": ["Dexterity", "Intelligence or Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "2",
+            "Constitution": "0",
+            "Intelligence": "2",
+            "Wisdom": "0",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Sorcerer",
+        "key_ability_modifier": ["Charisma", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "0",
+            "Constitution": "0",
+            "Intelligence": "2",
+            "Wisdom": "2",
+            "Charisma": "0"
+        }
+    },
+    {
+        "name": "Warlock",
+        "key_ability_modifier": ["Charisma", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "0",
+            "Constitution": "0",
+            "Intelligence": "0",
+            "Wisdom": "2",
+            "Charisma": "2"
+        }
+    },
+    {
+        "name": "Wizard",
+        "key_ability_modifier": ["Intelligence", "Constitution"],
+        "base_stats": {
+            "Strength": "0",
+            "Dexterity": "0",
+            "Constitution": "1",
+            "Intelligence": "1",
+            "Wisdom": "1",
+            "Charisma": "1"
+        }
+    }
+]
+

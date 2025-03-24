@@ -1,5 +1,3 @@
-use crate::commands::edit::EditCmd;
-use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;
 use std::str::FromStr;

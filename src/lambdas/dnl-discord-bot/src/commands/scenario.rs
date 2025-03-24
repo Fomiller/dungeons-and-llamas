@@ -58,7 +58,7 @@ impl ScenarioCmd {
             );
         }
 
-        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/scenario");
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "api/llm/scenario");
 
         match client.post(url).json(&json).send().await {
             Ok(response) => {

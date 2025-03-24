@@ -21,13 +21,25 @@ use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_dynamodb::{operation::put_item::PutItemOutput, types::PutRequest};
 use aws_sdk_dynamodb::{
     operation::{batch_write_item::BatchWriteItemInput, get_item::GetItemOutput},
+    types::TransactWriteItem,
+    types::Update,
     types::WriteRequest,
 };
+use dnl_types::api::request::NewGameData;
+use dnl_types::api::response::NewGameResponse;
+use dnl_types::entity::stats::get_base_stats_by_name;
 use dnl_types::scenarios::battle::BattleScenarioEnemy;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
+use strum::IntoEnumIterator;
 
 type Item = HashMap<String, AttributeValue>;
+
+#[derive(Debug, Clone)]
+pub struct UpdateItem {
+    pub sort_key: RootSortKeyBuilder,
+    pub item: (String, String),
+}
 
 pub struct Store {
     client: aws_sdk_dynamodb::Client,
@@ -459,10 +471,10 @@ impl Store {
         Ok(game_id)
     }
 
-    pub async fn try_new_game(&self, user_id: &str) -> anyhow::Result<()> {
+    pub async fn try_new_game(&self, data: NewGameData) -> anyhow::Result<NewGameResponse> {
         let game_id = try_create_sqid(None)?;
 
-        let factory = SortKeyFactory::new(user_id);
+        let factory = SortKeyFactory::new(&data.user_id);
 
         let mut sort_keys: Vec<RootSortKeyBuilder> = Vec::new();
 
@@ -470,12 +482,41 @@ impl Store {
         sort_keys.extend(factory.create_all_entity_actions_sks(&game_id));
         sort_keys.extend(factory.create_all_entity_stats_sks(&game_id));
 
-        self.try_generic_batch_write_root_sks(user_id, sort_keys)
+        self.try_generic_batch_write_root_sks(&data.user_id, sort_keys)
             .await?;
 
-        self.try_save_active_game_id(user_id, &game_id).await?;
+        let mut update_items = Vec::new();
 
-        Ok(())
+        let stats = get_base_stats_by_name(&data.class)?;
+
+        info!("Class Stats {:?}", stats);
+
+        for ability in AbilitiesSortKey::iter() {
+            let stat = match ability {
+                AbilitiesSortKey::Strength => &stats.strength,
+                AbilitiesSortKey::Charisma => &stats.charisma,
+                AbilitiesSortKey::Constitution => &stats.constitution,
+                AbilitiesSortKey::Dexterity => &stats.dexterity,
+                AbilitiesSortKey::Intelligence => &stats.intelligence,
+                AbilitiesSortKey::Wisdom => &stats.wisdom,
+            };
+
+            let sk =
+                RootSortKeyBuilder::create_abilities_sk(&data.user_id, ability, Entity::Player);
+
+            update_items.push(UpdateItem {
+                sort_key: sk,
+                item: ("value".to_string(), stat.to_string()),
+            });
+        }
+
+        self.try_generic_batch_update(&data.user_id, update_items)
+            .await?;
+
+        self.try_save_active_game_id(&data.user_id, &game_id)
+            .await?;
+
+        Ok(NewGameResponse { game_id })
     }
 
     pub async fn try_generic_batch_write_root_sks(
@@ -558,6 +599,57 @@ impl Store {
             }
         }
         Ok(())
+    }
+
+    pub async fn try_generic_batch_update(
+        &self,
+        user_id: &str,
+        items: Vec<UpdateItem>,
+    ) -> anyhow::Result<()> {
+        info!("Update Item Count: {}", items.len());
+        info!("Update Items: {:?}", items);
+
+        let mut transact_items = Vec::new();
+
+        for item in items {
+            info!("Sort keys: {}", item.sort_key.build());
+
+            let update_request = Update::builder()
+                .table_name(GAME_STATE_TABLE.to_string())
+                .key("UserId", AttributeValue::S(user_id.to_string()))
+                .key("StateComponent", AttributeValue::S(item.sort_key.build()))
+                .set_update_expression(Some("SET #attr = :val".to_string()))
+                .set_expression_attribute_names(Some(HashMap::from([(
+                    "#attr".to_string(),
+                    item.item.0,
+                )])))
+                .set_expression_attribute_values(Some(HashMap::from([(
+                    ":val".to_string(),
+                    AttributeValue::S(item.item.1),
+                )])))
+                .build()?;
+
+            let transact_write_item = TransactWriteItem::builder().update(update_request).build();
+
+            info!("Update Item: {:?}", transact_write_item);
+
+            transact_items.push(transact_write_item);
+        }
+
+        match self
+            .client
+            .transact_write_items()
+            .set_transact_items(Some(transact_items))
+            .send()
+            .await
+        {
+            Ok(response) => {
+                debug!("Transact Write Response: {:?}", response);
+                info!("Transact write successful!");
+                Ok(())
+            }
+            Err(e) => Err(anyhow!("Error during transact write: {:?}", e)),
+        }
     }
 }
 

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use std::any::Any;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct RootSortKeyBuilder {
     id: String,
     game: Option<GameSortKeyBuilder>,
@@ -156,14 +156,14 @@ impl RootSortKeyBuilder {
     }
 
     pub fn create_abilities_sk(
-        id: String,
+        id: &str,
         abilities: AbilitiesSortKey,
         entity: Entity,
     ) -> RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().abilities(abilities);
         let entity = EntitySortKeyBuilder::new(entity).stats(stats);
         let game = GameSortKeyBuilder::new().entity(entity);
-        RootSortKeyBuilder::new().id(&id).game(game)
+        RootSortKeyBuilder::new().id(id).game(game)
     }
 
     pub fn create_conditions_sk(

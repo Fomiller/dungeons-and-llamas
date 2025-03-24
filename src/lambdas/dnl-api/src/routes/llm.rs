@@ -204,6 +204,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
 
             return Ok(res);
         }
+
         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 }
