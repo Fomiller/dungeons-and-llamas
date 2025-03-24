@@ -1366,6 +1366,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
+ "serenity",
  "strum",
  "thiserror 2.0.9",
  "uuid",
