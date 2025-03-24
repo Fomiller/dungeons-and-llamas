@@ -1,5 +1,6 @@
 use aws_config::BehaviorVersion;
 use aws_lambda_events::event::s3::S3Event;
+use lambda_runtime::tracing::info;
 use lambda_runtime::{run, service_fn, tracing, Error, LambdaEvent};
 use serde_json::Value;
 use std::env;
@@ -40,7 +41,13 @@ async fn function_handler(event: LambdaEvent<S3Event>) -> Result<Value, Error> {
         .send()
         .await?;
 
-    Ok(res.json().await?)
+    info!("DISCORD RES STATUS: {:?}", res.status());
+
+    let json = res.json().await?;
+
+    info!("DISCORD RES: {:?}", json);
+
+    Ok(json)
 }
 
 #[tokio::main]

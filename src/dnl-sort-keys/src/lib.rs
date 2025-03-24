@@ -28,6 +28,7 @@ pub mod skills;
 pub mod spells;
 pub mod state;
 pub mod stats;
+pub mod temp;
 pub mod tools;
 pub mod user;
 pub mod weapons;

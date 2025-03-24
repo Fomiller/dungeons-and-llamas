@@ -9,10 +9,10 @@ pub async fn try_handle_component_interaction(
     interaction: ComponentInteraction,
 ) -> anyhow::Result<Option<CreateInteractionResponse>> {
     // custom_id's need to become Enums
-    match CustomId::from_str(&interaction.data.custom_id)? {
-        CustomId::BackGroundMenu(cmd) => cmd.execute(interaction),
-        CustomId::ClassMenu(cmd) => cmd.execute(interaction).await,
-        CustomId::RaceMenu(cmd) => cmd.execute(interaction),
+    match ComponentCustomId::from_str(&interaction.data.custom_id)? {
+        ComponentCustomId::BackGroundMenu(cmd) => cmd.execute(),
+        ComponentCustomId::ClassSelectMenu(cmd) => cmd.execute().await,
+        ComponentCustomId::RaceMenu(cmd) => cmd.execute(),
     }
 }
 
@@ -20,64 +20,77 @@ pub async fn try_handle_component_interaction(
 pub struct ClassCmd;
 
 #[derive(Debug, PartialEq, Default)]
-pub struct ClassMenuCmd;
+pub struct ClassSelectMenuCmd;
 
 #[derive(Debug, PartialEq, Default)]
-pub struct RaceMenuCmd;
+pub struct RaceSelectMenuCmd;
 
 #[derive(Debug, PartialEq, Default)]
-pub struct BackGroundMenuCmd;
+pub struct BackGroundSelectMenuCmd;
 
 #[derive(Debug, PartialEq, EnumString)]
-pub enum CustomId {
+pub enum ComponentCustomId {
     #[strum(serialize = "class_menu", ascii_case_insensitive)]
-    ClassMenu(ClassMenuCmd),
+    ClassSelectMenu(ClassSelectMenuCmd),
     #[strum(serialize = "race_menu", ascii_case_insensitive)]
-    RaceMenu(RaceMenuCmd),
+    RaceMenu(RaceSelectMenuCmd),
     #[strum(serialize = "background_menu", ascii_case_insensitive)]
-    BackGroundMenu(BackGroundMenuCmd),
+    BackGroundMenu(BackGroundSelectMenuCmd),
 }
 
-impl ClassMenuCmd {
-    pub async fn execute(
-        &self,
-        interaction: ComponentInteraction,
-    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        info!("Class CMD");
-        EditCmd::new().execute(interaction).await?;
-        let duration = std::time::Duration::from_secs(2);
-        std::thread::sleep(duration);
-        let message = CreateInteractionResponseMessage::new()
-            .embeds(vec![])
-            .content("LLM RESPONSE")
-            .components(vec![]);
-        Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
+impl ClassSelectMenuCmd {
+    pub async fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let options = vec![
+            CreateSelectMenuOption::new("Dragonborn", "dragonborn"),
+            CreateSelectMenuOption::new("Dwarf", "dwarf"),
+            CreateSelectMenuOption::new("Elf", "elf"),
+            CreateSelectMenuOption::new("Goliath", "goliath"),
+            CreateSelectMenuOption::new("Halfling", "halfling"),
+            CreateSelectMenuOption::new("Human", "Human"),
+            CreateSelectMenuOption::new("Orc", "orc"),
+            CreateSelectMenuOption::new("Tiefling", "tiefling"),
+        ];
+
+        let menu = CreateActionRow::SelectMenu(
+            CreateSelectMenu::new("race_menu", CreateSelectMenuKind::String { options })
+                .placeholder("Select a race"),
+        );
+
+        let message = CreateInteractionResponseMessage::new().components(vec![menu]);
+
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }
 
-impl RaceMenuCmd {
-    pub fn execute(
-        &self,
-        interaction: ComponentInteraction,
-    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let content = format!(
-            "custom_id: {:?}, kind: {:?}",
-            interaction.data.custom_id, interaction.data.kind
+impl RaceSelectMenuCmd {
+    pub fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let options = vec![
+            CreateSelectMenuOption::new("Soldier", "soldier"),
+            CreateSelectMenuOption::new("Athlete", "athlete"),
+            CreateSelectMenuOption::new("Artisan", "artisan"),
+            CreateSelectMenuOption::new("Criminal", "criminal"),
+            CreateSelectMenuOption::new("Entertainer", "entertainer"),
+            CreateSelectMenuOption::new("Farmer", "farmer"),
+            CreateSelectMenuOption::new("Hermit", "hermit"),
+            CreateSelectMenuOption::new("Gambler", "gambler"),
+            CreateSelectMenuOption::new("Noble", "noble"),
+            CreateSelectMenuOption::new("Merchant", "merchant"),
+        ];
+
+        let menu = CreateActionRow::SelectMenu(
+            CreateSelectMenu::new("background_menu", CreateSelectMenuKind::String { options })
+                .placeholder("Select a class"),
         );
-        let message = CreateInteractionResponseMessage::new().content(content);
-        Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
+
+        let message = CreateInteractionResponseMessage::new().components(vec![menu]);
+
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }
 
-impl BackGroundMenuCmd {
-    pub fn execute(
-        &self,
-        interaction: ComponentInteraction,
-    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let content = format!(
-            "custom_id: {:?}, kind: {:?}",
-            interaction.data.custom_id, interaction.data.kind
-        );
+impl BackGroundSelectMenuCmd {
+    pub fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let content = format!("CHARACTER CREATED",);
         let message = CreateInteractionResponseMessage::new().content(content);
         Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
     }

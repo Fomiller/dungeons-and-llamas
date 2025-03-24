@@ -1,5 +1,110 @@
 [
     {
+        "name": "new-game",
+        "type": 1,
+        "description": "Start a new game",
+        "options": [
+            {
+                "name": "name",
+                "description": "Characters name",
+                "type": 3,
+                "required": true
+            },
+            {
+                "name": "race",
+                "description": "Characters Race",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Dragonborn",
+                        "value": "dragonborn"
+                    },
+                    {
+                        "name": "Dwarf",
+                        "value": "dwarf"
+                    },
+                    {
+                        "name": "Elf",
+                        "value": "elf"
+                    },
+                    {
+                        "name": "Goliath",
+                        "value": "goliath"
+                    },
+                    {
+                        "name": "Halfling",
+                        "value": "halfling"
+                    },
+                    {
+                        "name": "Human",
+                        "value": "Human"
+                    },
+                    {
+                        "name": "Orc",
+                        "value": "orc"
+                    },
+                    {
+                        "name": "Tiefling",
+                        "value": "tiefling"
+                    }
+                ]
+            },
+            {
+                "name": "background",
+                "description": "Characters background",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Soldier",
+                        "value": "soldier"
+                    },
+                    {
+                        "name": "Athlete",
+                        "value": "athlete"
+                    },
+                    {
+                        "name": "Artisan",
+                        "value": "artisan"
+                    },
+                    {
+                        "name": "Criminal",
+                        "value": "criminal"
+                    },
+                    {
+                        "name": "Entertainer",
+                        "value": "entertainer"
+                    },
+                    {
+                        "name": "Farmer",
+                        "value": "farmer"
+                    },
+                    {
+                        "name": "Hermit",
+                        "value": "hermit"
+                    },
+                    {
+                        "name": "Gambler",
+                        "value": "gambler"
+                    },
+                    {
+                        "name": "Noble",
+                        "value": "noble"
+                    },
+                    {
+                        "name": "Merchant",
+                        "value": "merchant"
+                    },
+                    {
+                        "name": "Barbarian",
+                        "value": "barbarian"
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "name": "scenario",
         "type": 1,
         "description": "create a game scenario",
@@ -102,11 +207,6 @@
         ]
     },
     {
-        "name": "modal",
-        "type": 1,
-        "description": "create a modal response"
-    },
-    {
         "name": "text",
         "type": 1,
         "description": "create a text input response"
@@ -127,11 +227,6 @@
         "description": "Create a button response"
     },
     {
-        "name": "new-game",
-        "type": 1,
-        "description": "Start a new game"
-    },
-    {
         "name": "resume-game",
         "type": 1,
         "description": "Resume a game"
@@ -140,64 +235,5 @@
         "name": "list-games",
         "type": 1,
         "description": "List all games"
-    },
-    {
-        "name": "class",
-        "type": 1,
-        "description": "Which class do you want to play",
-        "options": [
-            {
-                "name": "class",
-                "description": "The type of class",
-                "type": 3,
-                "required": true,
-                "choices": [
-                    {
-                        "name": "Warlock",
-                        "value": "warlock"
-                    },
-                    {
-                        "name": "Barbarian",
-                        "value": "barbarian"
-                    },
-                    {
-                        "name": "Mage",
-                        "value": "mage"
-                    },
-                    {
-                        "name": "Rouge",
-                        "value": "rouge"
-                    },
-                    {
-                        "name": "Bard",
-                        "value": "bard"
-                    },
-                    {
-                        "name": "Cleric",
-                        "value": "cleric"
-                    },
-                    {
-                        "name": "Paladin",
-                        "value": "paladin"
-                    },
-                    {
-                        "name": "Monk",
-                        "value": "monk"
-                    },
-                    {
-                        "name": "Druid",
-                        "value": "druid"
-                    },
-                    {
-                        "name": "Fighter",
-                        "value": "fighter"
-                    },
-                    {
-                        "name": "Ranger",
-                        "value": "ranger"
-                    }
-                ]
-            }
-        ]
     }
 ]
