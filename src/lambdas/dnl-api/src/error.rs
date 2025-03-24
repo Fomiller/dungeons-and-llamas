@@ -2,6 +2,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
+use dnl_types::api::error::ApiResponseError;
 use serde_json::json;
 
 // https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs
@@ -30,7 +31,7 @@ where
 }
 
 pub fn handle_error(msg: String) -> Response {
-    let json = Json(json!({"error": msg}));
-    let res = (StatusCode::SERVICE_UNAVAILABLE, json).into_response();
+    let error = ApiResponseError { error: msg };
+    let res = (StatusCode::SERVICE_UNAVAILABLE, Json(error)).into_response();
     res
 }

@@ -20,15 +20,8 @@ pub async fn post_new_game_handler(Json(payload): Json<NewGameData>) -> Result<R
 
     let client = Store::new().await;
 
-    match client.try_new_game(payload).await {
-        Ok(res) => {
-            let res = (StatusCode::CREATED, Json(res)).into_response();
-            info!("NewGameResponse: {:?}", res);
-            return Ok(res);
-        }
-        Err(err) => {
-            info!("New game error: {}", err);
-            Ok(handle_error(format!("{:?}", err.to_string())))
-        }
-    }
+    Ok(match client.try_new_game(payload).await {
+        Ok(res) => (StatusCode::CREATED, Json(res)).into_response(),
+        Err(err) => handle_error(format!("{:?}", err.to_string())),
+    })
 }
