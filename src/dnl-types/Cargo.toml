@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dnl-db = { path = "../dnl-db/" }
 
 anyhow = "1.0.94"
 aws-config = "1.5.10"
@@ -13,7 +12,6 @@ aws-sdk-bedrockruntime = { version = "1.64.0", features = [
 ] }
 uuid = { version = "1.11.0", features = ["v4"] }
 lambda_runtime = "0.13.0"
-pgvector = { version = "0.4.0", features = ["diesel", "serde"] }
 serde_json = "1.0.133"
 strum = { version = "0.26.3", features = ["derive", "strum_macros"] }
 aws-smithy-types = { version = "1.2.10", features = [
