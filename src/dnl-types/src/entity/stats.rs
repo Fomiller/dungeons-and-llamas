@@ -1,4 +1,3 @@
-use anyhow::Context;
 use lambda_runtime::tracing::info;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -67,146 +66,147 @@ lazy_static! {
                 "name": "barbarian",
                 "key_ability_modifier": ["strength", "constitution"],
                 "base_stats": {
-                    "strength": "+2",
-                    "dexterity": "+0",
-                    "constitution": "+2",
-                    "intelligence": "+0",
-                    "wisdom": "+0",
-                    "charisma": "+0"
+                    "strength": "15",
+                    "dexterity": "10",
+                    "constitution": "14",
+                    "intelligence": "8",
+                    "wisdom": "12",
+                    "charisma": "10"
                 }
             },
             {
                 "name": "bard",
                 "key_ability_modifier": ["charisma", "dexterity"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+2",
-                    "constitution": "+0",
-                    "intelligence": "+0",
-                    "wisdom": "+0",
-                    "charisma": "+2"
+                    "strength": "8",
+                    "dexterity": "14",
+                    "constitution": "12",
+                    "intelligence": "10",
+                    "wisdom": "10",
+                    "charisma": "15"
                 }
             },
             {
                 "name": "cleric",
                 "key_ability_modifier": ["wisdom", "constitution"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+0",
-                    "constitution": "+1",
-                    "intelligence": "+1",
-                    "wisdom": "+2",
-                    "charisma": "+0"
+                    "strength": "10",
+                    "dexterity": "10",
+                    "constitution": "14",
+                    "intelligence": "12",
+                    "wisdom": "15",
+                    "charisma": "8"
                 }
             },
             {
                 "name": "druid",
                 "key_ability_modifier": ["wisdom", "constitution"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+0",
-                    "constitution": "+2",
-                    "intelligence": "+0",
-                    "wisdom": "+2",
-                    "charisma": "+0"
+                    "strength": "8",
+                    "dexterity": "12",
+                    "constitution": "14",
+                    "intelligence": "10",
+                    "wisdom": "15",
+                    "charisma": "10"
                 }
             },
             {
                 "name": "fighter",
                 "key_ability_modifier": ["strength or dexterity", "constitution"],
                 "base_stats": {
-                    "strength": "+1",
-                    "dexterity": "+1",
-                    "constitution": "+2",
-                    "intelligence": "+0",
-                    "wisdom": "+0",
-                    "charisma": "+0"
+                    "strength": "15",
+                    "dexterity": "12",
+                    "constitution": "14",
+                    "intelligence": "10",
+                    "wisdom": "10",
+                    "charisma": "8"
                 }
             },
             {
                 "name": "monk",
-                "key_ability_modifier": ["dexterity or wisdom", "constitution"],
+                "key_ability_modifier": ["dexterity", "wisdom"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+2",
-                    "constitution": "+0",
-                    "intelligence": "+0",
-                    "wisdom": "+2",
-                    "charisma": "+0"
+                    "strength": "10",
+                    "dexterity": "15",
+                    "constitution": "12",
+                    "intelligence": "8",
+                    "wisdom": "14",
+                    "charisma": "10"
                 }
             },
             {
                 "name": "paladin",
                 "key_ability_modifier": ["strength", "charisma"],
                 "base_stats": {
-                    "strength": "+2",
-                    "dexterity": "+0",
-                    "constitution": "+0",
-                    "intelligence": "+0",
-                    "wisdom": "+0",
-                    "charisma": "+2"
+                    "strength": "15",
+                    "dexterity": "8",
+                    "constitution": "14",
+                    "intelligence": "10",
+                    "wisdom": "10",
+                    "charisma": "12"
                 }
             },
             {
                 "name": "ranger",
                 "key_ability_modifier": ["dexterity", "wisdom"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+2",
-                    "constitution": "+0",
-                    "intelligence": "+0",
-                    "wisdom": "+2",
-                    "charisma": "+0"
+                    "strength": "10",
+                    "dexterity": "15",
+                    "constitution": "12",
+                    "intelligence": "10",
+                    "wisdom": "14",
+                    "charisma": "8"
                 }
             },
             {
                 "name": "rogue",
                 "key_ability_modifier": ["dexterity", "intelligence or constitution"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+2",
-                    "constitution": "+0",
-                    "intelligence": "+2",
-                    "wisdom": "+0",
-                    "charisma": "+0"
+                    "strength": "8",
+                    "dexterity": "15",
+                    "constitution": "12",
+                    "intelligence": "14",
+                    "wisdom": "10",
+                    "charisma": "10"
                 }
             },
             {
                 "name": "sorcerer",
                 "key_ability_modifier": ["charisma", "constitution"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+0",
-                    "constitution": "+0",
-                    "intelligence": "+2",
-                    "wisdom": "+2",
-                    "charisma": "+0"
+                    "strength": "8",
+                    "dexterity": "10",
+                    "constitution": "12",
+                    "intelligence": "14",
+                    "wisdom": "10",
+                    "charisma": "15"
                 }
             },
             {
                 "name": "warlock",
                 "key_ability_modifier": ["charisma", "constitution"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+0",
-                    "constitution": "+0",
-                    "intelligence": "+0",
-                    "wisdom": "+2",
-                    "charisma": "+2"
+                    "strength": "8",
+                    "dexterity": "10",
+                    "constitution": "14",
+                    "intelligence": "12",
+                    "wisdom": "10",
+                    "charisma": "15"
                 }
             },
             {
                 "name": "wizard",
                 "key_ability_modifier": ["intelligence", "constitution"],
                 "base_stats": {
-                    "strength": "+0",
-                    "dexterity": "+0",
-                    "constitution": "+1",
-                    "intelligence": "+1",
-                    "wisdom": "+1",
-                    "charisma": "+1"
+                    "strength": "8",
+                    "dexterity": "10",
+                    "constitution": "12",
+                    "intelligence": "15",
+                    "wisdom": "14",
+                    "charisma": "10"
                 }
             }
-        ])
+        ]
+        )
     };
 }
