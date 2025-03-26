@@ -1,4 +1,4 @@
-use crate::error::handle_error;
+use crate::DiscordCmdResponse;
 
 use dnl_store::Store;
 
@@ -10,6 +10,9 @@ use serenity::model::application::*;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct AttackCmd;
+
+impl DiscordCmdResponse for AttackCmd {}
+
 impl AttackCmd {
     pub async fn execute(
         &self,
@@ -26,8 +29,6 @@ impl AttackCmd {
 
         http.set_application_id(cmd.application_id);
 
-        // cmd.defer(&http).await.context("Failed to defer command")?;
-
         let _ = client
             .try_save_message_token(&user_id, &token)
             .await
@@ -39,7 +40,7 @@ impl AttackCmd {
             .context("Failed to get active game id")
         {
             Ok(game_id) => game_id,
-            Err(err) => return handle_error(&http, &cmd, err).await,
+            Err(err) => return Self::handle_error_with_followup(&http, &cmd, err).await,
         };
 
         let state = client.try_get_state(&user_id).await?;
@@ -65,62 +66,7 @@ impl AttackCmd {
             )
         }
 
-        // // client.get_enemies();
-        // let enemies = vec![
-        //     CreateSelectMenuOption::new("Dragonborn", "dragonborn"),
-        //     CreateSelectMenuOption::new("Dwarf", "dwarf"),
-        //     CreateSelectMenuOption::new("Elf", "elf"),
-        //     CreateSelectMenuOption::new("Goliath", "goliath"),
-        //     CreateSelectMenuOption::new("Halfling", "halfling"),
-        //     CreateSelectMenuOption::new("Human", "Human"),
-        //     CreateSelectMenuOption::new("Orc", "orc"),
-        //     CreateSelectMenuOption::new("Tiefling", "tiefling"),
-        // ];
-        //
-        // let enemy_menu = CreateActionRow::SelectMenu(
-        //     CreateSelectMenu::new(
-        //         "enemy_menu",
-        //         CreateSelectMenuKind::String { options: enemies },
-        //     )
-        //     .placeholder("Select a race"),
-        // );
-        //
-        // let class_menu = CreateActionRow::SelectMenu(
-        //     CreateSelectMenu::new(
-        //         "class_menu",
-        //         CreateSelectMenuKind::String {
-        //             options: class_options,
-        //         },
-        //     )
-        //     .min_values(1)
-        //     .max_values(3)
-        //     .placeholder("Select a class"),
-        // );
-        //
-        // let background_menu = CreateActionRow::SelectMenu(
-        //     CreateSelectMenu::new(
-        //         "background_menu",
-        //         CreateSelectMenuKind::String {
-        //             options: background_options,
-        //         },
-        //     )
-        //     .min_values(1)
-        //     .max_values(3)
-        //     .placeholder("Select a background"),
-        // );
-        //
-        // let menu_action_rows = vec![class_menu, race_menu, background_menu];
-        // // let action_rows = vec![character_name];
-        //
-        // let embed = CreateEmbed::new()
-        //     .color(serenity::model::Colour::BLUE)
-        //     .title("My Embed")
-        //     .field("Name", "Forrest", false);
-
         let message = CreateInteractionResponseMessage::new().add_embeds(enemy_embeds);
-
-        // let modal = CreateModal::new("my_modal", "My Modal").components(action_rows);
-        // debug!("{:?}", modal);
 
         debug!("EMBED {:?}", message);
         Ok(Some(CreateInteractionResponse::Message(message)))

@@ -5,9 +5,10 @@ use std::str::FromStr;
 
 use aws_sdk_dynamodb::types::AttributeValue;
 use dnl_db::*;
-use dnl_generators::battle::BattleJsonGeneratorConfig;
-use dnl_generators::rest::RestJsonGeneratorConfig;
-use dnl_generators::shop::ShopJsonGeneratorConfig;
+use dnl_generators::scenarios::battle::BattleJsonGeneratorConfig;
+// use dnl_generators::random_weapon::RandomWeaponJsonGeneratorConfig;
+use dnl_generators::scenarios::rest::RestJsonGeneratorConfig;
+use dnl_generators::scenarios::shop::ShopJsonGeneratorConfig;
 use dnl_generators::{JsonGeneratorConfigEnum, JsonGeneratorEnum, JsonResponseGenerator};
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
 use dnl_store::Store;
@@ -87,14 +88,11 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
 
-    info!("HERE1: {}", &payload.scenario);
     let scenario = Scenario::from_str(&payload.scenario)?;
 
-    info!("HERE2: {}", scenario);
     let tool_output =
         ToolOutput::from_str(&scenario.to_string()).context("Unable to match scenario")?;
 
-    info!("HERE3: {}", tool_output);
     let example = serde_json::to_string(&tool_output.mock())?;
 
     text_vars.insert("theme".to_string(), payload.theme.clone());
@@ -208,3 +206,116 @@ pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Respons
         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 }
+
+// #[debug_handler]
+// pub async fn post_tool_creation(Json(payload): Json<ToolInput>) -> Result<Response, ApiError> {
+//     info!("Payload: {:?}", payload);
+//
+//     let system_vars = HashMap::new();
+//     let mut text_vars = HashMap::new();
+//     let mut json_vars = HashMap::new();
+//
+//     let scenario = Scenario::from_str(&payload.tool)?;
+//
+//     let tool_output =
+//         ToolOutput::from_str(&scenario.to_string()).context("Unable to match scenario")?;
+//
+//     let example = serde_json::to_string(&tool_output.mock())?;
+//
+//     json_vars.insert("level".to_string(), payload.level.clone());
+//     json_vars.insert("example".to_string(), example);
+//
+//     let config = match Tool::from_str(&tool.to_string()).context("Unable to match tool")? {
+//         Tool::RandomWeapon => Some(JsonGeneratorConfigEnum::RandomWeapon(
+//             RandomWeaponJsonGeneratorConfig::new(
+//                 payload.clone(),
+//                 system_vars,
+//                 text_vars,
+//                 json_vars,
+//             ),
+//         )),
+//         _ => None,
+//     };
+//     info!("HERE4");
+//
+//     let mut generator = match config.expect("Config should have a matching Tool") {
+//         JsonGeneratorConfigEnum::RandomWeapon(config) => Some(JsonGeneratorEnum::RandomWeapon(
+//             JsonResponseGenerator::new(config).await,
+//         )),
+//         _ => None,
+//     }
+//     .expect("Generator should have a matching Config");
+//
+//     match generator
+//         .generate_text()
+//         .await
+//         .context("Failed to generate text")
+//     {
+//         Ok(_) => {
+//             info!("Text Created");
+//         }
+//         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
+//     };
+//
+//     match generator
+//         .generate_json()
+//         .await
+//         .context("Failed to generate json")
+//     {
+//         Ok(_) => {
+//             generator.save_json().await.context("Failed to save_json")?;
+//
+//             let data = generator.scenario_model().unwrap().clone();
+//
+//             info!("DATA: {:?}", data);
+//
+//             let value = serde_json::to_value(data)?;
+//
+//             info!("Value: {:?}", value);
+//
+//             let mut embedding_engine = EmbeddingEngine::new(EmbeddingConfig::default()).await;
+//
+//             let db = VectorDatabase::new();
+//
+//             let text = generator.text().unwrap().clone();
+//
+//             let vector = embedding_engine.try_create_vector(&text).await?;
+//
+//             let embedding = models::NewEmbedding {
+//                 user_id: &payload.user_id,
+//                 game_id: &payload.game_id,
+//                 vector,
+//                 text: &text,
+//                 type_: "output".to_string(),
+//             };
+//
+//             let store = Store::new().await;
+//
+//             let mut state = HashMap::new();
+//
+//             state.insert("round".to_string(), AttributeValue::N(payload.round));
+//             state.insert("level".to_string(), AttributeValue::N(payload.level));
+//             state.insert(
+//                 "curr_encounter".to_string(),
+//                 AttributeValue::S(payload.scenario),
+//             );
+//
+//             let _ = store.try_update_state(&payload.user_id, state).await?;
+//
+//             let db_res = db
+//                 .await
+//                 .try_insert_new_embedding(&embedding)
+//                 .await
+//                 .context("failed to insert embedding")?;
+//
+//             info!("Database NewEmbedding response: {:?}", db_res);
+//
+//             let res = (StatusCode::OK, Json(value)).into_response();
+//             info!("Response: {:?}", res);
+//
+//             return Ok(res);
+//         }
+//
+//         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
+//     };
+// }

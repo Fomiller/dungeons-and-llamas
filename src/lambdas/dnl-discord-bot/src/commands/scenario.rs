@@ -4,10 +4,7 @@ use std::collections::HashMap;
 
 use dnl_store::Store;
 use dnl_types::scenarios::ScenarioModel;
-use dnl_types::traits::DiscordMsg;
 
-use lambda_http::tracing::info;
-use reqwest::Response;
 use serenity::builder::*;
 use serenity::http::Http;
 
@@ -16,6 +13,9 @@ use serenity::model::application::*;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct ScenarioCmd;
+
+#[async_trait::async_trait]
+impl DiscordCmdResponse for ScenarioCmd {}
 
 impl ScenarioCmd {
     pub async fn execute(
@@ -62,32 +62,16 @@ impl ScenarioCmd {
 
         match client.post(url).json(&json).send().await {
             Ok(response) => {
-                if let Err(err) = Self::handle_sucessful_response(response, &cmd, &http).await {
-                    return error::handle_error(&http, &cmd, err).await;
+                if let Err(err) = Self::handle_sucessful_response_with_followup::<ScenarioModel>(
+                    response, &cmd, &http,
+                )
+                .await
+                {
+                    return Self::handle_error_with_followup(&http, &cmd, err).await;
                 }
                 Ok(None)
             }
             Err(err) => return error::handle_error(&http, &cmd, err.into()).await,
         }
-    }
-
-    pub async fn handle_sucessful_response(
-        res: Response,
-        cmd: &CommandInteraction,
-        http: &Http,
-    ) -> anyhow::Result<()> {
-        info!("API Res: {:?}", res);
-        let output: ScenarioModel = res
-            .json()
-            .await
-            .context("Failed to parse into ApiScenarioResponse")?;
-
-        let message = CreateInteractionResponseFollowup::new().content(output.to_message());
-
-        let res = cmd.create_followup(&http, message).await;
-
-        info!("Follow up: {:?}", res);
-
-        Ok(())
     }
 }

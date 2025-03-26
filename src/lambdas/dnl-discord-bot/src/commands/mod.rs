@@ -16,45 +16,27 @@ use std::str::FromStr;
 use attack::*;
 use buttons::*;
 use class::*;
+use dnl_types::api::error::ApiResponseError;
 use list_games::*;
 use menu::*;
 use new_game::*;
 use resume_game::*;
 use roll::*;
 use scenario::*;
+use serenity::all::Http;
 use text::*;
 
+use dnl_types::traits::DiscordMsg;
+
+use anyhow::Context;
 use lambda_http::tracing::info;
+use reqwest::Response;
 use serenity::builder::*;
 use serenity::model::application::*;
 use strum::EnumString;
 
 lazy_static::lazy_static! {
     pub static ref DNL_API_URL: String = format!("https://dnl-api.{}.aws.fomillercloud.com", std::env::var("ENVIRONMENT").unwrap());
-}
-
-pub async fn try_handle_command_interaction(
-    interaction: CommandInteraction,
-) -> anyhow::Result<Option<CreateInteractionResponse>> {
-    info!("NAME: {:?}", &interaction.data.name);
-
-    let command_name = SlashCommands::from_str(&interaction.data.name).unwrap();
-    info!("COMMAND NAME: {:?}", command_name);
-
-    let res = match command_name {
-        SlashCommands::Class(cmd) => cmd.execute(interaction),
-        SlashCommands::Roll(cmd) => cmd.execute(interaction),
-        SlashCommands::NewGame(cmd) => cmd.execute(interaction).await,
-        SlashCommands::ResumeGame(cmd) => cmd.execute(interaction).await,
-        SlashCommands::ListGames(cmd) => cmd.execute(),
-        SlashCommands::Buttons(cmd) => cmd.execute(),
-        SlashCommands::Menu(cmd) => cmd.execute(),
-        SlashCommands::Text(cmd) => cmd.execute(interaction).await,
-        SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
-        SlashCommands::Attack(cmd) => cmd.execute(interaction).await,
-    }?;
-
-    Ok(res)
 }
 
 #[derive(Debug, PartialEq, EnumString)]
@@ -81,8 +63,94 @@ pub enum SlashCommands {
     Attack(AttackCmd),
 }
 
+pub async fn try_handle_command_interaction(
+    interaction: CommandInteraction,
+) -> anyhow::Result<Option<CreateInteractionResponse>> {
+    info!("NAME: {:?}", &interaction.data.name);
+
+    let command_name = SlashCommands::from_str(&interaction.data.name).unwrap();
+    info!("COMMAND NAME: {:?}", command_name);
+
+    let res = match command_name {
+        SlashCommands::Class(cmd) => cmd.execute(interaction),
+        SlashCommands::Roll(cmd) => cmd.execute(interaction),
+        SlashCommands::NewGame(cmd) => cmd.execute(interaction).await,
+        SlashCommands::ResumeGame(cmd) => cmd.execute(interaction).await,
+        SlashCommands::ListGames(cmd) => cmd.execute(),
+        SlashCommands::Buttons(cmd) => cmd.execute(),
+        SlashCommands::Menu(cmd) => cmd.execute(),
+        SlashCommands::Text(cmd) => cmd.execute(interaction).await,
+        SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
+        SlashCommands::Attack(cmd) => cmd.execute(interaction).await,
+    }?;
+
+    Ok(res)
+}
+
 pub fn format_interaction_response(content: String) -> CreateInteractionResponse {
     let message = CreateInteractionResponseMessage::new().content(content);
 
     CreateInteractionResponse::Message(message)
+}
+
+#[async_trait::async_trait]
+pub trait DiscordCmdResponse {
+    async fn handle_sucessful_response<T>(
+        res: Response,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>>
+    where
+        T: serde::de::DeserializeOwned,
+    {
+        let _output: T = res.json().await.context("Failed to parse API Response")?;
+
+        let content = format!("Success");
+
+        let message = CreateInteractionResponseMessage::new().content(content);
+
+        Ok(Some(CreateInteractionResponse::Message(message)))
+    }
+
+    async fn handle_error(res: Response) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let error: ApiResponseError = res
+            .json()
+            .await
+            .context("Failed to parse into ApiResponseError")?;
+
+        let message = CreateInteractionResponseMessage::new().content(error.error);
+
+        Ok(Some(CreateInteractionResponse::Message(message)))
+    }
+
+    async fn handle_sucessful_response_with_followup<T>(
+        res: Response,
+        cmd: &CommandInteraction,
+        http: &Http,
+    ) -> anyhow::Result<()>
+    where
+        T: serde::de::DeserializeOwned + DiscordMsg + Send,
+    {
+        info!("API Res: {:?}", res);
+        let output: T = res
+            .json()
+            .await
+            .context(format!("Failed to parse ApiResponse"))?;
+
+        let message = CreateInteractionResponseFollowup::new().content(output.to_message());
+
+        let res = cmd.create_followup(&http, message).await;
+
+        info!("Follow up: {:?}", res);
+
+        Ok(())
+    }
+
+    async fn handle_error_with_followup<T>(
+        http: &Http,
+        cmd: &CommandInteraction,
+        err: anyhow::Error,
+    ) -> anyhow::Result<T> {
+        let message = CreateInteractionResponseFollowup::new().content(format!("Error: {:?}", err));
+        let _ = cmd.create_followup(http, message).await;
+        Err(anyhow::anyhow!(err))
+    }
 }
