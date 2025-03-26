@@ -1,10 +1,8 @@
-pub mod battle;
-pub mod rest;
-pub mod shop;
+pub mod scenarios;
+pub mod tools;
 
 use std::collections::HashMap;
 
-use battle::{BattleJsonGenerator, BattleJsonGeneratorConfig};
 use dnl_sort_keys::encounter::EncounterSortKey;
 use dnl_store::Store;
 use dnl_types::llm::LlmHandler;
@@ -12,8 +10,9 @@ use dnl_types::llm::ParseConverseOutput;
 use dnl_types::scenarios::ScenarioInput;
 use dnl_types::scenarios::ScenarioModel;
 use dnl_types::tools::{Tool, ToolOutput};
-use rest::{RestJsonGenerator, RestJsonGeneratorConfig};
-use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
+use scenarios::battle::{BattleJsonGenerator, BattleJsonGeneratorConfig};
+use scenarios::rest::{RestJsonGenerator, RestJsonGeneratorConfig};
+use scenarios::shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
 
 use anyhow::anyhow;
 use anyhow::Context;
