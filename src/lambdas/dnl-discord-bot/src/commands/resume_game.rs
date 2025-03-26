@@ -10,9 +10,9 @@ impl ResumeGameCmd {
         &self,
         cmd: CommandInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
-        let result = client.try_get_game_state(&user_id).await?;
+        let client = Store::new(&user_id).await;
+        let result = client.try_get_game_state().await?;
 
         if let Some(state) = result {
             let content = format!("{:?}", state);

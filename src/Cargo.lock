@@ -1240,6 +1240,7 @@ name = "dnl-discord-bot"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "dnl-dice",
  "dnl-sort-keys",
  "dnl-store",
@@ -1249,6 +1250,7 @@ dependencies = [
  "lambda_http",
  "lazy_static",
  "reqwest 0.12.11",
+ "serde",
  "serde_json",
  "serenity",
  "strum",
@@ -1280,6 +1282,7 @@ dependencies = [
  "dnl-store",
  "dnl-types",
  "lambda_http",
+ "serde",
  "serde_dynamo",
  "serde_json",
 ]

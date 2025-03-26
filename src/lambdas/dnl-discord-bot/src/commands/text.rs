@@ -12,9 +12,11 @@ impl TextCmd {
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let token = cmd.token;
 
-        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
-        client.try_save_message_token(&user_id, &token).await?;
+
+        let client = Store::new(&user_id).await;
+
+        client.try_save_message_token(&token).await?;
 
         let _character_name = CreateActionRow::InputText(
             CreateInputText::new(InputTextStyle::Short, "Name", "name")

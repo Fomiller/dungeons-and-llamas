@@ -41,8 +41,10 @@ pub struct UpdateItem {
     pub item: (String, String),
 }
 
+#[derive(Debug, Clone)]
 pub struct Store {
     client: aws_sdk_dynamodb::Client,
+    user_id: String,
 }
 
 lazy_static::lazy_static! {
@@ -51,19 +53,22 @@ lazy_static::lazy_static! {
 const SQID_ALPHABET: &str = "k3G7QAe51FCsPW92uEOyq4Bg6Sp8YzVTmnU0liwDdHXLajZrfxNhobJIRcMvKt";
 
 impl Store {
-    pub async fn new() -> Self {
+    pub async fn new(user_id: &str) -> Self {
         let config = aws_config::defaults(BehaviorVersion::latest())
             .region("us-east-1")
             .load()
             .await;
         let client = aws_sdk_dynamodb::Client::new(&config);
 
-        Self { client }
+        Self {
+            client,
+            user_id: user_id.to_string(),
+        }
     }
 
     pub async fn try_generic_update(
         &self,
-        primary_key: String,
+        primary_key: &str,
         sort_key: String,
         updates: HashMap<String, AttributeValue>,
     ) -> anyhow::Result<UpdateItemOutput> {
@@ -87,7 +92,7 @@ impl Store {
             .client
             .update_item()
             .table_name(GAME_STATE_TABLE.to_string())
-            .key("UserId", AttributeValue::S(primary_key))
+            .key("UserId", AttributeValue::S(primary_key.to_string()))
             .key("StateComponent", AttributeValue::S(sort_key))
             .update_expression(update_expression)
             .set_expression_attribute_names(Some(expression_attribute_names))
@@ -101,7 +106,6 @@ impl Store {
 
     pub async fn try_generic_query(
         &self,
-        primary_key: String,
         sort_key: String,
         attributes: &Vec<&str>,
     ) -> anyhow::Result<QueryOutput> {
@@ -129,7 +133,7 @@ impl Store {
             .table_name(GAME_STATE_TABLE.to_string())
             .key_condition_expression("#pk = :user_id AND #sk = :sort_key")
             .set_expression_attribute_names(Some(expression_attribute_names))
-            .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
+            .expression_attribute_values(":user_id", AttributeValue::S(self.user_id.to_string()))
             .expression_attribute_values(":sort_key", AttributeValue::S(sort_key))
             .set_projection_expression(projection_expression)
             .send()
@@ -176,12 +180,12 @@ impl Store {
         Ok(res)
     }
 
-    pub async fn try_generic_get(&self, key: String) -> anyhow::Result<GetItemOutput> {
+    pub async fn try_generic_get(&self) -> anyhow::Result<GetItemOutput> {
         let res = self
             .client
             .get_item()
             .table_name(GAME_STATE_TABLE.to_string())
-            .key("UserId", AttributeValue::S(key))
+            .key("UserId", AttributeValue::S(self.user_id.clone()))
             .send()
             .await?;
         Ok(res)
@@ -202,8 +206,8 @@ impl Store {
         Ok(res)
     }
 
-    pub async fn try_get_game_state(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
-        let res = self.try_generic_get(user_id.to_string()).await?;
+    pub async fn try_get_game_state(&self) -> anyhow::Result<Option<GameState>> {
+        let res = self.try_generic_get().await?;
 
         let state: Option<GameState> = match res.item {
             Some(item) => {
@@ -216,8 +220,8 @@ impl Store {
         Ok(state)
     }
 
-    pub async fn try_find_user(&self, user_id: &str) -> anyhow::Result<Option<GameState>> {
-        let res = self.try_generic_get(user_id.to_string()).await?;
+    pub async fn try_find_user(&self) -> anyhow::Result<Option<GameState>> {
+        let res = self.try_generic_get().await?;
 
         match res.item {
             Some(item) => {
@@ -225,15 +229,15 @@ impl Store {
                 Ok(Some(state))
             }
             None => {
-                info!("New user created: {}", user_id);
+                info!("New user created: {}", self.user_id);
                 Ok(None)
             }
         }
     }
 
-    pub async fn try_create_user(&self, user_id: &str) -> anyhow::Result<()> {
+    pub async fn try_create_user(&self) -> anyhow::Result<()> {
         let mut map = HashMap::new();
-        map.insert("user_id", user_id);
+        map.insert("user_id", &self.user_id);
         let item = serde_dynamo::to_item(map)?;
 
         self.try_generic_put(item).await?;
@@ -241,11 +245,11 @@ impl Store {
         Ok(())
     }
 
-    pub async fn try_save_message_token(&self, user_id: &str, token: &str) -> anyhow::Result<()> {
+    pub async fn try_save_message_token(&self, token: &str) -> anyhow::Result<()> {
         let mut state_component: Item = serde_dynamo::to_item(StateComponent {
-            user_id: user_id.to_string(),
+            user_id: self.user_id.to_string(),
             state_component: RootSortKeyBuilder::new()
-                .id(user_id)
+                .id(&self.user_id)
                 .message(MessageSortKey::LastMessageToken)
                 .build(),
             ..Default::default()
@@ -262,17 +266,13 @@ impl Store {
         Ok(())
     }
 
-    pub async fn try_save_active_game_id(
-        &self,
-        user_id: &str,
-        game_id: &str,
-    ) -> anyhow::Result<()> {
-        let sk = SortKeyFactory::new(user_id)
+    pub async fn try_save_active_game_id(&self, game_id: &str) -> anyhow::Result<()> {
+        let sk = SortKeyFactory::new(&self.user_id)
             .create_user_active_game_sk()
             .build();
 
         let mut state_component: Item = serde_dynamo::to_item(StateComponent {
-            user_id: user_id.to_string(),
+            user_id: self.user_id.to_string(),
             state_component: sk,
             ..Default::default()
         })?;
@@ -291,19 +291,18 @@ impl Store {
 
     pub async fn try_save_encounter(
         &self,
-        user_id: &str,
         game_id: &str,
         encounter: EncounterSortKey,
         level: u8,
         round: u8,
         state: HashMap<String, AttributeValue>,
     ) -> anyhow::Result<()> {
-        let sk = SortKeyFactory::new(user_id)
+        let sk = SortKeyFactory::new(&self.user_id)
             .create_encounter_sk(game_id, round, level, encounter)
             .build();
 
         let mut state_component: Item = serde_dynamo::to_item(StateComponent {
-            user_id: user_id.to_string(),
+            user_id: self.user_id.to_string(),
             state_component: sk,
             ..Default::default()
         })?;
@@ -315,41 +314,32 @@ impl Store {
         Ok(())
     }
 
-    pub async fn try_get_last_message_token(&self, user_id: &str) -> anyhow::Result<QueryOutput> {
+    pub async fn try_get_last_message_token(&self) -> anyhow::Result<QueryOutput> {
         let sort_key = RootSortKeyBuilder::new()
-            .id(user_id)
+            .id(&self.user_id)
             .message(MessageSortKey::LastMessageToken)
             .build();
 
         let attributes = vec!["last_message_token"];
 
-        let res = self
-            .try_generic_query(user_id.to_string(), sort_key, &attributes)
-            .await?;
+        let res = self.try_generic_query(sort_key, &attributes).await?;
 
         Ok(res)
     }
 
     pub async fn try_get_encounters(
         &self,
-        user_id: &str,
         game_id: &str,
         level: &str,
-        encounter: &str,
+        encounter: EncounterSortKey,
     ) -> anyhow::Result<Vec<EncounterQuery>> {
-        let mut chars = encounter.chars();
-        let encounter = match chars.next() {
-            Some(first_char) => first_char.to_uppercase().chain(chars).collect(),
-            None => String::new(), // Return empty string if input is empty
-        };
-
         let sk = format!(
             "{}#Game#Level#{}#Encounter#{}#Round#",
             game_id, level, encounter
         );
         info!("Sk: {}", sk);
         let res = self
-            .try_generic_begins_with_query(user_id.to_string(), sk, vec!["text", "name"])
+            .try_generic_begins_with_query(self.user_id.to_string(), sk, vec!["text", "name"])
             .await
             .context("try_generic_begins_with_query failed")?;
 
@@ -362,17 +352,17 @@ impl Store {
         Ok(ctxs)
     }
 
-    pub async fn try_get_state(&self, user_id: &str) -> anyhow::Result<State> {
-        let sk = RootSortKeyBuilder::create_state_sk(user_id).build();
+    pub async fn try_get_state(&self) -> anyhow::Result<State> {
+        let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
 
         let attributes = vec!["round", "level", "current_encounter", "previous_encounter"];
 
         let res = self
-            .try_generic_query(user_id.to_string(), sk.clone(), &attributes)
+            .try_generic_query(sk.clone(), &attributes)
             .await
             .context(format!(
                 "Generic query failed with args; user_id: {}, sk: {}, attrs: {:?}",
-                user_id, sk, attributes
+                &self.user_id, sk, attributes
             ))?;
 
         let item = res.items.unwrap()[0].clone();
@@ -385,14 +375,11 @@ impl Store {
 
     pub async fn try_update_state(
         &self,
-        user_id: &str,
         updates: HashMap<String, AttributeValue>,
     ) -> anyhow::Result<UpdateItemOutput> {
-        let sk = RootSortKeyBuilder::create_state_sk(&user_id).build();
+        let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
 
-        let res = self
-            .try_generic_update(user_id.to_string(), sk, updates)
-            .await?;
+        let res = self.try_generic_update(&self.user_id, sk, updates).await?;
 
         Ok(res)
     }
@@ -400,22 +387,21 @@ impl Store {
     pub async fn try_get_enemies(
         &self,
         game_id: &str,
-        user_id: &str,
         round: u8,
         level: u8,
     ) -> anyhow::Result<Vec<BattleScenarioEnemy>> {
-        let sk = SortKeyFactory::new(&user_id)
+        let sk = SortKeyFactory::new(&self.user_id)
             .create_encounter_sk(game_id, round, level, EncounterSortKey::Battle)
             .build();
 
         let attributes = vec!["enemies"];
 
         let res = self
-            .try_generic_query(user_id.to_string(), sk.clone(), &attributes)
+            .try_generic_query(sk.clone(), &attributes)
             .await
             .context(format!(
                 "Generic query failed with args; user_id: {}, sk: {}, attrs: {:?}",
-                user_id, sk, attributes
+                &self.user_id, sk, attributes
             ))?;
 
         let items = res.items.expect(format!("Could not find {}", sk).as_str());
@@ -440,18 +426,49 @@ impl Store {
         Ok(enemies)
     }
 
-    pub async fn try_get_active_game_id(&self, user_id: &str) -> anyhow::Result<String> {
-        let sk = SortKeyFactory::new(&user_id)
+    pub async fn try_get_llm_model(&self) -> anyhow::Result<String> {
+        let sk = SortKeyFactory::new(&self.user_id)
+            .create_user_metadata_sk()
+            .build();
+
+        let attribute = "llm_model";
+        let res = self
+            .try_generic_query(sk.clone(), &vec![attribute])
+            .await
+            .context(format!(
+                "Generic query failed with args; user_id: {}, sk: {}, attrs: {}",
+                &self.user_id, sk, attribute
+            ))?;
+
+        let items = res.items.expect(format!("Could not find {}", sk).as_str());
+
+        debug!("QUERY: {:?}", items);
+
+        let item = items
+            .first()
+            .unwrap()
+            .get_key_value(attribute)
+            .expect(&format!("{} not found", attribute))
+            .1
+            .as_s()
+            .unwrap()
+            .to_owned();
+
+        Ok(item)
+    }
+
+    pub async fn try_get_active_game_id(&self) -> anyhow::Result<String> {
+        let sk = SortKeyFactory::new(&self.user_id)
             .create_user_active_game_sk()
             .build();
 
         let attributes = vec!["game_id"];
         let res = self
-            .try_generic_query(user_id.to_string(), sk.clone(), &attributes)
+            .try_generic_query(sk.clone(), &attributes)
             .await
             .context(format!(
                 "Generic query failed with args; user_id: {}, sk: {}, attrs: {}",
-                user_id, sk, "game_id"
+                &self.user_id, sk, "game_id"
             ))?;
 
         let items = res.items.expect(format!("Could not find {}", sk).as_str());
@@ -482,8 +499,7 @@ impl Store {
         sort_keys.extend(factory.create_all_entity_actions_sks(&game_id));
         sort_keys.extend(factory.create_all_entity_stats_sks(&game_id));
 
-        self.try_generic_batch_write_root_sks(&data.user_id, sort_keys)
-            .await?;
+        self.try_generic_batch_write_root_sks(sort_keys).await?;
 
         let mut update_items = Vec::new();
 
@@ -510,18 +526,15 @@ impl Store {
             });
         }
 
-        self.try_generic_batch_update(&data.user_id, update_items)
-            .await?;
+        self.try_generic_batch_update(update_items).await?;
 
-        self.try_save_active_game_id(&data.user_id, &game_id)
-            .await?;
+        self.try_save_active_game_id(&game_id).await?;
 
         Ok(NewGameResponse { game_id })
     }
 
     pub async fn try_generic_batch_write_root_sks(
         &self,
-        user_id: &str,
         sort_keys: Vec<RootSortKeyBuilder>,
     ) -> anyhow::Result<()> {
         info!("Batch Write Item Count: {}", sort_keys.len());
@@ -531,7 +544,7 @@ impl Store {
         let components: Vec<StateComponent> = sort_keys
             .iter()
             .map(|sk| StateComponent {
-                user_id: user_id.to_string(),
+                user_id: self.user_id.to_string(),
                 state_component: sk.build(),
                 ..Default::default()
             })
@@ -601,11 +614,7 @@ impl Store {
         Ok(())
     }
 
-    pub async fn try_generic_batch_update(
-        &self,
-        user_id: &str,
-        items: Vec<UpdateItem>,
-    ) -> anyhow::Result<()> {
+    pub async fn try_generic_batch_update(&self, items: Vec<UpdateItem>) -> anyhow::Result<()> {
         info!("Update Item Count: {}", items.len());
         info!("Update Items: {:?}", items);
 
@@ -616,7 +625,7 @@ impl Store {
 
             let update_request = Update::builder()
                 .table_name(GAME_STATE_TABLE.to_string())
-                .key("UserId", AttributeValue::S(user_id.to_string()))
+                .key("UserId", AttributeValue::S(self.user_id.to_string()))
                 .key("StateComponent", AttributeValue::S(item.sort_key.build()))
                 .set_update_expression(Some("SET #attr = :val".to_string()))
                 .set_expression_attribute_names(Some(HashMap::from([(

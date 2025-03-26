@@ -1,4 +1,4 @@
-use crate::*;
+use crate::prompt::Prompt;
 
 use std::collections::HashMap;
 
@@ -36,8 +36,6 @@ to the previous examples provided in the context if there are any. The player co
 being presented with brand new scenarios every time.
 ";
 
-pub type BattleJsonGenerator = JsonResponseGenerator<BattleJsonGeneratorConfig>;
-
 #[derive(Clone)]
 pub struct BattleJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
@@ -45,30 +43,6 @@ pub struct BattleJsonGeneratorConfig {
     pub system_prompt: Prompt,
     pub json_prompt: Prompt,
     pub text_prompt: Prompt,
-}
-
-impl JsonResponseGeneratorConfig for BattleJsonGeneratorConfig {
-    fn scenario_input(&self) -> ScenarioInput {
-        self.scenario_input.clone()
-    }
-    fn model(&self) -> String {
-        self.scenario_input.model.clone()
-    }
-    fn system_prompt(&self) -> String {
-        self.system_prompt.format()
-    }
-    fn schema(&self) -> serde_json::Value {
-        self.tool.schema()
-    }
-    fn json_prompt(&self) -> String {
-        self.json_prompt.format()
-    }
-    fn text_prompt(&self) -> String {
-        self.text_prompt.format()
-    }
-    fn tool(&self) -> Tool {
-        self.tool.clone()
-    }
 }
 
 impl BattleJsonGeneratorConfig {

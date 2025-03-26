@@ -33,10 +33,10 @@ impl ScenarioCmd {
 
         let user_id = cmd.user.id.to_string();
 
-        let store = Store::new().await;
+        let store = Store::new(&user_id).await;
 
         let game_id = match store
-            .try_get_active_game_id(&user_id)
+            .try_get_active_game_id()
             .await
             .context("Failed to get active game id")
         {

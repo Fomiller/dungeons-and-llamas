@@ -18,10 +18,10 @@ impl EditCmd {
         &self,
         cmd: ComponentInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
+        let client = Store::new(&user_id).await;
 
-        let query = client.try_get_last_message_token(&user_id).await?;
+        let query = client.try_get_last_message_token().await?;
         let items = query.items.expect(
             format!(
                 "Could not find {}",

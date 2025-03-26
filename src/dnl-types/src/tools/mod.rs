@@ -1,14 +1,17 @@
 pub mod battle;
+pub mod random_weapon;
 pub mod rest;
 pub mod shop;
 
 use crate::dice::DiceExpression;
+use crate::scenarios::battle::BattleScenarioEnemy;
 use crate::scenarios::shop::*;
 use crate::scenarios::*;
 use crate::tools::battle::*;
 use crate::tools::shop::*;
 use rest::REST_TOOL_SCHEMA;
 use shop::SHOP_TOOL_SCHEMA;
+
 use std::collections::HashMap;
 
 use aws_sdk_bedrockruntime::types::Tool as BedRockTool;
@@ -29,6 +32,15 @@ pub enum Tool {
     Shop,
     #[strum(to_string = "rest")]
     Rest,
+    // #[strum(to_string = "weapon")]
+    // Weapon,
+    // #[strum(to_string = "spell")]
+    // Spell,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ToolInput {
+    pub tool: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, strum::EnumString, strum::Display)]
@@ -54,6 +66,70 @@ pub enum ToolOutput {
         fauna: String,
         secret: Option<String>,
     },
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, strum::Display, strum::EnumString)]
+#[strum(ascii_case_insensitive)]
+#[serde(untagged)]
+pub enum ToolOutputModel {
+    #[strum(to_string = "battle")]
+    Battle {
+        enemies: Vec<BattleScenarioEnemy>,
+        summary: String,
+        name: String,
+        terrain: String,
+    },
+    #[strum(to_string = "shop")]
+    Shop {
+        items: Vec<ShopScenarioItem>,
+        merchant: ShopScenarioMerchant,
+        summary: String,
+    },
+    #[strum(to_string = "rest")]
+    Rest {
+        summary: String,
+        flora: String,
+        fauna: String,
+        secret: Option<String>,
+    },
+}
+
+impl From<ToolOutput> for ToolOutputModel {
+    fn from(source: ToolOutput) -> Self {
+        match source {
+            ToolOutput::Battle {
+                enemies,
+                summary,
+                name,
+                terrain,
+            } => ToolOutputModel::Battle {
+                enemies: enemies.into_iter().map(Into::into).collect(),
+                summary,
+                name,
+                terrain,
+            },
+            ToolOutput::Shop {
+                items,
+                merchant,
+                summary,
+            } => ToolOutputModel::Shop {
+                items: items.into_iter().map(Into::into).collect(),
+                merchant: ShopScenarioMerchant::from(merchant),
+                summary,
+            },
+            ToolOutput::Rest {
+                summary,
+                flora,
+                fauna,
+                secret,
+            } => ToolOutputModel::Rest {
+                summary,
+                flora,
+                fauna,
+                secret,
+            },
+        }
+    }
 }
 
 impl Tool {

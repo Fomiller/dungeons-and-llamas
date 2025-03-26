@@ -18,6 +18,7 @@ pub struct LlmHandler {
     pub model: String,
     pub system: String,
     pub messages: Vec<Message>,
+    pub context: Vec<String>,
 }
 
 impl LlmHandler {
@@ -29,6 +30,7 @@ impl LlmHandler {
             model,
             system,
             messages: vec![],
+            context: vec![],
         }
     }
 

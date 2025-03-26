@@ -18,7 +18,7 @@ pub fn game_router() -> Router {
 pub async fn post_new_game_handler(Json(payload): Json<NewGameData>) -> Result<Response, ApiError> {
     info!("NewGameData: {:?}", payload);
 
-    let client = Store::new().await;
+    let client = Store::new(&payload.user_id).await;
 
     Ok(match client.try_new_game(payload).await {
         Ok(res) => (StatusCode::CREATED, Json(res)).into_response(),

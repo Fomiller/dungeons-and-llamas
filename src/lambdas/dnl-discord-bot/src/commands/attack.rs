@@ -19,8 +19,8 @@ impl AttackCmd {
         cmd: CommandInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
         // let token = cmd.token;
-        let client = Store::new().await;
         let user_id = cmd.user.id.to_string();
+        let client = Store::new(&user_id).await;
 
         let token =
             std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
@@ -30,12 +30,12 @@ impl AttackCmd {
         http.set_application_id(cmd.application_id);
 
         let _ = client
-            .try_save_message_token(&user_id, &token)
+            .try_save_message_token(&token)
             .await
             .context("failed to save message_token");
 
         let game_id = match client
-            .try_get_active_game_id(&user_id)
+            .try_get_active_game_id()
             .await
             .context("Failed to get active game id")
         {
@@ -43,15 +43,10 @@ impl AttackCmd {
             Err(err) => return Self::handle_error_with_followup(&http, &cmd, err).await,
         };
 
-        let state = client.try_get_state(&user_id).await?;
+        let state = client.try_get_state().await?;
 
         let enemies = client
-            .try_get_enemies(
-                &game_id,
-                &user_id,
-                state.round.unwrap(),
-                state.level.unwrap(),
-            )
+            .try_get_enemies(&game_id, state.round.unwrap(), state.level.unwrap())
             .await?;
 
         let mut enemy_embeds = Vec::new();

@@ -2,6 +2,7 @@ pub mod api;
 pub mod dice;
 pub mod entity;
 pub mod errors;
+pub mod generators;
 pub mod llm;
 pub mod scenarios;
 pub mod tools;
