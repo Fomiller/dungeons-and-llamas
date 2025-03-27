@@ -1251,6 +1251,7 @@ dependencies = [
  "lazy_static",
  "reqwest 0.12.11",
  "serde",
+ "serde_dynamo",
  "serde_json",
  "serenity",
  "strum",

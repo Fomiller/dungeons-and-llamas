@@ -29,11 +29,12 @@ use dnl_types::api::request::NewGameData;
 use dnl_types::api::response::NewGameResponse;
 use dnl_types::entity::stats::get_base_stats_by_name;
 use dnl_types::scenarios::battle::BattleScenarioEnemy;
+use dnl_types::settings::Settings;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
 use strum::IntoEnumIterator;
 
-type Item = HashMap<String, AttributeValue>;
+pub type Item = HashMap<String, AttributeValue>;
 
 #[derive(Debug, Clone)]
 pub struct UpdateItem {
@@ -69,7 +70,7 @@ impl Store {
     pub async fn try_generic_update(
         &self,
         primary_key: &str,
-        sort_key: String,
+        sort_key: &str,
         updates: HashMap<String, AttributeValue>,
     ) -> anyhow::Result<UpdateItemOutput> {
         let mut expression_attribute_names = HashMap::new();
@@ -93,7 +94,7 @@ impl Store {
             .update_item()
             .table_name(GAME_STATE_TABLE.to_string())
             .key("UserId", AttributeValue::S(primary_key.to_string()))
-            .key("StateComponent", AttributeValue::S(sort_key))
+            .key("StateComponent", AttributeValue::S(sort_key.to_string()))
             .update_expression(update_expression)
             .set_expression_attribute_names(Some(expression_attribute_names))
             .set_expression_attribute_values(Some(expression_attribute_values))
@@ -266,6 +267,54 @@ impl Store {
         Ok(())
     }
 
+    pub async fn try_save_game_settings(
+        &self,
+        game_id: &str,
+        settings: Settings,
+    ) -> anyhow::Result<()> {
+        let sk = SortKeyFactory::new(&self.user_id)
+            .create_game_settings_sk(game_id)
+            .build();
+
+        let mut state_component: Item = serde_dynamo::to_item(StateComponent {
+            user_id: self.user_id.to_string(),
+            state_component: sk,
+            ..Default::default()
+        })?;
+
+        let item: Item = serde_dynamo::to_item(settings)?;
+
+        state_component.extend(item);
+
+        self.try_generic_put(state_component).await?;
+
+        Ok(())
+    }
+
+    pub async fn try_save_new_game_state(&self) -> anyhow::Result<()> {
+        let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
+
+        let mut state_component: Item = serde_dynamo::to_item(StateComponent {
+            user_id: self.user_id.to_string(),
+            state_component: sk,
+            ..Default::default()
+        })?;
+
+        let mut map = HashMap::new();
+
+        map.insert("round".to_string(), 1.to_string());
+        map.insert("level".to_string(), 1.to_string());
+        map.insert("curr_encounter".to_string(), "new_game".to_string());
+
+        let item: Item = serde_dynamo::to_item(map)?;
+
+        state_component.extend(item);
+
+        self.try_generic_put(state_component).await?;
+
+        Ok(())
+    }
+
     pub async fn try_save_active_game_id(&self, game_id: &str) -> anyhow::Result<()> {
         let sk = SortKeyFactory::new(&self.user_id)
             .create_user_active_game_sk()
@@ -379,7 +428,7 @@ impl Store {
     ) -> anyhow::Result<UpdateItemOutput> {
         let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
 
-        let res = self.try_generic_update(&self.user_id, sk, updates).await?;
+        let res = self.try_generic_update(&self.user_id, &sk, updates).await?;
 
         Ok(res)
     }
@@ -517,8 +566,7 @@ impl Store {
                 AbilitiesSortKey::Wisdom => &stats.wisdom,
             };
 
-            let sk =
-                RootSortKeyBuilder::create_abilities_sk(&data.user_id, ability, Entity::Player);
+            let sk = RootSortKeyBuilder::create_abilities_sk(&game_id, ability, Entity::Player);
 
             update_items.push(UpdateItem {
                 sort_key: sk,
@@ -526,9 +574,15 @@ impl Store {
             });
         }
 
-        self.try_generic_batch_update(update_items).await?;
+        let settings = Settings {
+            theme: Some(data.theme),
+            model: Some("anthropic.claude-3-5-sonnet-20240620-v1:0".to_string()),
+        };
 
+        self.try_generic_batch_update(update_items).await?;
         self.try_save_active_game_id(&game_id).await?;
+        self.try_save_new_game_state().await?;
+        self.try_save_game_settings(&game_id, settings).await?;
 
         Ok(NewGameResponse { game_id })
     }

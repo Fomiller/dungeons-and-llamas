@@ -114,7 +114,7 @@
                 "name": "background",
                 "description": "Characters background",
                 "type": 3,
-                "required": false,
+                "required": true,
                 "choices": [
                     {
                         "name": "Soldier",
@@ -161,6 +161,12 @@
                         "value": "barbarian"
                     }
                 ]
+            },
+            {
+                "name": "theme",
+                "description": "Theme of the generated content, i.e. Jungle",
+                "type": 3,
+                "required": true
             }
         ]
     },
@@ -295,5 +301,30 @@
         "name": "list-games",
         "type": 1,
         "description": "List all games"
+    },
+    {
+        "name": "settings",
+        "type": 1,
+        "description": "Change game settings",
+        "options": [
+            {
+                "name": "model",
+                "description": "Set which llm model the game uses",
+                "type": 3,
+                "required": false,
+                "choices": [
+                    {
+                        "name": "Claude3.5 Sonnet",
+                        "value": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+                    }
+                ]
+            },
+            {
+                "name": "theme",
+                "description": "Set games theme",
+                "type": 3,
+                "required": false
+            }
+        ]
     }
 ]

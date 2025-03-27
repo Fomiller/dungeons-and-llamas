@@ -5,6 +5,9 @@ use crate::scenarios::shop::ShopScenario;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct SettingsResponse {}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct NewGameResponse {
     pub game_id: String,
 }

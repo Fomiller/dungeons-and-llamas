@@ -8,6 +8,7 @@ pub struct RootSortKeyBuilder {
     user: Option<UserSortKey>,
     message: Option<MessageSortKey>,
     state: Option<StateSortKey>,
+    settings: Option<bool>,
 }
 
 impl RootSortKeyBuilder {
@@ -29,6 +30,10 @@ impl RootSortKeyBuilder {
     }
     pub fn state(mut self, state: StateSortKey) -> Self {
         self.state = Some(state);
+        self
+    }
+    pub fn settings(mut self, settings: bool) -> Self {
+        self.settings = Some(settings);
         self
     }
 
@@ -215,6 +220,9 @@ impl SortKeyBuildable for RootSortKeyBuilder {
         }
         if let Some(state) = self.state {
             result.push_str(&format!("{}", state.to_string()));
+        }
+        if let Some(_) = self.settings {
+            result.push_str(&format!("{}", RootSortKey::Settings))
         }
 
         result

@@ -5,5 +5,6 @@ pub mod errors;
 pub mod generators;
 pub mod llm;
 pub mod scenarios;
+pub mod settings;
 pub mod tools;
 pub mod traits;

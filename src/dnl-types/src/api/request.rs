@@ -10,16 +10,18 @@ pub struct NewGameData {
     pub class: String,
     pub race: String,
     pub background: String,
+    pub theme: String,
 }
 
 impl From<CommandInteraction> for NewGameData {
     fn from(source: CommandInteraction) -> Self {
         Self {
             user_id: source.user.id.to_string(),
-            name: find_options_value(&source.data.options, "name"),
-            class: find_options_value(&source.data.options, "class"),
-            race: find_options_value(&source.data.options, "race"),
-            background: find_options_value(&source.data.options, "background"),
+            name: find_options_value(&source.data.options, "name").unwrap(),
+            class: find_options_value(&source.data.options, "class").unwrap(),
+            race: find_options_value(&source.data.options, "race").unwrap(),
+            background: find_options_value(&source.data.options, "background").unwrap(),
+            theme: find_options_value(&source.data.options, "theme").unwrap(),
         }
     }
 }

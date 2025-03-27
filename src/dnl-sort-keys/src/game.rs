@@ -25,6 +25,8 @@ pub enum GameSortKey {
     Level,
     #[strum(to_string = "Round")]
     Round,
+    #[strum(to_string = "Settings")]
+    Settings,
 }
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -32,6 +34,7 @@ pub struct GameSortKeyBuilder {
     entity: Option<EntitySortKeyBuilder>,
     level: Option<LevelSortKeyBuilder>,
     round: Option<bool>,
+    settings: Option<bool>,
 }
 
 impl GameSortKeyBuilder {
@@ -48,8 +51,14 @@ impl GameSortKeyBuilder {
         self.level = Some(level);
         self
     }
+
     pub fn round(mut self, round: bool) -> Self {
         self.round = Some(round);
+        self
+    }
+
+    pub fn settings(mut self, settings: bool) -> Self {
+        self.settings = Some(settings);
         self
     }
 
@@ -61,6 +70,8 @@ impl GameSortKeyBuilder {
             result.push_str(&format!("{}", level.build().to_string()));
         } else if let Some(round) = self.round {
             result.push_str(&format!("{}", round.to_string()));
+        } else if let Some(_) = self.settings {
+            result.push_str(&format!("{}", GameSortKey::Settings.to_string()));
         }
 
         result

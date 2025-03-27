@@ -9,28 +9,30 @@ pub mod new_game;
 pub mod resume_game;
 pub mod roll;
 pub mod scenario;
+pub mod settings;
 pub mod text;
-
-use std::str::FromStr;
 
 use attack::*;
 use buttons::*;
 use class::*;
-use dnl_types::api::error::ApiResponseError;
 use list_games::*;
 use menu::*;
 use new_game::*;
 use resume_game::*;
 use roll::*;
 use scenario::*;
-use serenity::all::Http;
+use settings::*;
 use text::*;
 
+use dnl_types::api::error::ApiResponseError;
 use dnl_types::traits::DiscordMsg;
+
+use std::str::FromStr;
 
 use anyhow::Context;
 use lambda_http::tracing::info;
 use reqwest::Response;
+use serenity::all::Http;
 use serenity::builder::*;
 use serenity::model::application::*;
 use strum::EnumString;
@@ -61,6 +63,8 @@ pub enum SlashCommands {
     Scenario(ScenarioCmd),
     #[strum(serialize = "attack", ascii_case_insensitive)]
     Attack(AttackCmd),
+    #[strum(serialize = "setttings", ascii_case_insensitive)]
+    Settings(SettingsCmd),
 }
 
 pub async fn try_handle_command_interaction(
@@ -82,6 +86,7 @@ pub async fn try_handle_command_interaction(
         SlashCommands::Text(cmd) => cmd.execute(interaction).await,
         SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
         SlashCommands::Attack(cmd) => cmd.execute(interaction).await,
+        SlashCommands::Settings(cmd) => cmd.execute(interaction).await,
     }?;
 
     Ok(res)

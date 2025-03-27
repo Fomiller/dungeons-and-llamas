@@ -6,4 +6,6 @@ pub enum RootSortKey {
     User,
     #[strum(to_string = "Messages#")]
     Message,
+    #[strum(to_string = "Settings")]
+    Settings,
 }
