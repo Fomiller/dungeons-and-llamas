@@ -63,7 +63,7 @@ pub enum SlashCommands {
     Scenario(ScenarioCmd),
     #[strum(serialize = "attack", ascii_case_insensitive)]
     Attack(AttackCmd),
-    #[strum(serialize = "setttings", ascii_case_insensitive)]
+    #[strum(serialize = "settings", ascii_case_insensitive)]
     Settings(SettingsCmd),
 }
 
