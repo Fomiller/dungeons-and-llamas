@@ -9,6 +9,8 @@ pub enum EncounterSortKey {
     Shop,
     #[strum(to_string = "Rest")]
     Rest,
+    #[strum(to_string = "NewGame")]
+    NewGame,
 }
 
 #[derive(Debug, Clone, Copy, Default)]

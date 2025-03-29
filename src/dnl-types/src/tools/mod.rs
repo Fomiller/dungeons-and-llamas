@@ -234,7 +234,7 @@ impl ToolOutput {
             terrain,
         }
     }
-    fn mock_rest() -> ToolOutput {
+    pub fn mock_rest() -> ToolOutput {
         let summary = "This is a nice place to rest".to_string();
         let flora = "plants".to_string();
         let fauna = "animals".to_string();
@@ -249,7 +249,7 @@ impl ToolOutput {
 
         rest
     }
-    fn mock_shop() -> ToolOutput {
+    pub fn mock_shop() -> ToolOutput {
         let stats = DiceExpression {
             die_count: 1,
             die_size: 6,

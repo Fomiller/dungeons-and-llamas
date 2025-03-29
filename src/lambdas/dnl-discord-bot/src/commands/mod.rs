@@ -149,13 +149,13 @@ pub trait DiscordCmdResponse {
         Ok(())
     }
 
-    async fn handle_error_with_followup<T>(
+    async fn handle_error_with_followup(
         http: &Http,
         cmd: &CommandInteraction,
-        err: anyhow::Error,
-    ) -> anyhow::Result<T> {
+        err: String,
+    ) -> anyhow::Result<()> {
         let message = CreateInteractionResponseFollowup::new().content(format!("Error: {:?}", err));
         let _ = cmd.create_followup(http, message).await;
-        Err(anyhow::anyhow!(err))
+        Ok(())
     }
 }

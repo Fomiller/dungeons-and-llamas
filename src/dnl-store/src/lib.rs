@@ -5,18 +5,23 @@ pub mod state_component;
 pub mod user;
 pub mod weapon;
 
-use std::collections::HashMap;
-use std::env;
-
 use crate::encounter::EncounterQuery;
 use crate::state_component::StateComponent;
-use aws_sdk_dynamodb::operation::update_item::UpdateItemOutput;
-use dnl_sort_keys::game::GameState;
+
 use dnl_sort_keys::prelude::*;
+use dnl_types::api::request::NewGameData;
+use dnl_types::api::response::NewGameResponse;
+use dnl_types::entity::stats::get_base_stats_by_name;
+use dnl_types::scenarios::battle::BattleScenarioEnemy;
+use dnl_types::settings::Settings;
+
+use std::collections::HashMap;
+use std::env;
 
 use anyhow::{anyhow, Context};
 use aws_config::BehaviorVersion;
 use aws_sdk_dynamodb::operation::query::QueryOutput;
+use aws_sdk_dynamodb::operation::update_item::UpdateItemOutput;
 use aws_sdk_dynamodb::types::AttributeValue;
 use aws_sdk_dynamodb::{operation::put_item::PutItemOutput, types::PutRequest};
 use aws_sdk_dynamodb::{
@@ -25,11 +30,6 @@ use aws_sdk_dynamodb::{
     types::Update,
     types::WriteRequest,
 };
-use dnl_types::api::request::NewGameData;
-use dnl_types::api::response::NewGameResponse;
-use dnl_types::entity::stats::get_base_stats_by_name;
-use dnl_types::scenarios::battle::BattleScenarioEnemy;
-use dnl_types::settings::Settings;
 use lambda_http::tracing::{debug, info};
 use rand::Rng;
 use strum::IntoEnumIterator;
@@ -181,12 +181,13 @@ impl Store {
         Ok(res)
     }
 
-    pub async fn try_generic_get(&self) -> anyhow::Result<GetItemOutput> {
+    pub async fn try_generic_get(&self, sort_key: &str) -> anyhow::Result<GetItemOutput> {
         let res = self
             .client
             .get_item()
             .table_name(GAME_STATE_TABLE.to_string())
             .key("UserId", AttributeValue::S(self.user_id.clone()))
+            .key("StateComponent", AttributeValue::S(sort_key.to_string()))
             .send()
             .await?;
         Ok(res)
@@ -207,34 +208,34 @@ impl Store {
         Ok(res)
     }
 
-    pub async fn try_get_game_state(&self) -> anyhow::Result<Option<GameState>> {
-        let res = self.try_generic_get().await?;
+    // pub async fn try_get_game_state(&self) -> anyhow::Result<Option<GameState>> {
+    //     let res = self.try_generic_get().await?;
+    //
+    //     let state: Option<GameState> = match res.item {
+    //         Some(item) => {
+    //             let state: GameState = serde_dynamo::from_item(item)?;
+    //             Some(state)
+    //         }
+    //         None => None,
+    //     };
+    //
+    //     Ok(state)
+    // }
 
-        let state: Option<GameState> = match res.item {
-            Some(item) => {
-                let state: GameState = serde_dynamo::from_item(item)?;
-                Some(state)
-            }
-            None => None,
-        };
-
-        Ok(state)
-    }
-
-    pub async fn try_find_user(&self) -> anyhow::Result<Option<GameState>> {
-        let res = self.try_generic_get().await?;
-
-        match res.item {
-            Some(item) => {
-                let state: GameState = serde_dynamo::from_item(item)?;
-                Ok(Some(state))
-            }
-            None => {
-                info!("New user created: {}", self.user_id);
-                Ok(None)
-            }
-        }
-    }
+    // pub async fn try_find_user(&self) -> anyhow::Result<Option<GameState>> {
+    //     let res = self.try_generic_get().await?;
+    //
+    //     match res.item {
+    //         Some(item) => {
+    //             let state: GameState = serde_dynamo::from_item(item)?;
+    //             Ok(Some(state))
+    //         }
+    //         None => {
+    //             info!("New user created: {}", self.user_id);
+    //             Ok(None)
+    //         }
+    //     }
+    // }
 
     pub async fn try_create_user(&self) -> anyhow::Result<()> {
         let mut map = HashMap::new();
@@ -292,7 +293,8 @@ impl Store {
     }
 
     pub async fn try_save_new_game_state(&self) -> anyhow::Result<()> {
-        let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
+        let game_id = self.try_get_active_game_id().await?;
+        let sk = RootSortKeyBuilder::create_state_sk(&game_id).build();
 
         let mut state_component: Item = serde_dynamo::to_item(StateComponent {
             user_id: self.user_id.to_string(),
@@ -304,7 +306,10 @@ impl Store {
 
         map.insert("round".to_string(), 1.to_string());
         map.insert("level".to_string(), 1.to_string());
-        map.insert("curr_encounter".to_string(), "new_game".to_string());
+        map.insert(
+            "curr_encounter".to_string(),
+            EncounterSortKey::NewGame.to_string(),
+        );
 
         let item: Item = serde_dynamo::to_item(map)?;
 
@@ -401,10 +406,32 @@ impl Store {
         Ok(ctxs)
     }
 
-    pub async fn try_get_state(&self) -> anyhow::Result<State> {
-        let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
+    pub async fn try_get_settings(&self) -> anyhow::Result<Settings> {
+        let game_id = self.try_get_active_game_id().await?;
+        let sk = SortKeyFactory::new(&self.user_id)
+            .create_game_settings_sk(&game_id)
+            .build();
 
-        let attributes = vec!["round", "level", "current_encounter", "previous_encounter"];
+        let res = self.try_generic_get(&sk).await.context(format!(
+            "Generic get failed with args;  user_id: {}, sk: {}",
+            &self.user_id, &sk,
+        ))?;
+
+        let item = res.item.unwrap().clone();
+
+        let state: Settings =
+            serde_dynamo::from_item(item).context("serde_dynamo::from_items failed")?;
+
+        Ok(state)
+    }
+
+    pub async fn try_get_state(&self) -> anyhow::Result<State> {
+        let game_id = self.try_get_active_game_id().await?;
+        info!("Game Id: {}", game_id);
+        let sk = RootSortKeyBuilder::create_state_sk(&game_id).build();
+        info!("GameState Sk: {}", sk);
+
+        let attributes = vec!["round", "level", "curr_encounter", "prev_encounter"];
 
         let res = self
             .try_generic_query(sk.clone(), &attributes)
@@ -414,10 +441,17 @@ impl Store {
                 &self.user_id, sk, attributes
             ))?;
 
+        info!("get state res : {:?}", res);
+
         let item = res.items.unwrap()[0].clone();
+        info!("BING");
+
+        info!("item: {:?}", item);
 
         let state: State =
             serde_dynamo::from_item(item).context("serde_dynamo::from_items failed")?;
+
+        info!("BANG");
 
         Ok(state)
     }
@@ -476,11 +510,12 @@ impl Store {
     }
 
     pub async fn try_get_llm_model(&self) -> anyhow::Result<String> {
+        let game_id = self.try_get_active_game_id().await?;
         let sk = SortKeyFactory::new(&self.user_id)
-            .create_user_metadata_sk()
+            .create_game_settings_sk(&game_id)
             .build();
 
-        let attribute = "llm_model";
+        let attribute = "model";
         let res = self
             .try_generic_query(sk.clone(), &vec![attribute])
             .await
@@ -495,7 +530,7 @@ impl Store {
 
         let item = items
             .first()
-            .unwrap()
+            .expect("res.items should have at least one item in the list for try_get_llm_model")
             .get_key_value(attribute)
             .expect(&format!("{} not found", attribute))
             .1

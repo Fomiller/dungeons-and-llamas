@@ -1,9 +1,14 @@
 use crate::error::handle_error;
 use crate::*;
+
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use dnl_store::Store;
-use dnl_types::scenarios::ScenarioModel;
+use dnl_types::api::find_options_value;
+use dnl_types::api::request::ScenarioRequest;
+use dnl_types::generators::{GeneratorScenarioConfig, GeneratorType};
+use dnl_types::scenarios::{Scenario, ScenarioModel};
 
 use serenity::builder::*;
 use serenity::http::Http;
@@ -29,7 +34,9 @@ impl ScenarioCmd {
 
         http.set_application_id(cmd.application_id);
 
+        info!("HERE 1");
         cmd.defer(&http).await.context("Failed to defer command")?;
+        info!("HERE 2");
 
         let user_id = cmd.user.id.to_string();
 
@@ -58,17 +65,38 @@ impl ScenarioCmd {
             );
         }
 
+        let scenario =
+            Scenario::from_str(&find_options_value(&cmd.data.options, "scenario").unwrap())?;
+
+        let config = match scenario {
+            Scenario::Battle => GeneratorScenarioConfig::Battle,
+            Scenario::Shop => GeneratorScenarioConfig::Shop,
+            Scenario::Rest => GeneratorScenarioConfig::Rest,
+        };
+
+        let generator = GeneratorType::Scenario(config);
+
+        let payload = ScenarioRequest {
+            user_id,
+            generator,
+            options: cmd.data.options.clone(),
+        };
+
         let url = format!("{}/{}", DNL_API_URL.to_string(), "api/llm/scenario");
 
-        match client.post(url).json(&json).send().await {
+        match client.post(url).json(&payload).send().await {
             Ok(response) => {
-                if let Err(err) = Self::handle_sucessful_response_with_followup::<ScenarioModel>(
-                    response, &cmd, &http,
-                )
-                .await
-                {
-                    return Self::handle_error_with_followup(&http, &cmd, err).await;
+                info!("STATUS: {}", response.status());
+                if response.status().is_success() {
+                    Self::handle_sucessful_response_with_followup::<ScenarioModel>(
+                        response, &cmd, &http,
+                    )
+                    .await?
+                } else {
+                    let _ =
+                        Self::handle_error_with_followup(&http, &cmd, response.text().await?).await;
                 }
+
                 Ok(None)
             }
             Err(err) => return error::handle_error(&http, &cmd, err.into()).await,

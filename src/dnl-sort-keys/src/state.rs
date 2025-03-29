@@ -6,8 +6,8 @@ pub enum StateSortKey {
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct State {
-    pub round: Option<u8>,
-    pub level: Option<u8>,
+    pub round: Option<String>,
+    pub level: Option<String>,
     pub prev_encounter: Option<String>,
     pub curr_encounter: Option<String>,
 }

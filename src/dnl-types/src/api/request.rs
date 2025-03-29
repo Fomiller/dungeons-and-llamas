@@ -1,7 +1,15 @@
 use super::find_options_value;
 
+use crate::generators::GeneratorType;
 use serde::{Deserialize, Serialize};
 use serenity::model::application::*;
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub struct ScenarioRequest {
+    pub user_id: String,
+    pub generator: GeneratorType,
+    pub options: Vec<CommandDataOption>,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NewGameData {

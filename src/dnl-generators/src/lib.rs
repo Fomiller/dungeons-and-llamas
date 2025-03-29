@@ -45,7 +45,7 @@ impl JsonResponseGenerator {
 
         let model = store.try_get_llm_model().await?;
 
-        let llm = LlmHandler::new(model, prompt_config.system.clone()).await;
+        let llm = LlmHandler::new(model, prompt_config.system.format()).await;
 
         let text = None;
 
@@ -67,22 +67,30 @@ impl JsonResponseGenerator {
 
     // :TODO: this will have to be custom logic based on the GeneratorConfig
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
+        info!("GEN TEXT 1");
+
         let scenario_config = match &self.gen_type {
             GeneratorType::Scenario(config) => Some(config),
             _ => None,
         }
         .expect("GeneratorType should be a scenario if calling generate_text");
 
+        info!("GEN TEXT 2");
+        info!("Scenario Config: {:?}", scenario_config);
+
         // :TODO: this should probably be made into a get_text_context function
         let resp = match scenario_config {
-            GeneratorScenarioConfig::Battle => {
+            &GeneratorScenarioConfig::Battle => {
                 let state = self.store.try_get_state().await?;
 
                 let game_id = self.store.try_get_active_game_id().await?;
 
-                let level = &state.level.unwrap().to_string();
+                let level = &state.level.expect("state.level should be set").to_string();
+                info!("Battle1");
 
-                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())?;
+                // THIS DOES NOT HANDLE NEW GAME
+                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())
+                    .context("Encounter Sort Key variant not found")?;
 
                 self.store
                     .try_get_encounters(&game_id, level, encounter)
@@ -118,6 +126,7 @@ impl JsonResponseGenerator {
                     .context("try_get_encounters failed")?
             }
         };
+        info!("GEN TEXT 3");
 
         let ctxs: Vec<String> = resp
             .iter()
@@ -139,8 +148,9 @@ impl JsonResponseGenerator {
         info!("Ctx Count: {:?}", ctxs.len());
         info!("CTXS: {:?}", ctxs);
 
-        let prompt = &self.prompt_config.clone().text.expect("Expected a prompt text, but found None. Ensure that prompt_config.text is set before calling generate_text.");
-        let prompt = self.llm.create_prompt(Some(ctxs), prompt);
+        let text_prompt = &self.prompt_config.clone().text.expect("Expected a prompt text, but found None. Ensure that prompt_config.text is set before calling generate_text.");
+
+        let prompt = self.llm.create_prompt(Some(ctxs), &text_prompt.format());
 
         let message = self.llm.create_user_message(&prompt);
 
@@ -217,7 +227,7 @@ impl JsonResponseGenerator {
 
         let input = self
             .llm
-            .create_prompt(Some(contexts), &self.prompt_config.json);
+            .create_prompt(Some(contexts), &self.prompt_config.json.format());
 
         let message = self.llm.create_user_message(&input);
 
@@ -282,11 +292,13 @@ impl JsonResponseGenerator {
 
         let level = game_state
             .level
-            .expect("GameState.level should not be None");
+            .expect("GameState.level should not be None")
+            .parse()?;
 
         let round = game_state
             .round
-            .expect("GameState.round should not be None");
+            .expect("GameState.round should not be None")
+            .parse()?;
 
         let curr_encounter = game_state
             .curr_encounter

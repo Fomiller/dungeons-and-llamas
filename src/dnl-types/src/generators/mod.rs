@@ -1,4 +1,7 @@
+pub mod prompt;
+
 use crate::tools::Tool;
+use prompt::Prompt;
 
 use serde::{Deserialize, Serialize};
 
@@ -20,6 +23,7 @@ pub enum GeneratorType {
     Scenario(GeneratorScenarioConfig),
     Object(GeneratorObjectConfig),
 }
+
 impl GeneratorType {
     pub fn is_scenario(&self) -> bool {
         match self {
@@ -42,7 +46,7 @@ pub struct GeneratorToolConfig {
 
 #[derive(Debug, Clone)]
 pub struct GeneratorPromptConfig {
-    pub system: String,
-    pub json: String,
-    pub text: Option<String>,
+    pub system: Prompt,
+    pub json: Prompt,
+    pub text: Option<Prompt>,
 }

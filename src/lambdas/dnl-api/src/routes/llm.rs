@@ -8,6 +8,8 @@ use dnl_generators::JsonResponseGenerator;
 use dnl_generators::*;
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
 use dnl_store::Store;
+use dnl_types::api::request::ScenarioRequest;
+use dnl_types::generators::prompt::Prompt;
 use dnl_types::generators::*;
 use dnl_types::llm::*;
 use dnl_types::scenarios::*;
@@ -25,12 +27,6 @@ use axum::{routing::post, Router};
 use axum_macros::debug_handler;
 use lambda_http::tracing::info;
 use serde_json::json;
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-pub struct ScenarioRequest {
-    pub user_id: String,
-    pub generator: GeneratorType,
-}
 
 pub fn llm_router() -> Router {
     let router: Router = Router::new()
@@ -90,14 +86,65 @@ pub async fn post_llm_converse(
 pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Response, ApiError> {
     info!("Payload: {:?}", payload);
 
-    // let system_vars = HashMap::new();
-    // let mut text_vars = HashMap::new();
-    // let mut json_vars = HashMap::new();
+    let store = Store::new(&payload.user_id).await;
+    info!("HERE 0");
+    let game_state = match store.try_get_state().await {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            info!("THIS ERROR {}", e);
+            Err(e)
+        }
+    }?;
 
-    // let scenario = Scenario::from_str(&payload.scenario)?;
+    info!("HERE 00");
+    let settings = store.try_get_settings().await?;
+    info!("HERE 1");
 
-    //     ToolOutput::from_str(&scenario.to_string()).context("Unable to match scenario")?;
-    // let tool_output =
+    let system_vars = HashMap::new();
+    let mut text_vars = HashMap::new();
+    let mut json_vars = HashMap::new();
+
+    text_vars.insert(
+        "theme".to_string(),
+        settings
+            .theme
+            .clone()
+            .expect("settings.theme should not be None"),
+    );
+
+    json_vars.insert(
+        "level".to_string(),
+        game_state
+            .level
+            .clone()
+            .expect("game_state.level should not be None")
+            .to_string(),
+    );
+
+    json_vars.insert(
+        "round".to_string(),
+        game_state
+            .round
+            .clone()
+            .expect("game_state.round should not be None")
+            .to_string(),
+    );
+
+    info!("HERE 2");
+
+    let example = match &payload.generator {
+        GeneratorType::Scenario(config) => match config {
+            GeneratorScenarioConfig::Battle => ToolOutput::mock_battle(),
+            GeneratorScenarioConfig::Shop => ToolOutput::mock_shop(),
+            GeneratorScenarioConfig::Rest => ToolOutput::mock_rest(),
+        },
+        GeneratorType::Object(config) => match config {
+            GeneratorObjectConfig::Weapon => ToolOutput::mock_battle(),
+            GeneratorObjectConfig::Spell => ToolOutput::mock_battle(),
+        },
+    };
+
+    json_vars.insert("example".to_string(), serde_json::to_string(&example)?);
 
     let tool_config = match &payload.generator {
         GeneratorType::Scenario(config) => match config {
@@ -110,42 +157,86 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
             GeneratorObjectConfig::Spell => GeneratorToolConfig { tool: Tool::Battle },
         },
     };
+    info!("HERE 3");
 
     let prompt_config = match &payload.generator {
         GeneratorType::Scenario(config) => match config {
             GeneratorScenarioConfig::Battle => GeneratorPromptConfig {
-                system: BATTLE_SYSTEM_PROMPT.to_string(),
-                text: Some(BATTLE_TEXT_PROMPT.to_string()),
-                json: BATTLE_JSON_PROMPT.to_string(),
+                system: Prompt {
+                    text: BATTLE_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: BATTLE_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: BATTLE_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
             },
             GeneratorScenarioConfig::Shop => GeneratorPromptConfig {
-                system: SHOP_SYSTEM_PROMPT.to_string(),
-                text: Some(SHOP_TEXT_PROMPT.to_string()),
-                json: SHOP_JSON_PROMPT.to_string(),
+                system: Prompt {
+                    text: SHOP_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: SHOP_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: SHOP_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
             },
             GeneratorScenarioConfig::Rest => GeneratorPromptConfig {
-                system: REST_SYSTEM_PROMPT.to_string(),
-                text: Some(REST_TEXT_PROMPT.to_string()),
-                json: REST_JSON_PROMPT.to_string(),
+                system: Prompt {
+                    text: REST_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: REST_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: REST_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
             },
         },
+
+        //:TODO: create unique prompts for these
         GeneratorType::Object(config) => match config {
             GeneratorObjectConfig::Weapon => GeneratorPromptConfig {
-                system: BATTLE_SYSTEM_PROMPT.to_string(),
-                text: Some(BATTLE_TEXT_PROMPT.to_string()),
-                json: BATTLE_JSON_PROMPT.to_string(),
+                system: Prompt {
+                    text: BATTLE_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: BATTLE_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: BATTLE_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
             },
             GeneratorObjectConfig::Spell => GeneratorPromptConfig {
-                system: BATTLE_SYSTEM_PROMPT.to_string(),
-                text: Some(BATTLE_TEXT_PROMPT.to_string()),
-                json: BATTLE_JSON_PROMPT.to_string(),
+                system: Prompt {
+                    text: BATTLE_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: BATTLE_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: BATTLE_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
             },
         },
     };
-
-    // let example = serde_json::to_string(&tool_output.mock())?;
-
-    // json_vars.insert("example".to_string(), example);
 
     info!("HERE4");
 
@@ -157,10 +248,9 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
     )
     .await?;
 
-    let text_res = generator
-        .generate_text()
-        .await
-        .context("Failed to generate text");
+    let text_res = generator.generate_text().await;
+
+    info!("HERE5");
 
     match text_res {
         Ok(_) => {
@@ -169,8 +259,11 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 
+    info!("HERE6");
+
     let json_res = generator.generate_json::<ToolOutput>().await;
 
+    info!("HERE7");
     match json_res {
         Ok(output) => {
             let data = ToolOutputModel::from(output);

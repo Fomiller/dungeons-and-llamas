@@ -40,13 +40,20 @@ impl AttackCmd {
             .context("Failed to get active game id")
         {
             Ok(game_id) => game_id,
-            Err(err) => return Self::handle_error_with_followup(&http, &cmd, err).await,
+            Err(err) => {
+                let _ = Self::handle_error_with_followup(&http, &cmd, err.to_string()).await;
+                return Ok(None);
+            }
         };
 
         let state = client.try_get_state().await?;
 
         let enemies = client
-            .try_get_enemies(&game_id, state.round.unwrap(), state.level.unwrap())
+            .try_get_enemies(
+                &game_id,
+                state.round.unwrap().parse()?,
+                state.level.unwrap().parse()?,
+            )
             .await?;
 
         let mut enemy_embeds = Vec::new();

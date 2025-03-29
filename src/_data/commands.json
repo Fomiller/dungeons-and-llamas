@@ -176,36 +176,6 @@
         "description": "create a game scenario",
         "options": [
             {
-                "name": "model",
-                "description": "Which llm model to use",
-                "type": 3,
-                "required": true,
-                "choices": [
-                    {
-                        "name": "Claude3.5 Sonnet",
-                        "value": "anthropic.claude-3-5-sonnet-20240620-v1:0"
-                    }
-                ]
-            },
-            {
-                "name": "theme",
-                "description": "theme for the scenario",
-                "type": 3,
-                "required": true
-            },
-            {
-                "name": "level",
-                "description": "level for the scenario",
-                "type": 3,
-                "required": true
-            },
-            {
-                "name": "round",
-                "description": "round for the scenario",
-                "type": 3,
-                "required": true
-            },
-            {
                 "name": "scenario",
                 "description": "Scenario to create",
                 "type": 3,
