@@ -1,11 +1,11 @@
-use crate::*;
+use crate::prompt::Prompt;
 
 use std::collections::HashMap;
 
-use dnl_types::scenario::ScenarioInput;
-use dnl_types::tools::Tools;
+use dnl_types::scenarios::ScenarioInput;
+use dnl_types::tools::Tool;
 
-pub static SHOP_SYSTEM_PROMPT: &str = "
+pub static BATTLE_SYSTEM_PROMPT: &str = "
 You are a DM for a single player dungeons and dragons style text adventure game.
 It is important that you always create unique and fun scenarios with a wide variety of
 situations, enemies, items, and settings to keep the player engaged.
@@ -24,54 +24,28 @@ You always keep your scenarios to single 2-4 sentence paragraphs, without bullet
 
 ";
 
-pub static SHOP_JSON_PROMPT: &str = "
-Using the context provided use the 'shop' tool to create a level {{level}} shop scenario.
+pub static BATTLE_JSON_PROMPT: &str = "
+Using the context provided use the 'battle' tool to create a level {{level}} battle scenario.
 The responses should be json with the following structure:
 {{example}}
 ";
 
-pub static SHOP_TEXT_PROMPT: &str = "
-Create a random {{theme}} shop scenario for the player. Make sure that the scenario is truely unique
+pub static BATTLE_TEXT_PROMPT: &str = "
+Create a random {{theme}} battle scenario for the player. Make sure that the scenario is truely unique
 to the previous examples provided in the context if there are any. The player constantly wants to feel like they are 
 being presented with brand new scenarios every time.
 ";
 
-pub type ShopJsonGenerator = JsonResponseGenerator<ShopJsonGeneratorConfig>;
-
 #[derive(Clone)]
-pub struct ShopJsonGeneratorConfig {
+pub struct BattleJsonGeneratorConfig {
     pub scenario_input: ScenarioInput,
-    pub tool: Tools,
+    pub tool: Tool,
     pub system_prompt: Prompt,
     pub json_prompt: Prompt,
     pub text_prompt: Prompt,
 }
 
-impl JsonResponseGeneratorConfig for ShopJsonGeneratorConfig {
-    fn scenario_input(&self) -> ScenarioInput {
-        self.scenario_input.clone()
-    }
-    fn model(&self) -> String {
-        self.scenario_input.model.clone()
-    }
-    fn system_prompt(&self) -> String {
-        self.system_prompt.format()
-    }
-    fn schema(&self) -> serde_json::Value {
-        self.tool.schema()
-    }
-    fn json_prompt(&self) -> String {
-        self.json_prompt.format()
-    }
-    fn text_prompt(&self) -> String {
-        self.text_prompt.format()
-    }
-    fn tool(&self) -> Tools {
-        self.tool
-    }
-}
-
-impl ShopJsonGeneratorConfig {
+impl BattleJsonGeneratorConfig {
     pub fn new(
         scenario_input: ScenarioInput,
         system_vars: HashMap<String, String>,
@@ -79,21 +53,21 @@ impl ShopJsonGeneratorConfig {
         json_vars: HashMap<String, String>,
     ) -> Self {
         let system_prompt = Prompt {
-            text: SHOP_SYSTEM_PROMPT.to_string(),
+            text: BATTLE_SYSTEM_PROMPT.to_string(),
             variables: system_vars,
         };
 
         let json_prompt = Prompt {
-            text: SHOP_JSON_PROMPT.to_string(),
+            text: BATTLE_JSON_PROMPT.to_string(),
             variables: json_vars,
         };
 
         let text_prompt = Prompt {
-            text: SHOP_TEXT_PROMPT.to_string(),
+            text: BATTLE_TEXT_PROMPT.to_string(),
             variables: text_vars,
         };
 
-        let tool = Tools::Shop;
+        let tool = Tool::Battle;
 
         Self {
             scenario_input,

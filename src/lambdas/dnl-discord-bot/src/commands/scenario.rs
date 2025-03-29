@@ -1,13 +1,15 @@
 use crate::error::handle_error;
 use crate::*;
+
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use dnl_store::Store;
-use dnl_types::tools::ToolOutputEnum;
-use dnl_types::traits::DiscordMsg;
+use dnl_types::api::find_options_value;
+use dnl_types::api::request::ScenarioRequest;
+use dnl_types::generators::{GeneratorScenarioConfig, GeneratorType};
+use dnl_types::scenarios::{Scenario, ScenarioModel};
 
-use lambda_http::tracing::info;
-use reqwest::Response;
 use serenity::builder::*;
 use serenity::http::Http;
 
@@ -16,6 +18,9 @@ use serenity::model::application::*;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct ScenarioCmd;
+
+#[async_trait::async_trait]
+impl DiscordCmdResponse for ScenarioCmd {}
 
 impl ScenarioCmd {
     pub async fn execute(
@@ -29,14 +34,16 @@ impl ScenarioCmd {
 
         http.set_application_id(cmd.application_id);
 
+        info!("HERE 1");
         cmd.defer(&http).await.context("Failed to defer command")?;
+        info!("HERE 2");
 
         let user_id = cmd.user.id.to_string();
 
-        let store = Store::new().await;
+        let store = Store::new(&user_id).await;
 
         let game_id = match store
-            .try_get_active_game_id(&user_id)
+            .try_get_active_game_id()
             .await
             .context("Failed to get active game id")
         {
@@ -58,42 +65,41 @@ impl ScenarioCmd {
             );
         }
 
-        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/llm/scenario");
+        let scenario =
+            Scenario::from_str(&find_options_value(&cmd.data.options, "scenario").unwrap())?;
 
-        match client.post(url).json(&json).send().await {
+        let config = match scenario {
+            Scenario::Battle => GeneratorScenarioConfig::Battle,
+            Scenario::Shop => GeneratorScenarioConfig::Shop,
+            Scenario::Rest => GeneratorScenarioConfig::Rest,
+        };
+
+        let generator = GeneratorType::Scenario(config);
+
+        let payload = ScenarioRequest {
+            user_id,
+            generator,
+            options: cmd.data.options.clone(),
+        };
+
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "api/llm/scenario");
+
+        match client.post(url).json(&payload).send().await {
             Ok(response) => {
-                if let Err(err) = Self::handle_sucessful_response(response, &cmd, &http).await {
-                    return error::handle_error(&http, &cmd, err).await;
+                info!("STATUS: {}", response.status());
+                if response.status().is_success() {
+                    Self::handle_sucessful_response_with_followup::<ScenarioModel>(
+                        response, &cmd, &http,
+                    )
+                    .await?
+                } else {
+                    let _ =
+                        Self::handle_error_with_followup(&http, &cmd, response.text().await?).await;
                 }
+
                 Ok(None)
             }
             Err(err) => return error::handle_error(&http, &cmd, err.into()).await,
         }
-    }
-
-    pub async fn handle_sucessful_response(
-        res: Response,
-        cmd: &CommandInteraction,
-        http: &Http,
-    ) -> anyhow::Result<()> {
-        info!("API Res: {:?}", res);
-        let res: ToolOutputEnum = res
-            .json()
-            .await
-            .context("Failed to parse into ApiScenarioResponse")?;
-
-        let content: Box<dyn DiscordMsg + Send> = match res {
-            ToolOutputEnum::Battle(data) => Box::new(data),
-            ToolOutputEnum::Shop(data) => Box::new(data),
-            ToolOutputEnum::Rest(data) => Box::new(data),
-        };
-
-        let message = CreateInteractionResponseFollowup::new().content(content.to_message());
-
-        let res = cmd.create_followup(&http, message).await;
-
-        info!("Follow up: {:?}", res);
-
-        Ok(())
     }
 }

@@ -1,5 +1,4 @@
-use super::MockData;
-use crate::traits::DiscordMsg;
+use crate::dice::DiceExpression;
 use lazy_static::lazy_static;
 
 use serde::{Deserialize, Serialize};
@@ -11,80 +10,18 @@ pub struct ShopToolOutput {
     pub summary: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ShopToolMerchant {
-    #[serde(rename = "merchant_name")]
-    pub name: String,
-    #[serde(rename = "merchant_description")]
-    pub description: String,
+    pub merchant_name: String,
+    pub merchant_description: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShopToolItem {
-    #[serde(rename = "item_name")]
-    pub name: String,
-    #[serde(rename = "item_description")]
-    pub description: String,
-    #[serde(rename = "item_stats")]
-    pub stats: String,
-    #[serde(rename = "item_price")]
-    pub price: String,
-}
-
-impl MockData for ShopToolOutput {
-    fn mock() -> Self {
-        let sword = ShopToolItem {
-            name: "Magic Sword".to_string(),
-            description: "A glowing sword.".to_string(),
-            stats: "1d8 + 1".to_string(),
-            price: "3 gold".to_string(),
-        };
-
-        let bow = ShopToolItem {
-            name: "Short Bow".to_string(),
-            description: "A short bow, it seems to have some intricate carvings".to_string(),
-            stats: "1d8".to_string(),
-            price: "2 gold".to_string(),
-        };
-
-        let potion = ShopToolItem {
-            name: "Health Potion".to_string(),
-            description: "Restores Health".to_string(),
-            stats: "4d8".to_string(),
-            price: "5 gold".to_string(),
-        };
-
-        let items = vec![sword, bow, potion];
-
-        let merchant = ShopToolMerchant { name: "Dirty Dan".to_string(), description: "A dirty old man who is missing teeth, but you can see a cart full of treasure behind him".to_string()};
-
-        let summary = "This is summary Text".to_string();
-
-        Self {
-            merchant,
-            items,
-            summary,
-        }
-    }
-}
-
-impl DiscordMsg for ShopToolOutput {
-    fn to_message(&self) -> String {
-        let mut item_descriptions = String::new();
-
-        for item in &self.items {
-            let description = format!(
-                "**{}**\n{}\n - Stats: {}\n - Price: {}\n\n",
-                item.name, item.description, item.stats, item.price
-            );
-            item_descriptions.push_str(&description);
-        }
-
-        format!(
-            "*{}*\n# {}\n*{}*\n## Items:\n{}",
-            self.summary, self.merchant.name, self.merchant.description, item_descriptions
-        )
-    }
+    pub item_name: String,
+    pub item_description: String,
+    pub item_stats: DiceExpression,
+    pub item_price: String,
 }
 
 lazy_static! {
@@ -127,8 +64,28 @@ lazy_static! {
                                 "description": "1 sentence description of the item"
                             },
                             "item_stats":{
-                                "type": "string",
-                                "description": "The stats of item."
+                                "type": "object",
+                                "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
+                                "properties": {
+                                    "die_count": {
+                                        "type": "number",
+                                        "description": "number of dice from 1-12",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                    },
+                                    "die_size": {
+                                        "type": "number",
+                                        "description": "size of the dice from 4-12",
+                                        "minimum": 4,
+                                        "maximum": 12
+                                    },
+                                    "modifier": {
+                                        "type": "number",
+                                        "description": "modifier to the expression from 0-12",
+                                        "minimum": 0,
+                                        "maximum": 12
+                                    }
+                                }
                             },
                             "item_price":{
                                 "type": "string",

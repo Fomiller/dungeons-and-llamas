@@ -1,160 +1,132 @@
-pub mod battle;
-pub mod rest;
-pub mod shop;
+pub mod prompt;
+pub mod scenarios;
+pub mod tools;
 
 use std::collections::HashMap;
+use std::str::FromStr;
 
-use battle::{BattleJsonGenerator, BattleJsonGeneratorConfig};
 use dnl_sort_keys::encounter::EncounterSortKey;
 use dnl_store::Store;
+use dnl_types::generators::*;
 use dnl_types::llm::LlmHandler;
 use dnl_types::llm::ParseConverseOutput;
-use dnl_types::scenario::ScenarioInput;
-use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
-use dnl_types::tools::ToolOutputEnum;
-use dnl_types::tools::Tools;
-use rest::{RestJsonGenerator, RestJsonGeneratorConfig};
-use shop::{ShopJsonGenerator, ShopJsonGeneratorConfig};
 
+use anyhow::anyhow;
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
+use serde::{Deserialize, Serialize};
 
-pub enum JsonGeneratorConfigEnum {
-    Battle(BattleJsonGeneratorConfig),
-    Shop(ShopJsonGeneratorConfig),
-    Rest(RestJsonGeneratorConfig),
-}
+#[derive(Debug, Clone)]
+pub struct JsonResponseGenerator {
+    pub user_id: String,
+    pub gen_type: GeneratorType,
+    pub llm: LlmHandler,
 
-#[derive(Clone)]
-pub enum JsonGeneratorEnum {
-    Battle(BattleJsonGenerator),
-    Shop(ShopJsonGenerator),
-    Rest(RestJsonGenerator),
-}
+    pub text: Option<String>, // text output from llm after calling generate_text
 
-impl JsonGeneratorEnum {
-    pub async fn generate_text(&mut self) -> anyhow::Result<()> {
-        match self {
-            JsonGeneratorEnum::Battle(gen) => gen.generate_text().await,
-            JsonGeneratorEnum::Shop(gen) => gen.generate_text().await,
-            JsonGeneratorEnum::Rest(gen) => gen.generate_text().await,
-        }
-    }
-    pub async fn generate_json(&mut self) -> anyhow::Result<()> {
-        match self {
-            JsonGeneratorEnum::Battle(gen) => gen.generate_json().await,
-            JsonGeneratorEnum::Shop(gen) => gen.generate_json().await,
-            JsonGeneratorEnum::Rest(gen) => gen.generate_json().await,
-        }
-    }
-    pub async fn save_json(&mut self) -> anyhow::Result<()> {
-        match self {
-            JsonGeneratorEnum::Battle(gen) => gen.save_json().await,
-            JsonGeneratorEnum::Shop(gen) => gen.save_json().await,
-            JsonGeneratorEnum::Rest(gen) => gen.save_json().await,
-        }
-    }
-    pub fn data(&mut self) -> Option<ToolOutputEnum> {
-        match self {
-            JsonGeneratorEnum::Battle(gen) => gen.data(),
-            JsonGeneratorEnum::Shop(gen) => gen.data(),
-            JsonGeneratorEnum::Rest(gen) => gen.data(),
-        }
-    }
-    pub fn text(&mut self) -> Option<String> {
-        match self {
-            JsonGeneratorEnum::Battle(gen) => gen.text(),
-            JsonGeneratorEnum::Shop(gen) => gen.text(),
-            JsonGeneratorEnum::Rest(gen) => gen.text(),
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct Prompt {
-    text: String,
-    variables: HashMap<String, String>,
-}
-
-impl Prompt {
-    fn format(&self) -> String {
-        let mut result = self.text.to_string();
-
-        for (key, value) in &self.variables {
-            result = result.replace(key, value);
-        }
-
-        result
-    }
-}
-
-pub trait JsonResponseGeneratorConfig {
-    fn scenario_input(&self) -> ScenarioInput;
-    fn json_prompt(&self) -> String;
-    fn model(&self) -> String;
-    fn schema(&self) -> serde_json::Value;
-    fn system_prompt(&self) -> String;
-    fn text_prompt(&self) -> String;
-    fn tool(&self) -> Tools;
-}
-
-#[derive(Clone)]
-pub struct JsonResponseGenerator<C: JsonResponseGeneratorConfig> {
-    pub config: C,
-    pub context: Option<Vec<String>>,
-    pub model: LlmHandler,
-    pub text: Option<String>,
-    pub data: Option<ToolOutputEnum>,
     pub max_retries: u8,
     pub attempts: u8,
+
+    pub store: Store,
+
+    pub tool_config: GeneratorToolConfig,
+    pub prompt_config: GeneratorPromptConfig,
 }
 
-impl<C> JsonResponseGenerator<C>
-where
-    C: JsonResponseGeneratorConfig,
-{
-    pub fn data(&mut self) -> Option<ToolOutputEnum> {
-        self.data.clone()
-    }
+impl JsonResponseGenerator {
+    pub async fn new(
+        user_id: &str,
+        gen_type: GeneratorType,
+        tool_config: GeneratorToolConfig,
+        prompt_config: GeneratorPromptConfig,
+    ) -> anyhow::Result<Self> {
+        let store = Store::new(user_id).await;
 
-    pub fn text(&mut self) -> Option<String> {
-        self.text.clone()
-    }
+        let model = store.try_get_llm_model().await?;
 
-    pub async fn new(config: C) -> Self {
-        let model = LlmHandler::new(config.model(), config.system_prompt()).await;
+        let llm = LlmHandler::new(model, prompt_config.system.format()).await;
 
-        let context = None;
         let text = None;
-        let data = None;
+
         let max_retries = 5;
         let attempts = 0;
 
-        Self {
-            config,
-            context,
-            model,
+        Ok(Self {
+            gen_type,
+            user_id: user_id.to_string(),
+            llm,
             text,
-            data,
             max_retries,
             attempts,
-        }
+            prompt_config,
+            tool_config,
+            store,
+        })
     }
 
+    // :TODO: this will have to be custom logic based on the GeneratorConfig
     pub async fn generate_text(&mut self) -> anyhow::Result<()> {
-        let store = Store::new().await;
-        let scenario_input = self.config.scenario_input();
-        let user_id = scenario_input.user_id;
-        let game_id = scenario_input.game_id;
-        let level = scenario_input.level;
-        let scenario = scenario_input.scenario;
-        let resp = store
-            .try_get_encounters(&user_id, &game_id, &level, &scenario)
-            .await
-            .context("try_get_encounters failed")?;
+        info!("GEN TEXT 1");
+
+        let scenario_config = match &self.gen_type {
+            GeneratorType::Scenario(config) => Some(config),
+            _ => None,
+        }
+        .expect("GeneratorType should be a scenario if calling generate_text");
+
+        info!("GEN TEXT 2");
+        info!("Scenario Config: {:?}", scenario_config);
+
+        // :TODO: this should probably be made into a get_text_context function
+        let resp = match scenario_config {
+            &GeneratorScenarioConfig::Battle => {
+                let state = self.store.try_get_state().await?;
+
+                let game_id = self.store.try_get_active_game_id().await?;
+
+                let level = &state.level.expect("state.level should be set").to_string();
+                info!("Battle1");
+
+                // THIS DOES NOT HANDLE NEW GAME
+                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())
+                    .context("Encounter Sort Key variant not found")?;
+
+                self.store
+                    .try_get_encounters(&game_id, level, encounter)
+                    .await
+                    .context("try_get_encounters failed")?
+            }
+            GeneratorScenarioConfig::Shop => {
+                let state = self.store.try_get_state().await?;
+
+                let game_id = self.store.try_get_active_game_id().await?;
+
+                let level = &state.level.unwrap().to_string();
+
+                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())?;
+
+                self.store
+                    .try_get_encounters(&game_id, level, encounter)
+                    .await
+                    .context("try_get_encounters failed")?
+            }
+            GeneratorScenarioConfig::Rest => {
+                let state = self.store.try_get_state().await?;
+
+                let game_id = self.store.try_get_active_game_id().await?;
+
+                let level = &state.level.unwrap().to_string();
+
+                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())?;
+
+                self.store
+                    .try_get_encounters(&game_id, level, encounter)
+                    .await
+                    .context("try_get_encounters failed")?
+            }
+        };
+        info!("GEN TEXT 3");
 
         let ctxs: Vec<String> = resp
             .iter()
@@ -176,13 +148,13 @@ where
         info!("Ctx Count: {:?}", ctxs.len());
         info!("CTXS: {:?}", ctxs);
 
-        let prompt = self
-            .model
-            .create_prompt(Some(ctxs), &self.config.text_prompt());
+        let text_prompt = &self.prompt_config.clone().text.expect("Expected a prompt text, but found None. Ensure that prompt_config.text is set before calling generate_text.");
 
-        let message = self.model.create_user_message(&prompt);
+        let prompt = self.llm.create_prompt(Some(ctxs), &text_prompt.format());
 
-        self.model.set_messages(vec![message]);
+        let message = self.llm.create_user_message(&prompt);
+
+        self.llm.set_messages(vec![message]);
 
         let inference_cfg_builder = InferenceConfigurationBuilder::default()
             .temperature(1.0)
@@ -192,7 +164,7 @@ where
 
         let inference_cfg = Some(inference_cfg_builder);
 
-        let res = self.model.converse(None, inference_cfg).await?;
+        let res = self.llm.converse(None, inference_cfg).await?;
 
         let text = res.get_text_output().context("get_text_output failed")?;
 
@@ -201,23 +173,17 @@ where
         Ok(())
     }
 
-    pub async fn generate_json(&mut self) -> anyhow::Result<()> {
+    pub async fn generate_json<T: Serialize + for<'a> Deserialize<'a>>(
+        &mut self,
+    ) -> anyhow::Result<T> {
         let mut ctxs: Vec<String> = vec![];
-        // let mut fail_ctx: Option<String> = None;
 
         loop {
             self.attempts += 1;
 
-            // let mut temp_ctxs = ctxs.clone();
-
-            // if let Some(fail) = fail_ctx {
-            //     temp_ctxs.push(fail)
-            // }
-
-            match self.to_json(ctxs.clone()).await {
+            match self.to_json::<T>(ctxs.clone()).await {
                 Ok(data) => {
-                    self.data = Some(data);
-                    return Ok(());
+                    return Ok(data);
                 }
                 Err(err) => {
                     if self.attempts >= self.max_retries {
@@ -241,7 +207,10 @@ where
         }
     }
 
-    pub async fn to_json(&mut self, ctxs: Vec<String>) -> anyhow::Result<ToolOutputEnum> {
+    pub async fn to_json<T: Serialize + for<'a> Deserialize<'a>>(
+        &mut self,
+        ctxs: Vec<String>,
+    ) -> anyhow::Result<T> {
         let mut contexts: Vec<String> = Vec::new();
 
         // using the text in generate_text as context
@@ -256,13 +225,13 @@ where
             }
         }
 
-        let prompt = self.config.json_prompt();
+        let input = self
+            .llm
+            .create_prompt(Some(contexts), &self.prompt_config.json.format());
 
-        let input = self.model.create_prompt(Some(contexts), &prompt);
+        let message = self.llm.create_user_message(&input);
 
-        let message = self.model.create_user_message(&input);
-
-        self.model.set_messages(vec![message]);
+        self.llm.set_messages(vec![message]);
 
         let inference_cfg_builder = InferenceConfigurationBuilder::default()
             .temperature(0.3)
@@ -272,11 +241,11 @@ where
 
         let inference_cfg = Some(inference_cfg_builder);
 
-        info!("TOOL: {:?}", self.config.tool());
+        info!("TOOL: {:?}", self.tool_config.tool);
 
         let res = self
-            .model
-            .converse(Some(self.config.tool()), inference_cfg)
+            .llm
+            .converse(Some(self.tool_config.tool), inference_cfg)
             .await
             .context("Failed to call converse api")?;
 
@@ -291,54 +260,57 @@ where
         let value = serde_json::to_value(tool_value)
             .context("Failed to parese tool value to serde_json::Value")?;
 
-        match self.config.tool() {
-            Tools::Shop => serde_json::from_value::<ShopToolOutput>(value)
-                .map(ToolOutputEnum::Shop)
-                .map_err(Into::into),
-            Tools::Battle => serde_json::from_value::<BattleToolOutput>(value)
-                .map(ToolOutputEnum::Battle)
-                .map_err(Into::into),
-            Tools::Rest => serde_json::from_value::<RestToolOutput>(value)
-                .map(ToolOutputEnum::Rest)
-                .map_err(Into::into),
+        info!("VALUE: {:?}", value);
+
+        match serde_json::from_value::<T>(value) {
+            Ok(v) => Ok(v),
+            Err(e) => Err(anyhow!("{}", e)),
         }
     }
 
-    pub async fn save_json(&mut self) -> anyhow::Result<()> {
-        let store = Store::new().await;
-
-        let encounter = match self.config.tool() {
-            Tools::Battle => EncounterSortKey::Battle,
-            Tools::Shop => EncounterSortKey::Shop,
-            Tools::Rest => EncounterSortKey::Rest,
-        };
-
-        let scenario_input = self.config.scenario_input();
-
-        let level = scenario_input.level.parse::<u8>()?;
-        let round = scenario_input.round.parse::<u8>()?;
-        let user_id = &scenario_input.user_id;
-        let game_id = &scenario_input.game_id;
-
+    pub async fn save_json<T: Serialize + for<'a> Deserialize<'a>>(
+        &mut self,
+        value: T,
+    ) -> anyhow::Result<()> {
         let mut state = HashMap::new();
 
-        state.insert(
-            "text".to_string(),
-            aws_sdk_dynamodb::types::AttributeValue::S(self.text.clone().unwrap_or("".to_string())),
-        );
-
-        let data = self.data.clone().unwrap();
-
-        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> = match data {
-            ToolOutputEnum::Battle(item) => serde_dynamo::to_item(item)?,
-            ToolOutputEnum::Shop(item) => serde_dynamo::to_item(item)?,
-            ToolOutputEnum::Rest(item) => serde_dynamo::to_item(item)?,
-        };
+        let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> =
+            serde_dynamo::to_item(value)?;
 
         state.extend(map);
 
-        store
-            .try_save_encounter(user_id, game_id, encounter, level, round, state)
-            .await
+        if let Some(text) = self.text.clone() {
+            state.insert(
+                "text".to_string(),
+                aws_sdk_dynamodb::types::AttributeValue::S(text),
+            );
+        }
+
+        let game_id = self.store.try_get_active_game_id().await?;
+
+        let game_state = self.store.try_get_state().await?;
+
+        let level = game_state
+            .level
+            .expect("GameState.level should not be None")
+            .parse()?;
+
+        let round = game_state
+            .round
+            .expect("GameState.round should not be None")
+            .parse()?;
+
+        let curr_encounter = game_state
+            .curr_encounter
+            .expect("GameState.curr_encounter should not be None");
+
+        let encounter = EncounterSortKey::from_str(&curr_encounter)?;
+
+        let _ = self
+            .store
+            .try_save_encounter(&game_id, encounter, level, round, state)
+            .await;
+
+        Ok(())
     }
 }

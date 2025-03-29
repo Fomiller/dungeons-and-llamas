@@ -1,39 +1,180 @@
 [
     {
-        "name": "scenario",
+        "name": "new-game",
         "type": 1,
-        "description": "create a game scenario",
+        "description": "Start a new game",
         "options": [
             {
-                "name": "model",
-                "description": "Which llm model to use",
+                "name": "name",
+                "description": "Characters name",
+                "type": 3,
+                "required": true
+            },
+            {
+                "name": "class",
+                "description": "Characters class",
                 "type": 3,
                 "required": true,
                 "choices": [
                     {
-                        "name": "Claude3.5 Sonnet",
-                        "value": "anthropic.claude-3-5-sonnet-20240620-v1:0"
+                        "name": "barbarian",
+                        "value": "barbarian"
+                    },
+                    {
+                        "name": "bard",
+                        "value": "bard"
+                    },
+                    {
+                        "name": "cleric",
+                        "value": "cleric"
+                    },
+                    {
+                        "name": "druid",
+                        "value": "druid"
+                    },
+                    {
+                        "name": "fighter",
+                        "value": "fighter"
+                    },
+                    {
+                        "name": "mage",
+                        "value": "mage"
+                    },
+                    {
+                        "name": "monk",
+                        "value": "monk"
+                    },
+                    {
+                        "name": "paladin",
+                        "value": "paladin"
+                    },
+                    {
+                        "name": "ranger",
+                        "value": "ranger"
+                    },
+                    {
+                        "name": "rouge",
+                        "value": "rouge"
+                    },
+                    {
+                        "name": "sorcerer",
+                        "value": "sorcerer"
+                    },
+                    {
+                        "name": "warlock",
+                        "value": "warlock"
+                    },
+                    {
+                        "name": "wizard",
+                        "value": "wizard"
+                    }
+                ]
+            },
+            {
+                "name": "race",
+                "description": "Characters Race",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Dragonborn",
+                        "value": "dragonborn"
+                    },
+                    {
+                        "name": "Dwarf",
+                        "value": "dwarf"
+                    },
+                    {
+                        "name": "Elf",
+                        "value": "elf"
+                    },
+                    {
+                        "name": "Goliath",
+                        "value": "goliath"
+                    },
+                    {
+                        "name": "Halfling",
+                        "value": "halfling"
+                    },
+                    {
+                        "name": "Human",
+                        "value": "Human"
+                    },
+                    {
+                        "name": "Orc",
+                        "value": "orc"
+                    },
+                    {
+                        "name": "Tiefling",
+                        "value": "tiefling"
+                    }
+                ]
+            },
+            {
+                "name": "background",
+                "description": "Characters background",
+                "type": 3,
+                "required": true,
+                "choices": [
+                    {
+                        "name": "Soldier",
+                        "value": "soldier"
+                    },
+                    {
+                        "name": "Athlete",
+                        "value": "athlete"
+                    },
+                    {
+                        "name": "Artisan",
+                        "value": "artisan"
+                    },
+                    {
+                        "name": "Criminal",
+                        "value": "criminal"
+                    },
+                    {
+                        "name": "Entertainer",
+                        "value": "entertainer"
+                    },
+                    {
+                        "name": "Farmer",
+                        "value": "farmer"
+                    },
+                    {
+                        "name": "Hermit",
+                        "value": "hermit"
+                    },
+                    {
+                        "name": "Gambler",
+                        "value": "gambler"
+                    },
+                    {
+                        "name": "Noble",
+                        "value": "noble"
+                    },
+                    {
+                        "name": "Merchant",
+                        "value": "merchant"
+                    },
+                    {
+                        "name": "Barbarian",
+                        "value": "barbarian"
                     }
                 ]
             },
             {
                 "name": "theme",
-                "description": "theme for the scenario",
+                "description": "Theme of the generated content, i.e. Jungle",
                 "type": 3,
                 "required": true
-            },
-            {
-                "name": "level",
-                "description": "level for the scenario",
-                "type": 3,
-                "required": true
-            },
-            {
-                "name": "round",
-                "description": "round for the scenario",
-                "type": 3,
-                "required": true
-            },
+            }
+        ]
+    },
+    {
+        "name": "scenario",
+        "type": 1,
+        "description": "create a game scenario",
+        "options": [
             {
                 "name": "scenario",
                 "description": "Scenario to create",
@@ -102,14 +243,14 @@
         ]
     },
     {
-        "name": "modal",
-        "type": 1,
-        "description": "create a modal response"
-    },
-    {
         "name": "text",
         "type": 1,
         "description": "create a text input response"
+    },
+    {
+        "name": "attack",
+        "type": 1,
+        "description": "attack and enemy"
     },
     {
         "name": "menu",
@@ -122,11 +263,6 @@
         "description": "Create a button response"
     },
     {
-        "name": "new-game",
-        "type": 1,
-        "description": "Start a new game"
-    },
-    {
         "name": "resume-game",
         "type": 1,
         "description": "Resume a game"
@@ -137,61 +273,27 @@
         "description": "List all games"
     },
     {
-        "name": "class",
+        "name": "settings",
         "type": 1,
-        "description": "Which class do you want to play",
+        "description": "Change game settings",
         "options": [
             {
-                "name": "class",
-                "description": "The type of class",
+                "name": "model",
+                "description": "Set which llm model the game uses",
                 "type": 3,
-                "required": true,
+                "required": false,
                 "choices": [
                     {
-                        "name": "Warlock",
-                        "value": "warlock"
-                    },
-                    {
-                        "name": "Barbarian",
-                        "value": "barbarian"
-                    },
-                    {
-                        "name": "Mage",
-                        "value": "mage"
-                    },
-                    {
-                        "name": "Rouge",
-                        "value": "rouge"
-                    },
-                    {
-                        "name": "Bard",
-                        "value": "bard"
-                    },
-                    {
-                        "name": "Cleric",
-                        "value": "cleric"
-                    },
-                    {
-                        "name": "Paladin",
-                        "value": "paladin"
-                    },
-                    {
-                        "name": "Monk",
-                        "value": "monk"
-                    },
-                    {
-                        "name": "Druid",
-                        "value": "druid"
-                    },
-                    {
-                        "name": "Fighter",
-                        "value": "fighter"
-                    },
-                    {
-                        "name": "Ranger",
-                        "value": "ranger"
+                        "name": "Claude3.5 Sonnet",
+                        "value": "anthropic.claude-3-5-sonnet-20240620-v1:0"
                     }
                 ]
+            },
+            {
+                "name": "theme",
+                "description": "Set games theme",
+                "type": 3,
+                "required": false
             }
         ]
     }

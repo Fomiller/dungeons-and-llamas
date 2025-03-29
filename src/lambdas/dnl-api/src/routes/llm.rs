@@ -1,20 +1,23 @@
 use crate::error::{handle_error, ApiError};
 
 use std::collections::HashMap;
-use std::str::FromStr;
 
+use aws_sdk_dynamodb::types::AttributeValue;
 use dnl_db::*;
-use dnl_generators::battle::BattleJsonGeneratorConfig;
-use dnl_generators::rest::RestJsonGeneratorConfig;
-use dnl_generators::shop::ShopJsonGeneratorConfig;
-use dnl_generators::{JsonGeneratorConfigEnum, JsonGeneratorEnum, JsonResponseGenerator};
+use dnl_generators::JsonResponseGenerator;
+use dnl_generators::*;
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
+use dnl_store::Store;
+use dnl_types::api::request::ScenarioRequest;
+use dnl_types::generators::prompt::Prompt;
+use dnl_types::generators::*;
 use dnl_types::llm::*;
-use dnl_types::scenario::*;
+use dnl_types::scenarios::*;
 use dnl_types::tools::battle::BattleToolOutput;
-use dnl_types::tools::rest::RestToolOutput;
-use dnl_types::tools::shop::ShopToolOutput;
 use dnl_types::tools::*;
+use scenarios::battle::{BATTLE_JSON_PROMPT, BATTLE_SYSTEM_PROMPT, BATTLE_TEXT_PROMPT};
+use scenarios::rest::{REST_JSON_PROMPT, REST_SYSTEM_PROMPT, REST_TEXT_PROMPT};
+use scenarios::shop::{SHOP_JSON_PROMPT, SHOP_SYSTEM_PROMPT, SHOP_TEXT_PROMPT};
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::InferenceConfigurationBuilder;
@@ -52,7 +55,7 @@ pub async fn post_llm_converse(
             .build(),
     );
 
-    let con_res = llm.converse(Some(Tools::Battle), cfg).await;
+    let con_res = llm.converse(Some(Tool::Battle), cfg).await;
     info!("CON-RES: {:?}", con_res);
 
     match con_res?.get_tool_output() {
@@ -80,111 +83,277 @@ pub async fn post_llm_converse(
 }
 
 #[debug_handler]
-pub async fn post_scenario(Json(payload): Json<ScenarioInput>) -> Result<Response, ApiError> {
+pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Response, ApiError> {
     info!("Payload: {:?}", payload);
+
+    let store = Store::new(&payload.user_id).await;
+    info!("HERE 0");
+    let game_state = match store.try_get_state().await {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            info!("THIS ERROR {}", e);
+            Err(e)
+        }
+    }?;
+
+    info!("HERE 00");
+    let settings = store.try_get_settings().await?;
+    info!("HERE 1");
 
     let system_vars = HashMap::new();
     let mut text_vars = HashMap::new();
     let mut json_vars = HashMap::new();
 
-    let scenario = Scenario::from_str(&payload.scenario).context("Unable to match scenario")?;
+    text_vars.insert(
+        "theme".to_string(),
+        settings
+            .theme
+            .clone()
+            .expect("settings.theme should not be None"),
+    );
 
-    let example = match scenario {
-        Scenario::Battle => serde_json::to_string(&BattleToolOutput::mock())?,
-        Scenario::Shop => serde_json::to_string(&ShopToolOutput::mock())?,
-        Scenario::Rest => serde_json::to_string(&RestToolOutput::mock())?,
+    json_vars.insert(
+        "level".to_string(),
+        game_state
+            .level
+            .clone()
+            .expect("game_state.level should not be None")
+            .to_string(),
+    );
+
+    json_vars.insert(
+        "round".to_string(),
+        game_state
+            .round
+            .clone()
+            .expect("game_state.round should not be None")
+            .to_string(),
+    );
+
+    info!("HERE 2");
+
+    let example = match &payload.generator {
+        GeneratorType::Scenario(config) => match config {
+            GeneratorScenarioConfig::Battle => ToolOutput::mock_battle(),
+            GeneratorScenarioConfig::Shop => ToolOutput::mock_shop(),
+            GeneratorScenarioConfig::Rest => ToolOutput::mock_rest(),
+        },
+        GeneratorType::Object(config) => match config {
+            GeneratorObjectConfig::Weapon => ToolOutput::mock_battle(),
+            GeneratorObjectConfig::Spell => ToolOutput::mock_battle(),
+        },
     };
 
-    text_vars.insert("theme".to_string(), payload.theme.clone());
-    json_vars.insert("level".to_string(), payload.level.clone());
-    json_vars.insert("example".to_string(), example);
+    json_vars.insert("example".to_string(), serde_json::to_string(&example)?);
 
-    let config = match Scenario::from_str(&payload.scenario).context("Unable to match scenario")? {
-        Scenario::Battle => JsonGeneratorConfigEnum::Battle(BattleJsonGeneratorConfig::new(
-            payload.clone(),
-            system_vars,
-            text_vars,
-            json_vars,
-        )),
-        Scenario::Shop => JsonGeneratorConfigEnum::Shop(ShopJsonGeneratorConfig::new(
-            payload.clone(),
-            system_vars,
-            text_vars,
-            json_vars,
-        )),
-        Scenario::Rest => JsonGeneratorConfigEnum::Rest(RestJsonGeneratorConfig::new(
-            payload.clone(),
-            system_vars,
-            text_vars,
-            json_vars,
-        )),
+    let tool_config = match &payload.generator {
+        GeneratorType::Scenario(config) => match config {
+            GeneratorScenarioConfig::Battle => GeneratorToolConfig { tool: Tool::Battle },
+            GeneratorScenarioConfig::Shop => GeneratorToolConfig { tool: Tool::Shop },
+            GeneratorScenarioConfig::Rest => GeneratorToolConfig { tool: Tool::Rest },
+        },
+        GeneratorType::Object(config) => match config {
+            GeneratorObjectConfig::Weapon => GeneratorToolConfig { tool: Tool::Battle },
+            GeneratorObjectConfig::Spell => GeneratorToolConfig { tool: Tool::Battle },
+        },
+    };
+    info!("HERE 3");
+
+    let prompt_config = match &payload.generator {
+        GeneratorType::Scenario(config) => match config {
+            GeneratorScenarioConfig::Battle => GeneratorPromptConfig {
+                system: Prompt {
+                    text: BATTLE_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: BATTLE_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: BATTLE_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
+            },
+            GeneratorScenarioConfig::Shop => GeneratorPromptConfig {
+                system: Prompt {
+                    text: SHOP_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: SHOP_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: SHOP_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
+            },
+            GeneratorScenarioConfig::Rest => GeneratorPromptConfig {
+                system: Prompt {
+                    text: REST_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: REST_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: REST_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
+            },
+        },
+
+        //:TODO: create unique prompts for these
+        GeneratorType::Object(config) => match config {
+            GeneratorObjectConfig::Weapon => GeneratorPromptConfig {
+                system: Prompt {
+                    text: BATTLE_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: BATTLE_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: BATTLE_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
+            },
+            GeneratorObjectConfig::Spell => GeneratorPromptConfig {
+                system: Prompt {
+                    text: BATTLE_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: BATTLE_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: BATTLE_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
+            },
+        },
     };
 
-    let mut generator = match config {
-        JsonGeneratorConfigEnum::Battle(config) => {
-            JsonGeneratorEnum::Battle(JsonResponseGenerator::new(config).await)
-        }
-        JsonGeneratorConfigEnum::Shop(config) => {
-            JsonGeneratorEnum::Shop(JsonResponseGenerator::new(config).await)
-        }
-        JsonGeneratorConfigEnum::Rest(config) => {
-            JsonGeneratorEnum::Rest(JsonResponseGenerator::new(config).await)
-        }
-    };
+    info!("HERE4");
 
-    match generator
-        .generate_text()
-        .await
-        .context("Failed to generate text")
-    {
+    let mut generator = JsonResponseGenerator::new(
+        &payload.user_id,
+        payload.generator.clone(),
+        tool_config,
+        prompt_config,
+    )
+    .await?;
+
+    let text_res = generator.generate_text().await;
+
+    info!("HERE5");
+
+    match text_res {
         Ok(_) => {
             info!("Text Created");
         }
         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 
-    match generator
-        .generate_json()
-        .await
-        .context("Failed to generate json")
-    {
-        Ok(_) => {
-            generator.save_json().await.context("Failed to save_json")?;
+    info!("HERE6");
 
-            let data = generator.data().unwrap().clone();
+    let json_res = generator.generate_json::<ToolOutput>().await;
+
+    info!("HERE7");
+    match json_res {
+        Ok(output) => {
+            let data = ToolOutputModel::from(output);
+
+            generator
+                .save_json(data.clone())
+                .await
+                .context("Failed to save_json")?;
+
             info!("DATA: {:?}", data);
 
             let value = serde_json::to_value(data)?;
+
             info!("Value: {:?}", value);
 
-            let mut embedding_engine = EmbeddingEngine::new(EmbeddingConfig::default()).await;
+            let store = Store::new(&payload.user_id).await;
+            let game_id = store.try_get_active_game_id().await?;
 
-            let db = VectorDatabase::new();
+            if let Some(text) = generator.text {
+                let mut embedding_engine = EmbeddingEngine::new(EmbeddingConfig::default()).await;
 
-            let text = generator.text().unwrap().clone();
-            let vector = embedding_engine.try_create_vector(&text).await?;
+                let db = VectorDatabase::new();
 
-            let embedding = models::NewEmbedding {
-                user_id: &payload.user_id,
-                game_id: &payload.game_id,
-                vector,
-                text: &text,
-                type_: "output".to_string(),
+                let vector = embedding_engine.try_create_vector(&text).await?;
+
+                let embedding = models::NewEmbedding {
+                    user_id: &payload.user_id,
+                    game_id: &game_id,
+                    vector,
+                    text: &text,
+                    type_: "output".to_string(),
+                };
+
+                let db_res = db
+                    .await
+                    .try_insert_new_embedding(&embedding)
+                    .await
+                    .context("failed to insert embedding")?;
+
+                info!("Database NewEmbedding response: {:?}", db_res);
+            }
+
+            let mut state = HashMap::new();
+
+            //:TODO: this needs conditional logic on updating the current gamestate
+            if generator.gen_type.is_scenario() {
+                let game_state = store.try_get_state().await?;
+                let round = game_state
+                    .round
+                    .expect("GameState.round should not be None");
+                let level = game_state
+                    .level
+                    .expect("GameState.level should not be None");
+
+                state.insert("round".to_string(), AttributeValue::N(round.to_string()));
+                state.insert("level".to_string(), AttributeValue::N(level.to_string()));
+
+                match payload.generator {
+                    GeneratorType::Scenario(config) => match config {
+                        GeneratorScenarioConfig::Battle => {
+                            state.insert(
+                                "curr_encounter".to_string(),
+                                AttributeValue::S(Scenario::Battle.to_string()),
+                            );
+                        }
+                        GeneratorScenarioConfig::Shop => {
+                            state.insert(
+                                "curr_encounter".to_string(),
+                                AttributeValue::S(Scenario::Shop.to_string()),
+                            );
+                        }
+                        GeneratorScenarioConfig::Rest => {
+                            state.insert(
+                                "curr_encounter".to_string(),
+                                AttributeValue::S(Scenario::Rest.to_string()),
+                            );
+                        }
+                    },
+                    _ => (),
+                }
             };
 
-            let db_res = db
-                .await
-                .try_insert_new_embedding(&embedding)
-                .await
-                .context("failed to insert embedding")?;
-
-            info!("Database NewEmbedding response: {:?}", db_res);
+            let _ = store.try_update_state(state).await?;
 
             let res = (StatusCode::OK, Json(value)).into_response();
             info!("Response: {:?}", res);
 
             return Ok(res);
         }
+
         Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
     };
 }

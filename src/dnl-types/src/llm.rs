@@ -1,5 +1,5 @@
 use crate::errors::ToolError;
-use crate::tools::Tools;
+use crate::tools::Tool;
 
 use anyhow::Context;
 use aws_sdk_bedrockruntime::{
@@ -18,6 +18,7 @@ pub struct LlmHandler {
     pub model: String,
     pub system: String,
     pub messages: Vec<Message>,
+    pub context: Vec<String>,
 }
 
 impl LlmHandler {
@@ -29,12 +30,13 @@ impl LlmHandler {
             model,
             system,
             messages: vec![],
+            context: vec![],
         }
     }
 
     pub async fn converse(
         &mut self,
-        tool: Option<Tools>,
+        tool: Option<Tool>,
         config: Option<InferenceConfiguration>,
     ) -> anyhow::Result<ConverseOutput> {
         let system = SystemContentBlock::Text(self.system.clone());

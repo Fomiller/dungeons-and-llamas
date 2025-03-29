@@ -2,4 +2,8 @@
 pub enum UserSortKey {
     #[strum(to_string = "ActiveGameId")]
     ActiveGameId,
+    #[strum(to_string = "Metadata")]
+    Metadata,
+    #[strum(to_string = "Settings")]
+    Settings,
 }

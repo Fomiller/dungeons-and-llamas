@@ -1,30 +1,32 @@
 use crate::*;
+use dnl_types::api::request::NewGameData;
+use dnl_types::api::response::NewGameResponse;
 use serenity::builder::*;
 use serenity::model::application::*;
-use std::collections::HashMap;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct NewGameCmd;
+
+#[async_trait::async_trait]
+impl DiscordCmdResponse for NewGameCmd {}
 
 impl NewGameCmd {
     pub async fn execute(
         &self,
         cmd: CommandInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let user_id = cmd.user.id.to_string();
         let client = reqwest::Client::new();
 
-        let mut json = HashMap::new();
-        json.insert("id", user_id);
+        let url = format!("{}/{}", DNL_API_URL.to_string(), "api/game/new");
 
-        let url = format!("{}/{}", DNL_API_URL.to_string(), "/api/game/new");
+        let body = NewGameData::from(cmd);
 
-        match client.post(url).json(&json).send().await {
-            Ok(_) => {
-                let content = format!("New game created.");
-                Ok(Some(format_interaction_response(content)))
-            }
-            Err(e) => Err(anyhow::anyhow!(e)),
+        let res = client.post(url).json(&body).send().await?;
+
+        if res.status().is_success() {
+            Self::handle_sucessful_response::<NewGameResponse>(res).await
+        } else {
+            Self::handle_error(res).await
         }
     }
 }

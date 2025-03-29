@@ -23,6 +23,16 @@ impl SortKeyFactory {
             .user(UserSortKey::ActiveGameId)
     }
 
+    pub fn create_user_metadata_sk(&self) -> RootSortKeyBuilder {
+        RootSortKeyBuilder::new()
+            .id(&self.user_id)
+            .user(UserSortKey::Metadata)
+    }
+
+    pub fn create_game_settings_sk(&self, game_id: &str) -> RootSortKeyBuilder {
+        RootSortKeyBuilder::new().id(game_id).settings(true)
+    }
+
     pub fn create_encounter_sk(
         &self,
         game_id: &str,

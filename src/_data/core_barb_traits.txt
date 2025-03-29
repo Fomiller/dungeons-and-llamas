@@ -1,0 +1,7 @@
+Primary Ability	Strength
+Hit Point Die	d12 per Barbarian level
+Saving Throw Proficiencies	Strength and Constitution
+Skill Proficiencies	Choose 2: Animal Handling, Athletics, Intimidation, Nature, Perception, or Survival
+Weapon Proficiencies	Simple and Martial weapons
+Armor Training	Light and Medium armor and Shields
+Starting Equipment	Choose A or B: (A) Greataxe, 4 Handaxes, Explorer’s Pack, and 15 GP; or (B) 75 GP

@@ -1,7 +1,7 @@
 use crate::buildable::SortKeyBuildable;
 use std::any::Any;
 
-#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter)]
+#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter, strum::EnumString)]
 pub enum EncounterSortKey {
     #[strum(to_string = "Battle")]
     Battle,
@@ -9,6 +9,8 @@ pub enum EncounterSortKey {
     Shop,
     #[strum(to_string = "Rest")]
     Rest,
+    #[strum(to_string = "NewGame")]
+    NewGame,
 }
 
 #[derive(Debug, Clone, Copy, Default)]

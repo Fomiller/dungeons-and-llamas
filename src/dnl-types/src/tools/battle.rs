@@ -1,5 +1,4 @@
-use super::MockData;
-use crate::traits::DiscordMsg;
+use crate::dice::DiceExpression;
 use lazy_static::lazy_static;
 
 use serde::{Deserialize, Serialize};
@@ -14,80 +13,42 @@ pub struct BattleToolOutput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolEnemy {
-    pub health: String,
+    pub enemy_health: DiceExpression,
     pub enemy_type: String,
-    pub attack: BattleToolEnemyAttack,
+    pub enemy_armor_class: u8,
+    pub enemy_attack: BattleToolEnemyAttack,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BattleToolEnemyAttack {
-    pub attack_damage: String,
+    pub attack_expression: DiceExpression,
     pub attack_name: String,
-}
-
-impl MockData for BattleToolOutput {
-    fn mock() -> Self {
-        let sword = BattleToolEnemyAttack {
-            attack_damage: "1d6+2".to_string(),
-            attack_name: "Rusted Sword".to_string(),
-        };
-        let bow = BattleToolEnemyAttack {
-            attack_damage: "1d6+2".to_string(),
-            attack_name: "ShortBow".to_string(),
-        };
-        let enemies = vec![
-            BattleToolEnemy {
-                health: "1d6+8".to_string(),
-                enemy_type: "Goblin".to_string(),
-                attack: sword,
-            },
-            BattleToolEnemy {
-                health: "1d6+8".to_string(),
-                enemy_type: "Goblin Archer".to_string(),
-                attack: bow,
-            },
-        ];
-
-        let summary = "summary of the scenario".to_string();
-        let name = "a dangerous encounter".to_string();
-        let terrain = "description of the terrain".to_string();
-
-        Self {
-            enemies,
-            summary,
-            name,
-            terrain,
-        }
-    }
-}
-
-impl DiscordMsg for BattleToolOutput {
-    fn to_message(&self) -> String {
-        let mut enemy_description = String::new();
-
-        for enemy in &self.enemies {
-            let description = format!(
-                "- **{}**\n  - Attack: {}\n  - Damage: {}\n  - Health: {}\n",
-                enemy.enemy_type,
-                enemy.attack.attack_name,
-                enemy.attack.attack_damage,
-                enemy.health
-            );
-            enemy_description.push_str(&description);
-        }
-
-        format!(
-            "# *{}*\n## Description:\n{}\n\n## Terrain:\n{}\n\n## Enemies:\n{}\n\n## Summary:\n{}",
-            self.name, self.summary, self.terrain, enemy_description, self.summary
-        )
-    }
 }
 
 lazy_static! {
     pub static ref BATTLE_TOOL_SCHEMA: serde_json::Value = {
+        let required = vec![
+            "attack_expression",
+            "attack_name",
+            "current",
+            "die_count",
+            "die_size",
+            "enemies",
+            "enemy_armor_class",
+            "enemy_attack",
+            "enemy_health",
+            "enemy_type",
+            "health_expression",
+            "max",
+            "modifier",
+            "name",
+            "summary",
+            "terrain",
+        ];
+
         serde_json::json!({
             "type": "object",
-            "required": ["name", "summary", "terrain", "enemies", "enemy_type", "health", "attack", "attack_name", "attack_damage"],
+            "required": required,
             "properties":{
                 "name": {
                     "type":"string",
@@ -112,13 +73,35 @@ lazy_static! {
                                 "type": "string",
                                 "description": "Type of enemy"
                             },
-                            "health":{
-                                "type": "integer",
-                                "description": "Total health of the enemy",
-                                "minimum": 1,
-                                "maximum": 20
+                            "enemy_armor_class":{
+                                "type": "number",
+                                "description": "The armor value of the character."
                             },
-                            "attack":{
+                            "enemy_health":{
+                                "type": "object",
+                                "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
+                                "properties": {
+                                    "die_count": {
+                                        "type": "number",
+                                        "description": "number of dice from 1-12",
+                                        "minimum": 1,
+                                        "maximum": 12
+                                    },
+                                    "die_size": {
+                                        "type": "number",
+                                        "description": "size of the dice from 4-12",
+                                        "minimum": 4,
+                                        "maximum": 12
+                                    },
+                                    "modifier": {
+                                        "type": "number",
+                                        "description": "modifier to the expression from 0-12",
+                                        "minimum": 0,
+                                        "maximum": 12
+                                    }
+                                }
+                            },
+                            "enemy_attack":{
                                 "type": "object",
                                 "description": "An Object that defines an enemies attack",
                                 "properties": {
@@ -126,9 +109,29 @@ lazy_static! {
                                         "type": "string",
                                         "description": "Name of the attack"
                                     },
-                                    "attack_damage": {
-                                        "type": "string",
-                                        "description": "Damage value of attack as a integer value",
+                                    "attack_expression": {
+                                        "type": "object",
+                                        "description": "An Object that defines an the amount of dice, the dice size, and modifiers that make up the expression, 1d6+2",
+                                        "properties": {
+                                            "die_count": {
+                                                "type": "number",
+                                                "description": "number of dice from 1-12",
+                                                "minimum": 1,
+                                                "maximum": 12
+                                            },
+                                            "die_size": {
+                                                "type": "number",
+                                                "description": "size of the dice from 4-12",
+                                                "minimum": 4,
+                                                "maximum": 12
+                                            },
+                                            "modifier": {
+                                                "type": "number",
+                                                "description": "modifier to the expression from 0-12",
+                                                "minimum": 0,
+                                                "maximum": 12
+                                            }
+                                        }
                                     }
                                 }
                             }

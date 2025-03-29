@@ -1,12 +1,14 @@
 use crate::prelude::*;
 use std::any::Any;
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug)]
 pub struct RootSortKeyBuilder {
     id: String,
     game: Option<GameSortKeyBuilder>,
     user: Option<UserSortKey>,
     message: Option<MessageSortKey>,
+    state: Option<StateSortKey>,
+    settings: Option<bool>,
 }
 
 impl RootSortKeyBuilder {
@@ -26,6 +28,14 @@ impl RootSortKeyBuilder {
         self.message = Some(message);
         self
     }
+    pub fn state(mut self, state: StateSortKey) -> Self {
+        self.state = Some(state);
+        self
+    }
+    pub fn settings(mut self, settings: bool) -> Self {
+        self.settings = Some(settings);
+        self
+    }
 
     pub fn id(mut self, id: &str) -> Self {
         self.id = id.to_string();
@@ -36,6 +46,12 @@ impl RootSortKeyBuilder {
         RootSortKeyBuilder::new()
             .id(&id)
             .game(GameSortKeyBuilder::new().entity(entity))
+    }
+
+    pub fn create_state_sk(id: &str) -> RootSortKeyBuilder {
+        RootSortKeyBuilder::new()
+            .id(id)
+            .state(StateSortKey::GameState)
     }
 
     pub fn create_inventory_sk(
@@ -145,14 +161,14 @@ impl RootSortKeyBuilder {
     }
 
     pub fn create_abilities_sk(
-        id: String,
+        id: &str,
         abilities: AbilitiesSortKey,
         entity: Entity,
     ) -> RootSortKeyBuilder {
         let stats = StatsSortKeyBuilder::new().abilities(abilities);
         let entity = EntitySortKeyBuilder::new(entity).stats(stats);
         let game = GameSortKeyBuilder::new().entity(entity);
-        RootSortKeyBuilder::new().id(&id).game(game)
+        RootSortKeyBuilder::new().id(id).game(game)
     }
 
     pub fn create_conditions_sk(
@@ -201,6 +217,12 @@ impl SortKeyBuildable for RootSortKeyBuilder {
         }
         if let Some(message) = self.message {
             result.push_str(&format!("{}", message.to_string()));
+        }
+        if let Some(state) = self.state {
+            result.push_str(&format!("{}", state.to_string()));
+        }
+        if let Some(_) = self.settings {
+            result.push_str(&format!("{}", RootSortKey::Settings))
         }
 
         result
