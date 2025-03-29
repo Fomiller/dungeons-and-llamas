@@ -1,4 +1,4 @@
-use crate::error::handle_error;
+use crate::errors::handle_error;
 use crate::*;
 
 use std::collections::HashMap;
@@ -99,7 +99,7 @@ impl ScenarioCmd {
 
                 Ok(None)
             }
-            Err(err) => return error::handle_error(&http, &cmd, err.into()).await,
+            Err(err) => return errors::handle_error(&http, &cmd, err.into()).await,
         }
     }
 }

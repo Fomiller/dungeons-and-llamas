@@ -48,7 +48,7 @@ impl IntoResponse for ApiErrorEnum {
 
 // https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs
 // Make our own error that wraps `anyhow::Error`.
-pub struct ApiError(anyhow::Error);
+pub struct ApiError(pub anyhow::Error);
 // Tell axum how to convert `ApiError` into a response.
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {

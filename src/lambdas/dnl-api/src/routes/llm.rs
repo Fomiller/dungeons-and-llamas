@@ -1,4 +1,4 @@
-use crate::error::{handle_error, ApiError};
+use crate::error::ApiError;
 
 use std::collections::HashMap;
 
@@ -83,21 +83,25 @@ pub async fn post_llm_converse(
 }
 
 #[debug_handler]
-pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Response, ApiError> {
+pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoResponse {
     info!("Payload: {:?}", payload);
 
     let store = Store::new(&payload.user_id).await;
+
     info!("HERE 0");
+
     let game_state = match store.try_get_state().await {
-        Ok(v) => Ok(v),
-        Err(e) => {
-            info!("THIS ERROR {}", e);
-            Err(e)
-        }
-    }?;
+        Ok(store) => store,
+        Err(e) => return ApiError(e).into_response(),
+    };
 
     info!("HERE 00");
-    let settings = store.try_get_settings().await?;
+
+    let settings = match store.try_get_settings().await {
+        Ok(settings) => settings,
+        Err(e) => return ApiError(e).into_response(),
+    };
+
     info!("HERE 1");
 
     let system_vars = HashMap::new();
@@ -144,7 +148,10 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
         },
     };
 
-    json_vars.insert("example".to_string(), serde_json::to_string(&example)?);
+    match serde_json::to_string(&example) {
+        Ok(example) => json_vars.insert("example".to_string(), example),
+        Err(e) => return ApiError(e.into()).into_response(),
+    };
 
     let tool_config = match &payload.generator {
         GeneratorType::Scenario(config) => match config {
@@ -157,6 +164,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
             GeneratorObjectConfig::Spell => GeneratorToolConfig { tool: Tool::Battle },
         },
     };
+
     info!("HERE 3");
 
     let prompt_config = match &payload.generator {
@@ -240,54 +248,65 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
 
     info!("HERE4");
 
-    let mut generator = JsonResponseGenerator::new(
+    let mut generator = match JsonResponseGenerator::new(
         &payload.user_id,
         payload.generator.clone(),
         tool_config,
         prompt_config,
     )
-    .await?;
+    .await
+    {
+        Ok(generator) => generator,
+        Err(e) => return ApiError(e.into()).into_response(),
+    };
 
-    let text_res = generator.generate_text().await;
-
-    info!("HERE5");
-
-    match text_res {
+    match generator.generate_text().await {
         Ok(_) => {
             info!("Text Created");
         }
-        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
+        Err(e) => return ApiError(e).into_response(),
     };
 
     info!("HERE6");
 
-    let json_res = generator.generate_json::<ToolOutput>().await;
-
-    info!("HERE7");
-    match json_res {
+    match generator.generate_json::<ToolOutput>().await {
         Ok(output) => {
             let data = ToolOutputModel::from(output);
 
-            generator
+            match generator
                 .save_json(data.clone())
                 .await
-                .context("Failed to save_json")?;
+                .context("Failed to save_json")
+            {
+                Ok(_) => (),
+                Err(e) => return ApiError(e).into_response(),
+            };
 
             info!("DATA: {:?}", data);
 
-            let value = serde_json::to_value(data)?;
+            let value = match serde_json::to_value(data) {
+                Ok(value) => value,
+                Err(e) => return ApiError(e.into()).into_response(),
+            };
 
             info!("Value: {:?}", value);
 
             let store = Store::new(&payload.user_id).await;
-            let game_id = store.try_get_active_game_id().await?;
+
+            let game_id = match store.try_get_active_game_id().await {
+                Ok(game_id) => game_id,
+                Err(e) => return ApiError(e).into_response(),
+            };
 
             if let Some(text) = generator.text {
                 let mut embedding_engine = EmbeddingEngine::new(EmbeddingConfig::default()).await;
 
                 let db = VectorDatabase::new();
 
-                let vector = embedding_engine.try_create_vector(&text).await?;
+                let vector = match embedding_engine.try_create_vector(&text).await {
+                    Ok(vector) => vector,
+                    Err(e) => return ApiError(e).into_response(),
+                };
 
                 let embedding = models::NewEmbedding {
                     user_id: &payload.user_id,
@@ -297,11 +316,15 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
                     type_: "output".to_string(),
                 };
 
-                let db_res = db
+                let db_res = match db
                     .await
                     .try_insert_new_embedding(&embedding)
                     .await
-                    .context("failed to insert embedding")?;
+                    .context("failed to insert embedding")
+                {
+                    Ok(res) => res,
+                    Err(e) => return ApiError(e).into_response(),
+                };
 
                 info!("Database NewEmbedding response: {:?}", db_res);
             }
@@ -310,13 +333,26 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
 
             //:TODO: this needs conditional logic on updating the current gamestate
             if generator.gen_type.is_scenario() {
-                let game_state = store.try_get_state().await?;
-                let round = game_state
-                    .round
-                    .expect("GameState.round should not be None");
-                let level = game_state
-                    .level
-                    .expect("GameState.level should not be None");
+                let game_state = match store.try_get_state().await {
+                    Ok(game_state) => game_state,
+                    Err(e) => return ApiError(e).into_response(),
+                };
+
+                let round = match game_state.round {
+                    Some(round) => round,
+                    None => {
+                        let err = anyhow::anyhow!("GameState.round should not be None").into();
+                        return ApiError(err).into_response();
+                    }
+                };
+
+                let level = match game_state.level {
+                    Some(level) => level,
+                    None => {
+                        let err = anyhow::anyhow!("GameState.level should not be None").into();
+                        return ApiError(err).into_response();
+                    }
+                };
 
                 state.insert("round".to_string(), AttributeValue::N(round.to_string()));
                 state.insert("level".to_string(), AttributeValue::N(level.to_string()));
@@ -346,14 +382,16 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> Result<Respo
                 }
             };
 
-            let _ = store.try_update_state(state).await?;
+            let _ = match store.try_update_state(state).await {
+                Ok(_) => (),
+                Err(e) => return ApiError(e).into_response(),
+            };
 
             let res = (StatusCode::OK, Json(value)).into_response();
             info!("Response: {:?}", res);
-
-            return Ok(res);
+            res
         }
 
-        Err(err) => return Ok(handle_error(format!("{:?}", err.to_string()))),
-    };
+        Err(e) => return ApiError(e).into_response(),
+    }
 }
