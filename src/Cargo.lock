@@ -1350,6 +1350,7 @@ dependencies = [
  "serde_dynamo",
  "sqids",
  "strum",
+ "thiserror 2.0.9",
 ]
 
 [[package]]

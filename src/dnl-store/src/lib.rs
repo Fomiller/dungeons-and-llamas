@@ -1,4 +1,5 @@
 pub mod encounter;
+mod error;
 pub mod message;
 pub mod schema;
 pub mod state_component;
@@ -7,6 +8,8 @@ pub mod weapon;
 
 use crate::encounter::EncounterQuery;
 use crate::state_component::StateComponent;
+
+pub use error::*;
 
 use dnl_sort_keys::prelude::*;
 use dnl_types::api::request::NewGameData;
