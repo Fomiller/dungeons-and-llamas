@@ -61,17 +61,23 @@ pub async fn post_llm_converse(
     match con_res?.get_tool_output() {
         Ok(tool) => {
             let status = StatusCode::OK;
+
             let input = &tool[0].input;
-            let value = serde_json::to_value(input)?;
+
+            let value = serde_json::to_value(input)
+                .map_err(|e| <serde_json::Error as Into<ApiError>>::into(e))?;
+
             info!("Value: {}", value);
 
             let res: BattleToolOutput = serde_json::from_value(value.clone())
-                .context("Could not convert to BattleToolOutput")?;
+                .map_err(|e| <serde_json::Error as Into<ApiError>>::into(e))?;
+
             info!("BTR: {:?}", res);
 
             let json = Json(json!({"detail": res}));
 
             info!("Response: {:?}", json);
+
             Ok((status, json).into_response())
         }
         Err(e) => {
@@ -92,14 +98,14 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
     let game_state = match store.try_get_state().await {
         Ok(store) => store,
-        Err(e) => return ApiError(e).into_response(),
+        Err(e) => return ApiError::from(e).into_response(),
     };
 
     info!("HERE 00");
 
     let settings = match store.try_get_settings().await {
         Ok(settings) => settings,
-        Err(e) => return ApiError(e).into_response(),
+        Err(e) => return ApiError::from(e).into_response(),
     };
 
     info!("HERE 1");
@@ -150,7 +156,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
     match serde_json::to_string(&example) {
         Ok(example) => json_vars.insert("example".to_string(), example),
-        Err(e) => return ApiError(e.into()).into_response(),
+        Err(e) => return <serde_json::Error as Into<ApiError>>::into(e).into_response(),
     };
 
     let tool_config = match &payload.generator {
@@ -257,14 +263,14 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
     .await
     {
         Ok(generator) => generator,
-        Err(e) => return ApiError(e.into()).into_response(),
+        Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
     };
 
     match generator.generate_text().await {
         Ok(_) => {
             info!("Text Created");
         }
-        Err(e) => return ApiError(e).into_response(),
+        Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
     };
 
     info!("HERE6");
@@ -279,14 +285,14 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
                 .context("Failed to save_json")
             {
                 Ok(_) => (),
-                Err(e) => return ApiError(e).into_response(),
+                Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
             };
 
             info!("DATA: {:?}", data);
 
             let value = match serde_json::to_value(data) {
                 Ok(value) => value,
-                Err(e) => return ApiError(e.into()).into_response(),
+                Err(e) => return <serde_json::Error as Into<ApiError>>::into(e).into_response(),
             };
 
             info!("Value: {:?}", value);
@@ -295,7 +301,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
             let game_id = match store.try_get_active_game_id().await {
                 Ok(game_id) => game_id,
-                Err(e) => return ApiError(e).into_response(),
+                Err(e) => return <dnl_store::Error as Into<ApiError>>::into(e).into_response(),
             };
 
             if let Some(text) = generator.text {
@@ -305,7 +311,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
                 let vector = match embedding_engine.try_create_vector(&text).await {
                     Ok(vector) => vector,
-                    Err(e) => return ApiError(e).into_response(),
+                    Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
                 };
 
                 let embedding = models::NewEmbedding {
@@ -323,7 +329,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
                     .context("failed to insert embedding")
                 {
                     Ok(res) => res,
-                    Err(e) => return ApiError(e).into_response(),
+                    Err(e) => return ApiError::VectorDatabase(e.to_string()).into_response(),
                 };
 
                 info!("Database NewEmbedding response: {:?}", db_res);
@@ -335,22 +341,22 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
             if generator.gen_type.is_scenario() {
                 let game_state = match store.try_get_state().await {
                     Ok(game_state) => game_state,
-                    Err(e) => return ApiError(e).into_response(),
+                    Err(e) => return <dnl_store::Error as Into<ApiError>>::into(e).into_response(),
                 };
 
                 let round = match game_state.round {
                     Some(round) => round,
                     None => {
-                        let err = anyhow::anyhow!("GameState.round should not be None").into();
-                        return ApiError(err).into_response();
+                        let err = anyhow::anyhow!("GameState.round should not be None");
+                        return ApiError::from(err).into_response();
                     }
                 };
 
                 let level = match game_state.level {
                     Some(level) => level,
                     None => {
-                        let err = anyhow::anyhow!("GameState.level should not be None").into();
-                        return ApiError(err).into_response();
+                        let err = anyhow::anyhow!("GameState.level should not be None");
+                        return ApiError::from(err).into_response();
                     }
                 };
 
@@ -384,7 +390,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
             let _ = match store.try_update_state(state).await {
                 Ok(_) => (),
-                Err(e) => return ApiError(e).into_response(),
+                Err(e) => return <dnl_store::Error as Into<ApiError>>::into(e).into_response(),
             };
 
             let res = (StatusCode::OK, Json(value)).into_response();
@@ -392,6 +398,6 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
             res
         }
 
-        Err(e) => return ApiError(e).into_response(),
+        Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
     }
 }

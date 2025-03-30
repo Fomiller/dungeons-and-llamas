@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -35,8 +37,6 @@ pub enum Error {
 
     #[error("Failed to get encounters")]
     GetEncounters(String, String),
-    #[error("Failed to get settings")]
-    GetSettings(String, String),
     #[error("Failed to get state")]
     GetState(String, String),
     #[error("Failed to get enemies")]
@@ -48,4 +48,26 @@ pub enum Error {
 
     #[error("Failed to update state")]
     UpdateState(String, String),
+
+    #[error("Failed to find active game id for user ")]
+    ActiveGameIdNotFound(String),
+    #[error("Failed to find llm model for game settings ")]
+    LLMModelNotFound(String),
+    #[error("Failed to find encounters for user {0} game {1} ")]
+    EncountersNotFound(String, String),
+    #[error("Failed to find enemies for: {0}")]
+    EnemiesNotFound(String),
+    #[error("Failed to find settings")]
+    SettingsNotFound,
+    #[error("Failed to create game id: {0}")]
+    CreateGameId(String),
+
+    #[error("AWS DynamoDB Sdk Error: {0}")]
+    AWSSdk(String),
+
+    #[error("Serde Dynamo Error: {0}")]
+    SerdeDynamo(String),
+
+    #[error("An error occured: {0}")]
+    Other(String),
 }
