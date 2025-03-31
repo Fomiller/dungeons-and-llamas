@@ -1,6 +1,6 @@
 use dnl_store::Store;
 use dnl_types::api::request::NewGameData;
-use dnl_types::error::{handle_error, ApiError};
+use dnl_types::error::ApiError;
 use lambda_http::tracing::info;
 
 use axum::http::StatusCode;
@@ -22,6 +22,6 @@ pub async fn post_new_game_handler(Json(payload): Json<NewGameData>) -> Result<R
 
     Ok(match client.try_new_game(payload).await {
         Ok(res) => (StatusCode::CREATED, Json(res)).into_response(),
-        Err(err) => handle_error(format!("{:?}", err.to_string())),
+        Err(err) => err.into_response(),
     })
 }

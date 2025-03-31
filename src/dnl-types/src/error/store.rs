@@ -7,6 +7,9 @@ use aws_sdk_dynamodb::operation::put_item::PutItemError;
 use aws_sdk_dynamodb::operation::query::QueryError;
 use aws_sdk_dynamodb::operation::transact_write_items::TransactWriteItemsError;
 use aws_sdk_dynamodb::operation::update_item::UpdateItemError;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Json, Response};
+use serde_json::json;
 
 #[derive(Error, Debug)]
 pub enum StoreError {
@@ -74,4 +77,17 @@ pub enum StoreError {
     SerdeDynamo(String),
     #[error("An error occured: {0}")]
     Other(String),
+}
+
+// Tell axum how to convert `ApiError` into a response.
+impl IntoResponse for StoreError {
+    fn into_response(self) -> Response {
+        match self {
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("{}",self.to_string())})),
+            ),
+        }
+        .into_response()
+    }
 }

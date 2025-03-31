@@ -84,22 +84,16 @@ impl ScenarioCmd {
 
         let url = format!("{}/{}", DNL_API_URL.to_string(), "api/llm/scenario");
 
-        match client.post(url).json(&payload).send().await {
-            Ok(response) => {
-                info!("STATUS: {}", response.status());
-                if response.status().is_success() {
-                    Self::handle_sucessful_response_with_followup::<ScenarioModel>(
-                        response, &cmd, &http,
-                    )
-                    .await?
-                } else {
-                    let _ =
-                        Self::handle_error_with_followup(&http, &cmd, response.text().await?).await;
-                }
+        let response = client.post(url).json(&payload).send().await?;
 
-                Ok(None)
-            }
-            Err(err) => return errors::handle_error(&http, &cmd, err.into()).await,
+        if response.status().is_success() {
+            Self::handle_sucessful_response_with_followup::<ScenarioModel>(response, &cmd, &http)
+                .await?
+        } else {
+            let text = response.text().await?;
+            let _ = Self::handle_error_with_followup(&http, &cmd, text).await;
         }
+
+        Ok(None)
     }
 }

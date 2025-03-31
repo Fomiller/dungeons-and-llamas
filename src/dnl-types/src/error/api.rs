@@ -41,9 +41,3 @@ impl IntoResponse for ApiError {
         .into_response()
     }
 }
-
-pub fn handle_error(msg: String) -> Response {
-    let error = ApiResponseError { error: msg };
-    let res = (StatusCode::SERVICE_UNAVAILABLE, Json(error)).into_response();
-    res
-}

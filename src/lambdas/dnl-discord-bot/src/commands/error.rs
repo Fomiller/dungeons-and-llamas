@@ -1,9 +1,9 @@
-use dnl_types::error::ApiResponseError;
 use dnl_types::traits::DiscordMsg;
 
 use anyhow::Context;
 use lambda_http::tracing::info;
 use reqwest::Response;
+use serde_json::Value;
 use serenity::all::Http;
 use serenity::builder::*;
 use serenity::model::application::*;
@@ -28,12 +28,18 @@ pub trait DiscordCmdResponse {
     async fn handle_error_response(
         res: Response,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let error: ApiResponseError = res
+        let error: Value = res
             .json()
             .await
-            .context("Failed to parse into ApiResponseError")?;
+            .unwrap_or_else(|_| serde_json::json!({ "error": "Failed to parse JSON response in handle_error_response" }));
 
-        let message = CreateInteractionResponseMessage::new().content(error.error);
+        let message = error
+            .get("error")
+            .and_then(|v| v.as_str())
+            .unwrap_or_else(|| "Error unwrapping error message in handle_error_response")
+            .to_string();
+
+        let message = CreateInteractionResponseMessage::new().content(message);
 
         Ok(Some(CreateInteractionResponse::Message(message)))
     }
