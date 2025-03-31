@@ -1,5 +1,4 @@
 pub mod encounter;
-mod error;
 pub mod message;
 pub mod schema;
 pub mod state_component;
@@ -9,12 +8,11 @@ pub mod weapon;
 use crate::encounter::EncounterQuery;
 use crate::state_component::StateComponent;
 
-pub use error::*;
-
 use dnl_sort_keys::prelude::*;
 use dnl_types::api::request::NewGameData;
 use dnl_types::api::response::NewGameResponse;
 use dnl_types::entity::stats::get_base_stats_by_name;
+use dnl_types::error::StoreError as Error;
 use dnl_types::scenarios::battle::BattleScenarioEnemy;
 use dnl_types::settings::Settings;
 

@@ -1,5 +1,3 @@
-use crate::error::ApiError;
-
 use std::collections::HashMap;
 
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -9,6 +7,7 @@ use dnl_generators::*;
 use dnl_llm::embedding::{EmbeddingConfig, EmbeddingEngine};
 use dnl_store::Store;
 use dnl_types::api::request::ScenarioRequest;
+use dnl_types::error::ApiError;
 use dnl_types::generators::prompt::Prompt;
 use dnl_types::generators::*;
 use dnl_types::llm::*;

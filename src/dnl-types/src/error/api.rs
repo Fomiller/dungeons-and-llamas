@@ -2,19 +2,22 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
-use dnl_types::api::error::ApiResponseError;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use thiserror::Error;
 
-// https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs
-// Make our own error that wraps `anyhow::Error`.
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ApiResponseError {
+    pub error: String,
+}
+
 #[derive(Error, Debug)]
 pub enum ApiError {
     #[error(transparent)]
-    Generator(#[from] dnl_generators::Error),
+    Generator(#[from] super::generator::GeneratorError),
 
     #[error("Failed store operation: {0}")]
-    Store(#[from] dnl_store::Error),
+    Store(#[from] super::store::StoreError),
 
     #[error("Failed vector database operation: {0}")]
     VectorDatabase(String),

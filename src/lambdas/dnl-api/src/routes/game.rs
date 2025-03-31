@@ -1,6 +1,6 @@
-use crate::error::{handle_error, ApiError};
 use dnl_store::Store;
 use dnl_types::api::request::NewGameData;
+use dnl_types::error::{handle_error, ApiError};
 use lambda_http::tracing::info;
 
 use axum::http::StatusCode;

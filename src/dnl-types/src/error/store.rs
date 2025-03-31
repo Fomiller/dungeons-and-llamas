@@ -9,7 +9,7 @@ use aws_sdk_dynamodb::operation::transact_write_items::TransactWriteItemsError;
 use aws_sdk_dynamodb::operation::update_item::UpdateItemError;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum StoreError {
     #[error("Generic update error: {0}")]
     GenericUpdate(SdkError<UpdateItemError>),
     #[error("Generic query error: {0}")]

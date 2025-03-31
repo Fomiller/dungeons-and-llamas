@@ -1,4 +1,4 @@
-use dnl_types::api::error::ApiResponseError;
+use dnl_types::error::ApiResponseError;
 use dnl_types::traits::DiscordMsg;
 
 use anyhow::Context;

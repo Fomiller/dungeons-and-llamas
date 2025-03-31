@@ -1,15 +1,15 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum GeneratorError {
     #[error("Failed to generate text")]
     GenerateTextError,
 
     #[error(transparent)]
-    Store(#[from] dnl_store::Error),
+    Store(#[from] super::store::StoreError),
 
     #[error(transparent)]
-    Llm(#[from] dnl_types::errors::LLMError),
+    Llm(#[from] super::llm::LLMError),
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),

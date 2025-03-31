@@ -7,9 +7,3 @@ pub enum ToolError {
     #[error("No tool output available")]
     NoOutput,
 }
-
-#[derive(Error, Debug)]
-pub enum LLMError {
-    #[error("converse error")]
-    Converse,
-}

@@ -1,14 +1,11 @@
-mod error;
-
 pub mod prompt;
 pub mod scenarios;
 pub mod tools;
 
-pub use error::*;
-
 use dnl_sort_keys::encounter::EncounterSortKey;
 use dnl_store::encounter::EncounterQuery;
 use dnl_store::Store;
+use dnl_types::error::GeneratorError as Error;
 use dnl_types::generators::*;
 use dnl_types::llm::LlmHandler;
 use dnl_types::llm::ParseConverseOutput;

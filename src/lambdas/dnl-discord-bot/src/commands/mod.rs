@@ -28,15 +28,9 @@ use scenario::*;
 use settings::*;
 use text::*;
 
-use dnl_types::api::error::ApiResponseError;
-use dnl_types::traits::DiscordMsg;
-
 use std::str::FromStr;
 
-use anyhow::Context;
 use lambda_http::tracing::info;
-use reqwest::Response;
-use serenity::all::Http;
 use serenity::builder::*;
 use serenity::model::application::*;
 use strum::EnumString;

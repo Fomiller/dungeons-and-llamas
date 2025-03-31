@@ -7,19 +7,17 @@ edition = "2021"
 
 anyhow = "1.0.94"
 aws-config = "1.5.10"
-aws-sdk-bedrockruntime = { version = "1.64.0", features = [
-    "behavior-version-latest",
-] }
-uuid = { version = "1.11.0", features = ["v4"] }
+aws-sdk-bedrockruntime = { version = "1.64.0", features = [ "behavior-version-latest", ] }
+aws-sdk-dynamodb = "1.71.0"
+aws-smithy-types = { version = "1.2.10", features = [ "serde-deserialize", "serde-serialize", ] }
+axum = { version = "0.7.7" }
 lambda_runtime = "0.13.0"
-serde_json = "1.0.133"
-strum = { version = "0.26.3", features = ["derive", "strum_macros"] }
-aws-smithy-types = { version = "1.2.10", features = [
-    "serde-deserialize",
-    "serde-serialize",
-] }
-serde = { version = "1.0.215", features = ["derive"] }
 lazy_static = "1.5.0"
-thiserror = "2.0.9"
 rand = "0.8.5"
+serde = { version = "1.0.215", features = ["derive"] }
+serde_dynamo = "4.2.14"
+serde_json = "1.0.133"
 serenity = { version = "0.12.2", features = ["http"] }
+strum = { version = "0.26.3", features = ["derive", "strum_macros"] }
+thiserror = "2.0.9"
+uuid = { version = "1.11.0", features = ["v4"] }
