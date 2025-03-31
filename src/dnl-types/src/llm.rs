@@ -1,4 +1,4 @@
-use crate::errors::ToolError;
+use crate::error::ToolError;
 use crate::tools::Tool;
 
 use anyhow::Context;

@@ -26,7 +26,7 @@ impl NewGameCmd {
         if res.status().is_success() {
             Self::handle_sucessful_response::<NewGameResponse>(res).await
         } else {
-            Self::handle_error(res).await
+            Self::handle_error_response(res).await
         }
     }
 }

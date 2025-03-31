@@ -7,7 +7,7 @@ pub async fn handle_error<T>(
     cmd: &CommandInteraction,
     err: anyhow::Error,
 ) -> anyhow::Result<T> {
-    let message = CreateInteractionResponseFollowup::new().content(format!("Error: {:?}",err));
+    let message = CreateInteractionResponseFollowup::new().content(format!("Error: {:?}", err));
     let _ = cmd.create_followup(http, message).await;
     Err(anyhow::anyhow!(err))
 }

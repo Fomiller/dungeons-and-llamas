@@ -1,8 +1,10 @@
 pub mod commands;
 pub mod components;
-pub mod error;
+mod errors;
 pub mod modals;
 pub mod verify;
+
+pub use errors::*;
 
 use commands::*;
 use components::*;
