@@ -1,18 +1,22 @@
+mod error;
+
 pub mod prompt;
 pub mod scenarios;
 pub mod tools;
 
-use std::collections::HashMap;
-use std::str::FromStr;
+pub use error::*;
 
 use dnl_sort_keys::encounter::EncounterSortKey;
+use dnl_store::encounter::EncounterQuery;
 use dnl_store::Store;
 use dnl_types::generators::*;
 use dnl_types::llm::LlmHandler;
 use dnl_types::llm::ParseConverseOutput;
 
+use std::collections::HashMap;
+use std::str::FromStr;
+
 use anyhow::anyhow;
-use anyhow::Context;
 use aws_sdk_bedrockruntime::types::builders::*;
 use lambda_http::tracing::info;
 use serde::{Deserialize, Serialize};
@@ -40,7 +44,7 @@ impl JsonResponseGenerator {
         gen_type: GeneratorType,
         tool_config: GeneratorToolConfig,
         prompt_config: GeneratorPromptConfig,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self, Error> {
         let store = Store::new(user_id).await;
 
         let model = store.try_get_llm_model().await?;
@@ -66,7 +70,7 @@ impl JsonResponseGenerator {
     }
 
     // :TODO: this will have to be custom logic based on the GeneratorConfig
-    pub async fn generate_text(&mut self) -> anyhow::Result<()> {
+    pub async fn generate_text(&mut self) -> Result<(), Error> {
         info!("GEN TEXT 1");
 
         let scenario_config = match &self.gen_type {
@@ -76,56 +80,11 @@ impl JsonResponseGenerator {
         .expect("GeneratorType should be a scenario if calling generate_text");
 
         info!("GEN TEXT 2");
+
         info!("Scenario Config: {:?}", scenario_config);
 
-        // :TODO: this should probably be made into a get_text_context function
-        let resp = match scenario_config {
-            &GeneratorScenarioConfig::Battle => {
-                let state = self.store.try_get_state().await?;
+        let resp = self.get_text_context(scenario_config.clone()).await?;
 
-                let game_id = self.store.try_get_active_game_id().await?;
-
-                let level = &state.level.expect("state.level should be set").to_string();
-                info!("Battle1");
-
-                // THIS DOES NOT HANDLE NEW GAME
-                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())
-                    .context("Encounter Sort Key variant not found")?;
-
-                self.store
-                    .try_get_encounters(&game_id, level, encounter)
-                    .await
-                    .context("try_get_encounters failed")?
-            }
-            GeneratorScenarioConfig::Shop => {
-                let state = self.store.try_get_state().await?;
-
-                let game_id = self.store.try_get_active_game_id().await?;
-
-                let level = &state.level.unwrap().to_string();
-
-                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())?;
-
-                self.store
-                    .try_get_encounters(&game_id, level, encounter)
-                    .await
-                    .context("try_get_encounters failed")?
-            }
-            GeneratorScenarioConfig::Rest => {
-                let state = self.store.try_get_state().await?;
-
-                let game_id = self.store.try_get_active_game_id().await?;
-
-                let level = &state.level.unwrap().to_string();
-
-                let encounter = EncounterSortKey::from_str(&state.curr_encounter.unwrap())?;
-
-                self.store
-                    .try_get_encounters(&game_id, level, encounter)
-                    .await
-                    .context("try_get_encounters failed")?
-            }
-        };
         info!("GEN TEXT 3");
 
         let ctxs: Vec<String> = resp
@@ -146,9 +105,13 @@ impl JsonResponseGenerator {
             .collect();
 
         info!("Ctx Count: {:?}", ctxs.len());
+
         info!("CTXS: {:?}", ctxs);
 
-        let text_prompt = &self.prompt_config.clone().text.expect("Expected a prompt text, but found None. Ensure that prompt_config.text is set before calling generate_text.");
+        let text_prompt = match self.prompt_config.clone().text {
+            Some(text) => text,
+            None => return Err(anyhow!("Expected a prompt text, but found None. Ensure that prompt_config.text is set before calling generate_text.").into())
+        };
 
         let prompt = self.llm.create_prompt(Some(ctxs), &text_prompt.format());
 
@@ -166,7 +129,7 @@ impl JsonResponseGenerator {
 
         let res = self.llm.converse(None, inference_cfg).await?;
 
-        let text = res.get_text_output().context("get_text_output failed")?;
+        let text = res.get_text_output()?;
 
         self.text = Some(text);
 
@@ -175,7 +138,7 @@ impl JsonResponseGenerator {
 
     pub async fn generate_json<T: Serialize + for<'a> Deserialize<'a>>(
         &mut self,
-    ) -> anyhow::Result<T> {
+    ) -> Result<T, Error> {
         let mut ctxs: Vec<String> = vec![];
 
         loop {
@@ -188,19 +151,25 @@ impl JsonResponseGenerator {
                 Err(err) => {
                     if self.attempts >= self.max_retries {
                         info!("Reached max retry limit of {}", self.max_retries);
-                        return Err(anyhow::anyhow!(
+
+                        let err = anyhow::anyhow!(
                             "Exceeded max retry limit of {} when trying to create json",
                             self.max_retries
-                        ));
+                        )
+                        .into();
+
+                        return Err(err);
                     }
 
                     info!("Retrying creating JSON output");
+
                     info!("Attempt {} failed: {}", self.attempts, err);
 
                     let fail_ctx = format!(
                         "The previous attempt to deserialize your response failed with the error: {}",
                         err.to_string()
                     );
+
                     ctxs.push(fail_ctx);
                 }
             }
@@ -210,7 +179,7 @@ impl JsonResponseGenerator {
     pub async fn to_json<T: Serialize + for<'a> Deserialize<'a>>(
         &mut self,
         ctxs: Vec<String>,
-    ) -> anyhow::Result<T> {
+    ) -> Result<T, Error> {
         let mut contexts: Vec<String> = Vec::new();
 
         // using the text in generate_text as context
@@ -246,10 +215,9 @@ impl JsonResponseGenerator {
         let res = self
             .llm
             .converse(Some(self.tool_config.tool), inference_cfg)
-            .await
-            .context("Failed to call converse api")?;
+            .await?;
 
-        let tool_output = res.get_tool_output().context("Failed to get tool output")?;
+        let tool_output = res.get_tool_output()?;
 
         let tool_value = tool_output
             .first()
@@ -257,25 +225,30 @@ impl JsonResponseGenerator {
             .input
             .clone();
 
-        let value = serde_json::to_value(tool_value)
-            .context("Failed to parese tool value to serde_json::Value")?;
+        let value = match serde_json::to_value(tool_value) {
+            Ok(v) => v,
+            Err(e) => return Err(e.into()),
+        };
 
         info!("VALUE: {:?}", value);
 
         match serde_json::from_value::<T>(value) {
             Ok(v) => Ok(v),
-            Err(e) => Err(anyhow!("{}", e)),
+            Err(e) => Err(e.into()),
         }
     }
 
     pub async fn save_json<T: Serialize + for<'a> Deserialize<'a>>(
         &mut self,
         value: T,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), Error> {
         let mut state = HashMap::new();
 
         let map: HashMap<String, aws_sdk_dynamodb::types::AttributeValue> =
-            serde_dynamo::to_item(value)?;
+            match serde_dynamo::to_item(value) {
+                Ok(item) => item,
+                Err(e) => return Err(Error::from(e)),
+            };
 
         state.extend(map);
 
@@ -290,21 +263,22 @@ impl JsonResponseGenerator {
 
         let game_state = self.store.try_get_state().await?;
 
-        let level = game_state
-            .level
-            .expect("GameState.level should not be None")
-            .parse()?;
+        let round = match game_state.round {
+            Some(level) => level.parse::<u8>().map_err(|e| anyhow!(e))?,
+            None => return Err(anyhow!("state.round should be set").into()),
+        };
 
-        let round = game_state
-            .round
-            .expect("GameState.round should not be None")
-            .parse()?;
+        let level = match game_state.level {
+            Some(level) => level.parse::<u8>().map_err(|e| anyhow!(e))?,
+            None => return Err(anyhow!("state.level should be set").into()),
+        };
 
-        let curr_encounter = game_state
-            .curr_encounter
-            .expect("GameState.curr_encounter should not be None");
+        let curr_encounter = match game_state.curr_encounter {
+            Some(curr_encounter) => curr_encounter,
+            None => return Err(anyhow!("state.curr_encounter should be set").into()),
+        };
 
-        let encounter = EncounterSortKey::from_str(&curr_encounter)?;
+        let encounter = EncounterSortKey::from_str(&curr_encounter).map_err(|e| anyhow!(e))?;
 
         let _ = self
             .store
@@ -312,5 +286,36 @@ impl JsonResponseGenerator {
             .await;
 
         Ok(())
+    }
+
+    async fn get_text_context(
+        &self,
+        config: GeneratorScenarioConfig,
+    ) -> Result<Vec<EncounterQuery>, Error> {
+        let state = self.store.try_get_state().await?;
+
+        let game_id = self.store.try_get_active_game_id().await?;
+
+        let level = match state.level {
+            Some(level) => level,
+            None => return Err(anyhow!("state.level should be set").into()),
+        };
+
+        let curr_encounter = match state.curr_encounter {
+            Some(curr_encounter) => curr_encounter,
+            None => return Err(anyhow!("state.curr_encounter should be set").into()),
+        };
+
+        let encounter = EncounterSortKey::from_str(&curr_encounter).map_err(|e| anyhow!(e))?;
+
+        let encounters = match config {
+            _ => {
+                self.store
+                    .try_get_encounters(&game_id, &level, encounter)
+                    .await?
+            }
+        };
+
+        Ok(encounters)
     }
 }

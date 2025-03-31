@@ -36,9 +36,7 @@ pub fn llm_router() -> Router {
 }
 
 #[debug_handler]
-pub async fn post_llm_converse(
-    Json(payload): Json<LlmConverseInput>,
-) -> Result<Response, ApiError> {
+pub async fn post_llm_converse(Json(payload): Json<LlmConverseInput>) -> Response {
     println!("Payload: {:?}", payload);
 
     let mut llm = LlmHandler::new(payload.model, payload.system).await;
@@ -55,22 +53,30 @@ pub async fn post_llm_converse(
             .build(),
     );
 
-    let con_res = llm.converse(Some(Tool::Battle), cfg).await;
-    info!("CON-RES: {:?}", con_res);
+    let converse_output = match llm.converse(Some(Tool::Battle), cfg).await {
+        Ok(value) => value,
+        Err(e) => return ApiError::from(e).into_response(),
+    };
 
-    match con_res?.get_tool_output() {
+    info!("CONVERSE-OUTPUT: {:?}", converse_output);
+
+    match converse_output.get_tool_output() {
         Ok(tool) => {
             let status = StatusCode::OK;
 
             let input = &tool[0].input;
 
-            let value = serde_json::to_value(input)
-                .map_err(|e| <serde_json::Error as Into<ApiError>>::into(e))?;
+            let value = match serde_json::to_value(input) {
+                Ok(value) => value,
+                Err(e) => return ApiError::from(e).into_response(),
+            };
 
             info!("Value: {}", value);
 
-            let res: BattleToolOutput = serde_json::from_value(value.clone())
-                .map_err(|e| <serde_json::Error as Into<ApiError>>::into(e))?;
+            let res: BattleToolOutput = match serde_json::from_value(value.clone()) {
+                Ok(value) => value,
+                Err(e) => return ApiError::from(e).into_response(),
+            };
 
             info!("BTR: {:?}", res);
 
@@ -78,12 +84,12 @@ pub async fn post_llm_converse(
 
             info!("Response: {:?}", json);
 
-            Ok((status, json).into_response())
+            (status, json).into_response()
         }
         Err(e) => {
             let status = StatusCode::BAD_REQUEST;
             let json = Json(json!({"error": format!("{}",e)}));
-            Ok((status, json).into_response())
+            (status, json).into_response()
         }
     }
 }
@@ -156,7 +162,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
     match serde_json::to_string(&example) {
         Ok(example) => json_vars.insert("example".to_string(), example),
-        Err(e) => return <serde_json::Error as Into<ApiError>>::into(e).into_response(),
+        Err(e) => return ApiError::from(e).into_response(),
     };
 
     let tool_config = match &payload.generator {
@@ -263,14 +269,14 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
     .await
     {
         Ok(generator) => generator,
-        Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
+        Err(e) => return ApiError::from(e).into_response(),
     };
 
     match generator.generate_text().await {
         Ok(_) => {
             info!("Text Created");
         }
-        Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
+        Err(e) => return ApiError::from(e).into_response(),
     };
 
     info!("HERE6");
@@ -285,14 +291,14 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
                 .context("Failed to save_json")
             {
                 Ok(_) => (),
-                Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
+                Err(e) => return ApiError::from(e).into_response(),
             };
 
             info!("DATA: {:?}", data);
 
             let value = match serde_json::to_value(data) {
                 Ok(value) => value,
-                Err(e) => return <serde_json::Error as Into<ApiError>>::into(e).into_response(),
+                Err(e) => return ApiError::from(e).into_response(),
             };
 
             info!("Value: {:?}", value);
@@ -301,7 +307,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
             let game_id = match store.try_get_active_game_id().await {
                 Ok(game_id) => game_id,
-                Err(e) => return <dnl_store::Error as Into<ApiError>>::into(e).into_response(),
+                Err(e) => return ApiError::from(e).into_response(),
             };
 
             if let Some(text) = generator.text {
@@ -311,7 +317,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
                 let vector = match embedding_engine.try_create_vector(&text).await {
                     Ok(vector) => vector,
-                    Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
+                    Err(e) => return ApiError::from(e).into_response(),
                 };
 
                 let embedding = models::NewEmbedding {
@@ -341,7 +347,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
             if generator.gen_type.is_scenario() {
                 let game_state = match store.try_get_state().await {
                     Ok(game_state) => game_state,
-                    Err(e) => return <dnl_store::Error as Into<ApiError>>::into(e).into_response(),
+                    Err(e) => return ApiError::from(e).into_response(),
                 };
 
                 let round = match game_state.round {
@@ -390,7 +396,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
 
             let _ = match store.try_update_state(state).await {
                 Ok(_) => (),
-                Err(e) => return <dnl_store::Error as Into<ApiError>>::into(e).into_response(),
+                Err(e) => return ApiError::from(e).into_response(),
             };
 
             let res = (StatusCode::OK, Json(value)).into_response();
@@ -398,6 +404,6 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
             res
         }
 
-        Err(e) => return <anyhow::Error as Into<ApiError>>::into(e).into_response(),
+        Err(e) => return ApiError::from(e).into_response(),
     }
 }

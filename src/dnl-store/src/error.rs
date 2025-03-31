@@ -1,23 +1,29 @@
-use std::rc::Rc;
-
 use thiserror::Error;
+
+use aws_sdk_dynamodb::error::SdkError;
+use aws_sdk_dynamodb::operation::batch_write_item::BatchWriteItemError;
+use aws_sdk_dynamodb::operation::get_item::GetItemError;
+use aws_sdk_dynamodb::operation::put_item::PutItemError;
+use aws_sdk_dynamodb::operation::query::QueryError;
+use aws_sdk_dynamodb::operation::transact_write_items::TransactWriteItemsError;
+use aws_sdk_dynamodb::operation::update_item::UpdateItemError;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("Failed to update store {0}{1}")]
-    GenericUpdate(String, String),
-    #[error("Failed to query store")]
-    GenericQuery(String, String),
-    #[error("Failed to execute begins with query")]
-    GenericBeginsWithQuery(String, String),
-    #[error("Failed to exeute get store")]
-    GenericGet(String, String),
-    #[error("Failed to failed to put store")]
-    GenericPut(String, String),
-    #[error("Failed to batch write root sort keys")]
-    GenericBatchWriteRootSortKeys(String, String),
-    #[error("Failed to batch update")]
-    GenericBatchUpdate(String, String),
+    #[error("Generic update error: {0}")]
+    GenericUpdate(SdkError<UpdateItemError>),
+    #[error("Generic query error: {0}")]
+    GenericQuery(SdkError<QueryError>),
+    #[error("Generic begins with query error: {0}")]
+    GenericBeginsWithQuery(SdkError<QueryError>),
+    #[error("Generic get error: {0}")]
+    GenericGet(SdkError<GetItemError>),
+    #[error("Generic put error: {0}")]
+    GenericPut(SdkError<PutItemError>),
+    #[error("Generic batch write root sort keys error: {0}")]
+    GenericBatchWriteRootSortKeys(SdkError<BatchWriteItemError>),
+    #[error("Generic batch update error: {0}")]
+    GenericBatchUpdate(SdkError<TransactWriteItemsError>),
 
     #[error("Failed to create user")]
     CreateUser(String, String),
@@ -62,12 +68,10 @@ pub enum Error {
     #[error("Failed to create game id: {0}")]
     CreateGameId(String),
 
-    #[error("AWS DynamoDB Sdk Error: {0}")]
+    #[error("AWS Sdk error: {0}")]
     AWSSdk(String),
-
-    #[error("Serde Dynamo Error: {0}")]
+    #[error("Serde Dynamo error: {0}")]
     SerdeDynamo(String),
-
     #[error("An error occured: {0}")]
     Other(String),
 }

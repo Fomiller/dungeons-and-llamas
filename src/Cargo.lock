@@ -1198,7 +1198,7 @@ dependencies = [
  "lambda_http",
  "serde",
  "serde_json",
- "thiserror 2.0.9",
+ "thiserror 2.0.12",
  "tokio",
 ]
 
@@ -1286,6 +1286,8 @@ dependencies = [
  "serde",
  "serde_dynamo",
  "serde_json",
+ "strum",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -1350,7 +1352,7 @@ dependencies = [
  "serde_dynamo",
  "sqids",
  "strum",
- "thiserror 2.0.9",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -1368,7 +1370,7 @@ dependencies = [
  "serde_json",
  "serenity",
  "strum",
- "thiserror 2.0.9",
+ "thiserror 2.0.12",
  "uuid",
 ]
 
@@ -2698,7 +2700,7 @@ dependencies = [
  "rustc-hash",
  "rustls 0.23.19",
  "socket2",
- "thiserror 2.0.9",
+ "thiserror 2.0.12",
  "tokio",
  "tracing",
 ]
@@ -2717,7 +2719,7 @@ dependencies = [
  "rustls 0.23.19",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.9",
+ "thiserror 2.0.12",
  "tinyvec",
  "tracing",
  "web-time",
@@ -3592,11 +3594,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.9"
+version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f072643fd0190df67a8bab670c20ef5d8737177d6ac6b2e9a236cb096206b2cc"
+checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
 dependencies = [
- "thiserror-impl 2.0.9",
+ "thiserror-impl 2.0.12",
 ]
 
 [[package]]
@@ -3612,9 +3614,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.9"
+version = "2.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b50fa271071aae2e6ee85f842e2e28ba8cd2c5fb67f11fcb1fd70b276f9e7d4"
+checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",

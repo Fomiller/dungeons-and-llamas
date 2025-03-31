@@ -349,6 +349,7 @@ impl Store {
         Ok(())
     }
 
+    //:TODO: parsing level/round to u8 should probably happen inside this function
     pub async fn try_save_encounter(
         &self,
         game_id: &str,
