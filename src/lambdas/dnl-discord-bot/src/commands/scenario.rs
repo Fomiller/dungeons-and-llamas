@@ -72,6 +72,7 @@ impl ScenarioCmd {
             Scenario::Battle => GeneratorScenarioConfig::Battle,
             Scenario::Shop => GeneratorScenarioConfig::Shop,
             Scenario::Rest => GeneratorScenarioConfig::Rest,
+            Scenario::NewGame => GeneratorScenarioConfig::NewGame,
         };
 
         let generator = GeneratorType::Scenario(config);

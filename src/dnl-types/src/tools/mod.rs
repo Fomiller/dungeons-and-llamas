@@ -1,5 +1,5 @@
 pub mod battle;
-pub mod random_weapon;
+pub mod new_game;
 pub mod rest;
 pub mod shop;
 
@@ -9,6 +9,7 @@ use crate::scenarios::shop::*;
 use crate::scenarios::*;
 use crate::tools::battle::*;
 use crate::tools::shop::*;
+use new_game::NEW_GAME_TOOL_SCHEMA;
 use rest::REST_TOOL_SCHEMA;
 use shop::SHOP_TOOL_SCHEMA;
 
@@ -32,10 +33,8 @@ pub enum Tool {
     Shop,
     #[strum(to_string = "rest")]
     Rest,
-    // #[strum(to_string = "weapon")]
-    // Weapon,
-    // #[strum(to_string = "spell")]
-    // Spell,
+    #[strum(to_string = "new-game")]
+    NewGame,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -66,6 +65,12 @@ pub enum ToolOutput {
         fauna: String,
         secret: Option<String>,
     },
+    #[strum(to_string = "new-game")]
+    NewGame {
+        summary: String,
+        name: String,
+        items: Vec<ShopToolItem>,
+    },
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, strum::Display, strum::EnumString)]
@@ -92,6 +97,12 @@ pub enum ToolOutputModel {
         fauna: String,
         secret: Option<String>,
     },
+    #[strum(to_string = "new-game")]
+    NewGame {
+        summary: String,
+        name: String,
+        items: Vec<ShopScenarioItem>,
+    },
 }
 
 impl From<ToolOutput> for ToolOutputModel {
@@ -108,15 +119,17 @@ impl From<ToolOutput> for ToolOutputModel {
                 name,
                 terrain,
             },
+
             ToolOutput::Shop {
                 items,
                 merchant,
                 summary,
             } => ToolOutputModel::Shop {
                 items: items.into_iter().map(Into::into).collect(),
-                merchant: ShopScenarioMerchant::from(merchant),
+                merchant: merchant.into(),
                 summary,
             },
+
             ToolOutput::Rest {
                 summary,
                 flora,
@@ -128,6 +141,16 @@ impl From<ToolOutput> for ToolOutputModel {
                 fauna,
                 secret,
             },
+
+            ToolOutput::NewGame {
+                summary,
+                name,
+                items,
+            } => ToolOutputModel::NewGame {
+                summary,
+                name,
+                items: items.into_iter().map(Into::into).collect(),
+            },
         }
     }
 }
@@ -138,6 +161,7 @@ impl Tool {
             Tool::Battle=> "Creates the Battle scenario for a Dungeons and Dragons-style text adventure, in a JSON format.",
             Tool::Shop=> "Defines a shopping scenario where players can purchase items, in a JSON format.",
             Tool::Rest=> "Allows players to rest and regain health, in a JSON format.",
+            Tool::NewGame=> "Creates a starting scenario for a Dungeons and Dragons-style text adventure, in a JSON format.",
         }
     }
 
@@ -146,6 +170,7 @@ impl Tool {
             Tool::Battle => BATTLE_TOOL_SCHEMA.clone(),
             Tool::Shop => SHOP_TOOL_SCHEMA.clone(),
             Tool::Rest => REST_TOOL_SCHEMA.clone(),
+            Tool::NewGame => NEW_GAME_TOOL_SCHEMA.clone(),
         }
     }
 
@@ -291,6 +316,48 @@ impl ToolOutput {
 
         shop
     }
+    pub fn mock_new_game() -> ToolOutput {
+        let summary = "A tavern with a friendly barkeep".to_string();
+
+        let name = "new game".to_string();
+
+        let stats = DiceExpression {
+            die_count: 1,
+            die_size: 6,
+            modifier: 2,
+        };
+
+        let sword = ShopToolItem {
+            item_name: "Magic Sword".to_string(),
+            item_description: "A glowing sword.".to_string(),
+            item_stats: stats.clone(),
+            item_price: "3 gold".to_string(),
+        };
+
+        let bow = ShopToolItem {
+            item_name: "Short Bow".to_string(),
+            item_description: "A short bow, it seems to have some intricate carvings".to_string(),
+            item_stats: stats.clone(),
+            item_price: "2 gold".to_string(),
+        };
+
+        let mace = ShopToolItem {
+            item_name: "A spiky mace".to_string(),
+            item_description: "Crushes skulls".to_string(),
+            item_stats: stats.clone(),
+            item_price: "5 gold".to_string(),
+        };
+
+        let items = vec![sword, bow, mace];
+
+        let new_game = ToolOutput::NewGame {
+            summary,
+            name,
+            items,
+        };
+
+        new_game
+    }
 }
 
 impl From<ToolOutput> for ScenarioModel {
@@ -307,6 +374,7 @@ impl From<ToolOutput> for ScenarioModel {
                 name,
                 terrain,
             },
+
             ToolOutput::Shop {
                 items,
                 merchant,
@@ -316,6 +384,7 @@ impl From<ToolOutput> for ScenarioModel {
                 merchant: ShopScenarioMerchant::from(merchant),
                 summary,
             },
+
             ToolOutput::Rest {
                 summary,
                 flora,
@@ -327,6 +396,16 @@ impl From<ToolOutput> for ScenarioModel {
                 fauna,
                 secret,
             },
+
+            ToolOutput::NewGame {
+                summary,
+                name,
+                items,
+            } => ScenarioModel::NewGame {
+                summary,
+                name,
+                items: items.into_iter().map(Into::into).collect(),
+            },
         }
     }
 }
@@ -334,23 +413,10 @@ impl From<ToolOutput> for ScenarioModel {
 impl MockData for ToolOutput {
     fn mock(self) -> Self {
         match self {
-            ToolOutput::Battle {
-                enemies: _,
-                summary: _,
-                name: _,
-                terrain: _,
-            } => ToolOutput::mock_battle(),
-            ToolOutput::Shop {
-                items: _,
-                merchant: _,
-                summary: _,
-            } => ToolOutput::mock_shop(),
-            ToolOutput::Rest {
-                summary: _,
-                flora: _,
-                fauna: _,
-                secret: _,
-            } => ToolOutput::mock_rest(),
+            ToolOutput::Battle { .. } => ToolOutput::mock_battle(),
+            ToolOutput::Shop { .. } => ToolOutput::mock_shop(),
+            ToolOutput::Rest { .. } => ToolOutput::mock_rest(),
+            ToolOutput::NewGame { .. } => ToolOutput::mock_new_game(),
         }
     }
 }

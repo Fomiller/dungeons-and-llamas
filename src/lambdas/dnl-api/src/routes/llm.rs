@@ -15,6 +15,7 @@ use dnl_types::scenarios::*;
 use dnl_types::tools::battle::BattleToolOutput;
 use dnl_types::tools::*;
 use scenarios::battle::{BATTLE_JSON_PROMPT, BATTLE_SYSTEM_PROMPT, BATTLE_TEXT_PROMPT};
+use scenarios::new_game::{NEW_GAME_JSON_PROMPT, NEW_GAME_SYSTEM_PROMPT, NEW_GAME_TEXT_PROMPT};
 use scenarios::rest::{REST_JSON_PROMPT, REST_SYSTEM_PROMPT, REST_TEXT_PROMPT};
 use scenarios::shop::{SHOP_JSON_PROMPT, SHOP_SYSTEM_PROMPT, SHOP_TEXT_PROMPT};
 
@@ -152,6 +153,7 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
             GeneratorScenarioConfig::Battle => ToolOutput::mock_battle(),
             GeneratorScenarioConfig::Shop => ToolOutput::mock_shop(),
             GeneratorScenarioConfig::Rest => ToolOutput::mock_rest(),
+            GeneratorScenarioConfig::NewGame => ToolOutput::mock_new_game(),
         },
         GeneratorType::Object(config) => match config {
             GeneratorObjectConfig::Weapon => ToolOutput::mock_battle(),
@@ -169,6 +171,9 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
             GeneratorScenarioConfig::Battle => GeneratorToolConfig { tool: Tool::Battle },
             GeneratorScenarioConfig::Shop => GeneratorToolConfig { tool: Tool::Shop },
             GeneratorScenarioConfig::Rest => GeneratorToolConfig { tool: Tool::Rest },
+            GeneratorScenarioConfig::NewGame => GeneratorToolConfig {
+                tool: Tool::NewGame,
+            },
         },
         GeneratorType::Object(config) => match config {
             GeneratorObjectConfig::Weapon => GeneratorToolConfig { tool: Tool::Battle },
@@ -219,6 +224,20 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
                 }),
                 json: Prompt {
                     text: REST_JSON_PROMPT.to_string(),
+                    variables: json_vars,
+                },
+            },
+            GeneratorScenarioConfig::NewGame => GeneratorPromptConfig {
+                system: Prompt {
+                    text: NEW_GAME_SYSTEM_PROMPT.to_string(),
+                    variables: system_vars,
+                },
+                text: Some(Prompt {
+                    text: NEW_GAME_TEXT_PROMPT.to_string(),
+                    variables: text_vars,
+                }),
+                json: Prompt {
+                    text: NEW_GAME_JSON_PROMPT.to_string(),
                     variables: json_vars,
                 },
             },
@@ -386,6 +405,12 @@ pub async fn post_scenario(Json(payload): Json<ScenarioRequest>) -> impl IntoRes
                             state.insert(
                                 "curr_encounter".to_string(),
                                 AttributeValue::S(Scenario::Rest.to_string()),
+                            );
+                        }
+                        GeneratorScenarioConfig::NewGame => {
+                            state.insert(
+                                "curr_encounter".to_string(),
+                                AttributeValue::S(Scenario::NewGame.to_string()),
                             );
                         }
                     },
