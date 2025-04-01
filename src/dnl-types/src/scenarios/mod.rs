@@ -126,23 +126,10 @@ impl DiscordMsg for ScenarioModel {
 
                 message
             }
-            ScenarioModel::NewGame {
-                summary,
-                name,
-                items,
-            } => {
-                let mut item_descriptions = String::new();
-
-                for item in items {
-                    let description = format!(
-                        "**{}**\n{}\n - Stats: {}\n - Price: {}\n\n",
-                        item.name, item.description, item.stats, item.price
-                    );
-                    item_descriptions.push_str(&description);
-                }
+            ScenarioModel::NewGame { summary, name, .. } => {
                 format!(
-                    "# *{}*\n## Description:\n{}\n## Choose a Weapon:\n{}",
-                    name, summary, item_descriptions
+                    "# *{}*\n## Description:\n{}\n## Choose a Weapon:\n",
+                    name, summary,
                 )
             }
         }

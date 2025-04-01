@@ -1,6 +1,6 @@
-use crate::scenarios::battle::BattleScenario;
 use crate::scenarios::rest::RestScenario;
 use crate::scenarios::shop::ShopScenario;
+use crate::{scenarios::battle::BattleScenario, traits::DiscordMsg};
 
 use serde::{Deserialize, Serialize};
 
