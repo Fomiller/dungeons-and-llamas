@@ -1,4 +1,5 @@
 pub mod battle;
+pub mod new_game;
 pub mod rest;
 pub mod shop;
 
@@ -18,6 +19,8 @@ pub enum Scenario {
     Shop,
     #[strum(to_string = "rest")]
     Rest,
+    #[strum(to_string = "new-game")]
+    NewGame,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, strum::Display, strum::EnumString)]
@@ -43,6 +46,12 @@ pub enum ScenarioModel {
         flora: String,
         fauna: String,
         secret: Option<String>,
+    },
+    #[strum(to_string = "new-game")]
+    NewGame {
+        summary: String,
+        name: String,
+        items: Vec<ShopScenarioItem>,
     },
 }
 
@@ -116,6 +125,25 @@ impl DiscordMsg for ScenarioModel {
                 };
 
                 message
+            }
+            ScenarioModel::NewGame {
+                summary,
+                name,
+                items,
+            } => {
+                let mut item_descriptions = String::new();
+
+                for item in items {
+                    let description = format!(
+                        "**{}**\n{}\n - Stats: {}\n - Price: {}\n\n",
+                        item.name, item.description, item.stats, item.price
+                    );
+                    item_descriptions.push_str(&description);
+                }
+                format!(
+                    "# *{}*\n## Description:\n{}\n## Choose a Weapon:\n{}",
+                    name, summary, item_descriptions
+                )
             }
         }
     }

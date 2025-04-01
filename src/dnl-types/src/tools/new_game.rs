@@ -1,39 +1,21 @@
-use crate::dice::DiceExpression;
 use lazy_static::lazy_static;
 
-use serde::{Deserialize, Serialize};
+use super::shop::ShopToolItem;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ShopToolOutput {
+pub struct NewGameToolOutput {
+    pub name: String,
     pub items: Vec<ShopToolItem>,
-    pub merchant: ShopToolMerchant,
     pub summary: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct ShopToolMerchant {
-    pub merchant_name: String,
-    pub merchant_description: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ShopToolItem {
-    pub item_name: String,
-    pub item_description: String,
-    pub item_stats: DiceExpression,
-    pub item_price: String,
-}
-
 lazy_static! {
-    pub static ref SHOP_TOOL_SCHEMA: serde_json::Value = {
+    pub static ref NEW_GAME_TOOL_SCHEMA: serde_json::Value = {
         let required = vec![
+            "name",
             "summary",
-            "merchant",
-            "merchant_name",
-            "merchant_description",
             "items",
             "item_name",
-            "item_desciption",
+            "item_description",
             "item_stats",
             "item_price",
         ];
@@ -42,30 +24,20 @@ lazy_static! {
             "type": "object",
             "required": required,
             "properties":{
+                "name": {
+                    "type":"string",
+                    "description":"A name for the new game setting"
+                },
                 "summary":{
                     "type":"string",
-                    "description":"A 30 to 50 word objective summary of the shop scenario."
-                },
-                "merchant":{
-                    "type": "object",
-                    "description": "An Object that defines merchant",
-                    "properties": {
-                        "merchant_name": {
-                            "type": "string",
-                            "description": "Name of the Merchant"
-                        },
-                        "merchant_description": {
-                            "type": "string",
-                            "description": "A 30-50 word description of the merchant and his surroundings",
-                        }
-                    }
+                    "description":"A DND Dungeon Masters opening narrative of a campaign. 3 paragraphs max."
                 },
                 "items": {
                     "type": "array",
-                    "description": "A list of items to purchase",
+                    "description": "A list of  3 items to that the adventure can choose from",
                     "items": {
                         "type": "object",
-                        "description": "An Object that defines an item to purchase, items could be anything useful to a DnD player",
+                        "description": "An Object that defines an item, items could be anything useful to a DnD player",
                         "properties": {
                             "item_name":{
                                 "type": "string",

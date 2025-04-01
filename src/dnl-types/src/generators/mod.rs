@@ -16,6 +16,7 @@ pub enum GeneratorScenarioConfig {
     Battle,
     Shop,
     Rest,
+    NewGame,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
