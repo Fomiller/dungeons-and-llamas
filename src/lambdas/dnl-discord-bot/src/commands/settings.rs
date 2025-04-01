@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use crate::*;
 use dnl_sort_keys::buildable::SortKeyBuildable;
 use dnl_sort_keys::prelude::SortKeyFactory;
 use dnl_store::Store;
 use dnl_types::settings::Settings;
 
-use serde_dynamo;
+use serde_dynamo::{self};
 use serenity::builder::*;
 use serenity::model::application::*;
 
@@ -22,6 +24,7 @@ impl SettingsCmd {
         let user_id = cmd.user.id.to_string();
 
         let settings = Settings::from(cmd);
+        info!("settings {:?}", settings);
 
         //:TODO: this should be api driven instead of calling the store from the bot
         let store = Store::new(&user_id).await;
@@ -36,7 +39,10 @@ impl SettingsCmd {
         };
 
         let item = match serde_dynamo::to_item(settings) {
-            Ok(item) => item,
+            Ok(item) => {
+                println!("ITEM: {:?}", item);
+                item
+            }
             Err(_) => {
                 let content = "Error converting settings to item".to_string();
                 let message = CreateInteractionResponseMessage::new().content(content);
