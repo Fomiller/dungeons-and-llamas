@@ -53,7 +53,7 @@ The bot currently supports three different scenarios:
 3. **Rest**  
 <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png" width="50%" />
 
-``## Installation
+## Installation
 
 To add the Dungeons-and-Llamas bot to your Discord, follow this [link](https://discord.com/oauth2/authorize?client_id=1288579466242560000).
 
