@@ -1,8 +1,8 @@
 <p align="center">
-<img src="src/_data/DNL_README.jpg" alt="Dungeons and Llamas" width="600"/>
+    <img src="src/_data/DNL_README.jpg" alt="Dungeons and Llamas" width="600"/>
 </p>
 
-
+<!-- Badges (Uncomment the lines below for active badges) -->
 <!-- [![crates.io](https://img.shields.io/crates/v/my_crate.svg)](https://crates.io/crates/my_crate) -->
 <!-- [![docs.rs](https://docs.rs/my_crate/badge.svg)](https://docs.rs/my_crate) -->
 <!-- [![Build Status](https://github.com/Fomiller/dungesons-and-llamas/actions/workflows/deploy.yml/badge.svg)](https://github.com/Fomiller/dungeons-and-llamas/actions) -->
@@ -10,42 +10,71 @@
 ![Rust Version](https://img.shields.io/badge/rustc-1.82+-orange.svg)
 <!-- [![License](https://img.shields.io/crates/l/my_crate.svg)](https://crates.io/crates/my_crate) -->
 
-
 # Dungeons and Llamas
+
 ## Description
-A serverless Discord bot written in Rust, leveraging AWS services such as API-Gateway, DynamoDB, Lambda, Bedrock and more! This bot creates dynamic text-based adventures, powered by LLMs, allowing users to experience unique, AI-generated stories each time they play.
 
-Dungeons and Llamas revolves around leveraging discord's API as a UI. The player will have a variety of commands available to them while playing. 
+Dungeons and Llamas is a serverless Discord bot written in Rust, leveraging AWS services such as API Gateway, DynamoDB, Lambda, Bedrock, and more! This bot creates dynamic, text-based adventures powered by LLMs, allowing users to experience unique, AI-generated stories each time they play.
 
-To start a new game the user will use the `/new-game` command where they will fill in some base values about their character.  
-<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png" width="50%" />  
+The bot uses Discord's API as a UI, offering players a variety of commands throughout their adventure. 
 
-The user can fill in the theme field with whatever they want and the AI will create content related to the theme. 
+### Key Features
+- **Dynamic Story Generation**: AI creates content based on player inputs.
+- **Discord Command Integration**: Players can interact with the game using Discord commands.
 
-If the user ever wants to adjust the settings of their campaign they can make changes using the `/settings` command.  
-<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png" width="50%" />
+### Starting a Game
 
-Once a new game is started the user will be presented with a start to their campaign and the choice of 3 different weapons to begin their adventure with  
-<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png" width="50%" />
+To start a new game, the user will use the `/new-game` command, where they will fill in some basic details about their character.  
 
-Currently, there are 3 different scenarios that can be generated:
-Battle  
-<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png" width="50%" />
+<p align="center">
+    <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png" width="50%" />
+</p>
 
-Shop  
-<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png" width="50%" />
+Players can specify a theme for their game, and the AI will generate content related to that theme.
 
-Rest  
-<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png" width="50%" />
+### Adjusting Campaign Settings
 
-## Installation
-To add the Dungeons-and-Llamas bot to your discord follow this [link](https://discord.com/oauth2/authorize?client_id=1288579466242560000) 
+If a player wants to adjust the settings of their campaign, they can use the `/settings` command.  
+<p align="center">
+    <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png" width="50%" />
+</p>
+
+### Game Start
+
+Once the game starts, players will choose from three different weapons to begin their adventure.  
+<p align="center">
+    <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png" width="50%" />
+</p>
+
+### Generated Scenarios
+
+The bot currently supports three different scenarios:
+
+1. **Battle**  
+    <p align="center">
+        <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png" width="50%" />
+    </p>
+
+2. **Shop**  
+    <p align="center">
+        <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png" width="50%" />
+    </p>
+
+3. **Rest**  
+    <p align="center">
+        <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png" width="50%" />
+    </p>
+
+``## Installation
+
+To add the Dungeons-and-Llamas bot to your Discord, follow this [link](https://discord.com/oauth2/authorize?client_id=1288579466242560000).
 
 ## Commands
-Working Commands are currently 
-- `/new-game`
-    - creates a new game, currently writes all records to dynamodb for player inventory,
-    example:
+
+Here are the available commands for now:
+
+- `/new-game`: Creates a new game and writes all player records to DynamoDB. Example record:
+
     ```json
     {
       "UserId": {
@@ -61,28 +90,34 @@ Working Commands are currently
     ```
 
 ## Progress
-- [x] create discord bot lambda
-- [x] create command manager lambda
-- [x] create dungeons and llamas api (api to handle all interactions with game logic)
-- [x] dynamodb data modeling for player inventory
-- [x] integrate bot -> api -> database
-- [ ] build out further data models for GAME, ENEMY, ROUNDS, LEVELS, NPC
-- [ ] add additional records for GAME, ENEMY, ROUNDS, LEVELS, NPC components to dynamodb on `/new-game`
-- [ ] integrate with Bedrock
-- [ ] start releasing to production
-- [ ] turn serverless discord bot infrastructure into a terraform module
 
+### Completed Tasks:
+- [x] Created Discord bot Lambda
+- [x] Created command manager Lambda
+- [x] Developed the Dungeons and Llamas API (to handle interactions with game logic)
+- [x] Set up DynamoDB data modeling for player inventory
+- [x] Integrated bot → API → database
+
+### Upcoming Tasks:
+- [ ] Build out further data models for GAME, ENEMY, ROUNDS, LEVELS, NPC
+- [ ] Add additional records for GAME, ENEMY, ROUNDS, LEVELS, NPC components to DynamoDB on `/new-game`
+- [ ] Integrate with Bedrock
+- [ ] Begin releasing to production
+- [ ] Turn serverless Discord bot infrastructure into a Terraform module
 
 ## Developer Docs
-- inital project setup commmands
+
+### Initial Project Setup Commands
+To set up the project environment:
 ```
 doppler setup -p {project_name} -c {config_name}
 ```
-* just Commands
-    * just apply "module"
-    * just build-lambdas
-    * just deploy-lambdas
 
+### Useful Commands:
+- `just apply <module>` : Apply "module"
+- `just build-lambdas` : Build Lambdas
+- `just deploy-lambdas` : Deploy Lambdas
 
 ### Links
-https://artefact2.github.io/llm-sampling/index.xhtml
+
+- [LLM Sampling Docs](https://artefact2.github.io/llm-sampling/index.xhtml)
