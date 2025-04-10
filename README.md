@@ -21,16 +21,21 @@ To start a new game the user will use the `/new-game` command where they will fi
 ![/new-game](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png)  
 The user can fill in the theme field with what ever they want and the ai will create content related to the theme. 
 
+If the user ever wants to adjust the settings of their campaign they can make changes using the `/settings` command.
+![/new-game](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png)  
+
 Once a new game is started the user will be presented with a start to their campagin and the choice of 3 different weapons the begin their adventure with
 ![new-game scenario](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png)
 
 Currently there are 3 different scenarios that can be generated 
-Battle
+Battle  
 ![battle](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png)
-Shop
-![shop](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png)
-Rest
-![rest](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png)
+
+Shop  
+![shop](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png)
+
+Rest  
+![rest](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png)
 
 ## Installation
 To add the Dungeons-and-Llamas bot to your discord follow this [link](https://discord.com/oauth2/authorize?client_id=1288579466242560000) 
