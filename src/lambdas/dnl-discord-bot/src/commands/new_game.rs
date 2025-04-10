@@ -37,7 +37,7 @@ impl DiscordCmdResponse for NewGameCmd {
                             .field("Price", &item.price, true),
                     );
                     buttons.push(
-                        CreateButton::new(format!("button_{}", i))
+                        CreateButton::new(Component::Button(ButtonType::EquipItem(i)).to_string())
                             .style(ButtonStyle::Primary)
                             .label(&item.name),
                     )
@@ -84,7 +84,7 @@ impl DiscordCmdResponse for NewGameCmd {
                             .field("Price", &item.price, true),
                     );
                     buttons.push(
-                        CreateButton::new(format!("button_{}", i))
+                        CreateButton::new(Component::Button(ButtonType::EquipItem(i)).to_string())
                             .style(ButtonStyle::Primary)
                             .label(&item.name),
                     )

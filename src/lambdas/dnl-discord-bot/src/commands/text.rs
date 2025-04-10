@@ -66,7 +66,7 @@ impl TextCmd {
 
         let race_menu = CreateActionRow::SelectMenu(
             CreateSelectMenu::new(
-                "race_menu",
+                "menu_race",
                 CreateSelectMenuKind::String {
                     options: race_options,
                 },
@@ -76,7 +76,7 @@ impl TextCmd {
 
         let class_menu = CreateActionRow::SelectMenu(
             CreateSelectMenu::new(
-                "class_menu",
+                "menu_class",
                 CreateSelectMenuKind::String {
                     options: class_options,
                 },
@@ -88,7 +88,7 @@ impl TextCmd {
 
         let background_menu = CreateActionRow::SelectMenu(
             CreateSelectMenu::new(
-                "background_menu",
+                "menu_background",
                 CreateSelectMenuKind::String {
                     options: background_options,
                 },

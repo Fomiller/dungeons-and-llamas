@@ -1,16 +1,20 @@
+use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;
-use std::str::FromStr;
-use strum::EnumString;
 
 pub async fn try_handle_component_interaction(
     interaction: ComponentInteraction,
 ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+    info!("CUSTOM_ID: {}", interaction.data.custom_id);
     // custom_id's need to become Enums
-    match ComponentCustomId::from_str(&interaction.data.custom_id)? {
+    let id = interaction.data.custom_id.as_str();
+    match ComponentCustomId::from(id) {
         ComponentCustomId::BackGroundMenu(cmd) => cmd.execute(),
         ComponentCustomId::ClassSelectMenu(cmd) => cmd.execute().await,
         ComponentCustomId::RaceMenu(cmd) => cmd.execute(),
+        ComponentCustomId::EquipItem(cmd) => cmd.execute().await,
+        ComponentCustomId::BuyItem(cmd) => cmd.execute().await,
+        ComponentCustomId::Unknown(cmd) => cmd.execute().await,
     }
 }
 
@@ -26,14 +30,83 @@ pub struct RaceSelectMenuCmd;
 #[derive(Debug, PartialEq, Default)]
 pub struct BackGroundSelectMenuCmd;
 
-#[derive(Debug, PartialEq, EnumString)]
+#[derive(Debug, PartialEq, Default)]
+pub struct BuyItemCmd {
+    id: String,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct EquipItemCmd {
+    pub id: String,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct UnknownCmd(String);
+
+#[derive(Debug, PartialEq, strum::Display)]
+pub enum Component {
+    #[strum(to_string = "menu_{0}")]
+    Menu(MenuType),
+    #[strum(to_string = "button_{0}")]
+    Button(ButtonType),
+}
+
+#[derive(Debug, PartialEq, strum::Display)]
+pub enum MenuType {
+    #[strum(to_string = "class")]
+    Class,
+    #[strum(to_string = "race")]
+    Race,
+    #[strum(to_string = "background")]
+    BackGround,
+}
+
+#[derive(Debug, PartialEq, strum::Display)]
+pub enum ButtonType {
+    #[strum(to_string = "equip_item_{0}")]
+    EquipItem(usize),
+    #[strum(to_string = "buy_item_{0}")]
+    BuyItem(usize),
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ComponentCustomId {
-    #[strum(serialize = "class_menu", ascii_case_insensitive)]
     ClassSelectMenu(ClassSelectMenuCmd),
-    #[strum(serialize = "race_menu", ascii_case_insensitive)]
     RaceMenu(RaceSelectMenuCmd),
-    #[strum(serialize = "background_menu", ascii_case_insensitive)]
     BackGroundMenu(BackGroundSelectMenuCmd),
+    EquipItem(EquipItemCmd),
+    BuyItem(BuyItemCmd),
+    Unknown(UnknownCmd),
+}
+
+impl From<&str> for ComponentCustomId {
+    fn from(id: &str) -> Self {
+        let id = id.to_lowercase();
+
+        // Try to strip the "menu_" prefix and match the remaining string
+        if let Some(id_stripped) = id.strip_prefix("menu_") {
+            match id_stripped {
+                "class" => ComponentCustomId::ClassSelectMenu(ClassSelectMenuCmd),
+                "race" => ComponentCustomId::RaceMenu(RaceSelectMenuCmd),
+                "background" => ComponentCustomId::BackGroundMenu(BackGroundSelectMenuCmd),
+                _ => ComponentCustomId::Unknown(UnknownCmd(id)),
+            }
+        } else if let Some(id_stripped) = id.strip_prefix("button_") {
+            if let Some(item_id) = id_stripped.strip_prefix("buy_item_") {
+                ComponentCustomId::BuyItem(BuyItemCmd {
+                    id: item_id.to_string(),
+                })
+            } else if let Some(item_id) = id_stripped.strip_prefix("equip_item_") {
+                ComponentCustomId::EquipItem(EquipItemCmd {
+                    id: item_id.to_string(),
+                })
+            } else {
+                ComponentCustomId::Unknown(UnknownCmd(id))
+            }
+        } else {
+            ComponentCustomId::Unknown(UnknownCmd(id))
+        }
+    }
 }
 
 impl ClassSelectMenuCmd {
@@ -91,5 +164,32 @@ impl BackGroundSelectMenuCmd {
         let content = format!("CHARACTER CREATED",);
         let message = CreateInteractionResponseMessage::new().content(content);
         Ok(Some(CreateInteractionResponse::UpdateMessage(message)))
+    }
+}
+
+impl BuyItemCmd {
+    pub async fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let content = format!("Buy item custom_id for component interaction: {}", self.id);
+        let message = CreateInteractionResponseMessage::new().content(content);
+        Ok(Some(CreateInteractionResponse::Message(message)))
+    }
+}
+
+impl EquipItemCmd {
+    pub async fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let content = format!(
+            "Equip item custom_id for component interaction: {}",
+            self.id
+        );
+        let message = CreateInteractionResponseMessage::new().content(content);
+        Ok(Some(CreateInteractionResponse::Message(message)))
+    }
+}
+
+impl UnknownCmd {
+    pub async fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let content = format!("Unknown custom_id for component interaction: {}", self.0);
+        let message = CreateInteractionResponseMessage::new().content(content);
+        Ok(Some(CreateInteractionResponse::Message(message)))
     }
 }
