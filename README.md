@@ -26,44 +26,32 @@ The bot uses Discord's API as a UI, offering players a variety of commands throu
 
 To start a new game, the user will use the `/new-game` command, where they will fill in some basic details about their character.  
 
-<p align="center">
-    <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png" width="50%" />
-</p>
+<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png" width="50%" />
 
 Players can specify a theme for their game, and the AI will generate content related to that theme.
 
 ### Adjusting Campaign Settings
 
 If a player wants to adjust the settings of their campaign, they can use the `/settings` command.  
-<p align="center">
-    <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png" width="50%" />
-</p>
+<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png" width="50%" />
 
 ### Game Start
 
 Once the game starts, players will choose from three different weapons to begin their adventure.  
-<p align="center">
-    <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png" width="50%" />
-</p>
+<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png" width="50%" />
 
 ### Generated Scenarios
 
 The bot currently supports three different scenarios:
 
 1. **Battle**  
-    <p align="center">
-        <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png" width="50%" />
-    </p>
+<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png" width="50%" />
 
 2. **Shop**  
-    <p align="center">
-        <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png" width="50%" />
-    </p>
+<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png" width="50%" />
 
 3. **Rest**  
-    <p align="center">
-        <img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png" width="50%" />
-    </p>
+<img src="https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png" width="50%" />
 
 ``## Installation
 
