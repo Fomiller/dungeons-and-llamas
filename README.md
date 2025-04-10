@@ -18,7 +18,7 @@ A serverless Discord bot written in Rust, leveraging AWS services such as API-Ga
 Dungeons and Llamas revolves around leveraging discords api as a UI. The player will have a variety of commands avaialable to them while playing. 
 
 To start a new game the user will use the `/new-game` command where they will fill in some base values about their character.
-[/new-game](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/Screenshot%202025-04-10%20at%2010.40.00%E2%80%AFAM.png)The user can fill in the theme field with what ever they want and the ai will create content related to the theme. 
+![/new-game](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/Screenshot%202025-04-10%20at%2010.40.00%E2%80%AFAM.png)The user can fill in the theme field with what ever they want and the ai will create content related to the theme. 
 
 Once a new game is started the user will be presented with a start to their campagin and the choice of 3 different weapons the begin their adventure with
 ![new-game scenario](src/_data/Screenshot 2025-04-10 at 10.38.57 AM.png)
