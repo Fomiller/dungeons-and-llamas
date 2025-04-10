@@ -15,6 +15,23 @@
 ## Description
 A serverless Discord bot written in Rust, leveraging AWS services such as API-Gateway, DynamoDB, Lambda, Bedrock and more! This bot creates dynamic text-based adventures, powered by LLMs, allowing users to experience unique, AI-generated stories each time they play.
 
+Dungeons and Llamas revolves around leveraging discords api as a UI. The player will have a variety of commands avaialable to them while playing. 
+
+To start a new game the user will use the `/new-game` command where they will fill in some base values about their character.
+![new-game command](src/_data/Screenshot 2025-04-10 at 10.38.57 AM.png)
+The user can fill in the theme field with what ever they want and the ai will create content related to the theme. 
+
+Once a new game is started the user will be presented with a start to their campagin and the choice of 3 different weapons the begin their adventure with
+![new-game scenario](src/_data/Screenshot 2025-04-10 at 10.38.57 AM.png)
+
+Currently there are 3 different scenarios that can be generated 
+Battle
+![battle](src/_data/Screenshot 2025-04-10 at 10.38.57 AM.png)
+Shop
+![shop](src/_data/Screenshot 2025-04-10 at 10.38.57 AM.png)
+Rest
+![rest](src/_data/Screenshot 2025-04-10 at 10.38.57 AM.png)
+
 ## Installation
 To add the Dungeons-and-Llamas bot to your discord follow this [link](https://discord.com/oauth2/authorize?client_id=1288579466242560000) 
 
