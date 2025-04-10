@@ -18,24 +18,24 @@ A serverless Discord bot written in Rust, leveraging AWS services such as API-Ga
 Dungeons and Llamas revolves around leveraging discords api as a UI. The player will have a variety of commands avaialable to them while playing. 
 
 To start a new game the user will use the `/new-game` command where they will fill in some base values about their character.
-![/new-game](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png)  
+![new game cmd](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_cmd.png)  
 The user can fill in the theme field with what ever they want and the ai will create content related to the theme. 
 
-If the user ever wants to adjust the settings of their campaign they can make changes using the `/settings` command.
-![/new-game](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png)  
+If the user ever wants to adjust the settings of their campaign they can make changes using the `/settings` command.  
+![settings cmd](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/settings_cmd.png)  
 
-Once a new game is started the user will be presented with a start to their campagin and the choice of 3 different weapons the begin their adventure with
-![new-game scenario](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png)
+Once a new game is started the user will be presented with a start to their campagin and the choice of 3 different weapons the begin their adventure with  
+![new game scenario](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/new_game_gen.png)
 
 Currently there are 3 different scenarios that can be generated 
 Battle  
-![battle](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png)
+![battle scenario](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/battle_scenario_gen.png)
 
 Shop  
-![shop](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png)
+![shop scenario](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/shop_scenario_gen.png)
 
 Rest  
-![rest](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png)
+![rest scenario](https://github.com/Fomiller/dungeons-and-llamas/blob/develop/src/_data/rest_scenario_gen.png)
 
 ## Installation
 To add the Dungeons-and-Llamas bot to your discord follow this [link](https://discord.com/oauth2/authorize?client_id=1288579466242560000) 
