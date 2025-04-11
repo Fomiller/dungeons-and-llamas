@@ -33,6 +33,23 @@ impl SortKeyFactory {
         RootSortKeyBuilder::new().id(game_id).settings(true)
     }
 
+    pub fn create_equipped_state_weapon_sk(
+        &self,
+        game_id: &str,
+        entity: Entity,
+        equip_state: EquippedStateSortKey,
+    ) -> RootSortKeyBuilder {
+        let weapon_type = WeaponSortKey::Melee;
+        let weapon = WeaponSortKeyBuilder::new()
+            .equipped(equip_state)
+            .weapon(weapon_type);
+        let item = ItemSortKeyBuilder::new().weapons(weapon);
+        let inventory = InventorySortKeyBuilder::new().item(item);
+        let entity = EntitySortKeyBuilder::new(entity).inventory(inventory);
+        let game = GameSortKeyBuilder::new().entity(entity);
+        RootSortKeyBuilder::new().id(game_id).game(game)
+    }
+
     pub fn create_encounter_sk(
         &self,
         game_id: &str,

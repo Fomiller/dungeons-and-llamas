@@ -47,7 +47,7 @@ pub enum StoreError {
     #[error("Failed to get encounters")]
     GetEncounters(String, String),
     #[error("Failed to get state")]
-    GetState(String, String),
+    GetState,
     #[error("Failed to get enemies")]
     GetEnemies(String, String),
     #[error("Failed to get llm model")]
@@ -70,6 +70,8 @@ pub enum StoreError {
     SettingsNotFound,
     #[error("Failed to create game id: {0}")]
     CreateGameId(String),
+    #[error("Failed to find items for {0} ")]
+    ItemsNotFound(String),
 
     #[error("AWS Sdk error: {0}")]
     AWSSdk(String),

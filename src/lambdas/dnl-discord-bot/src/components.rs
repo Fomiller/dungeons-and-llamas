@@ -1,3 +1,4 @@
+use dnl_store::Store;
 use lambda_http::tracing::info;
 use serenity::builder::*;
 use serenity::model::application::*;
@@ -12,7 +13,7 @@ pub async fn try_handle_component_interaction(
         ComponentCustomId::BackGroundMenu(cmd) => cmd.execute(),
         ComponentCustomId::ClassSelectMenu(cmd) => cmd.execute().await,
         ComponentCustomId::RaceMenu(cmd) => cmd.execute(),
-        ComponentCustomId::EquipItem(cmd) => cmd.execute().await,
+        ComponentCustomId::EquipItem(cmd) => cmd.execute(interaction).await,
         ComponentCustomId::BuyItem(cmd) => cmd.execute().await,
         ComponentCustomId::Unknown(cmd) => cmd.execute().await,
     }
@@ -176,11 +177,19 @@ impl BuyItemCmd {
 }
 
 impl EquipItemCmd {
-    pub async fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let content = format!(
-            "Equip item custom_id for component interaction: {}",
-            self.id
-        );
+    pub async fn execute(
+        &self,
+        interaction: ComponentInteraction,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let user_id = &interaction.user.id.to_string();
+
+        let item_id = self.id.parse()?;
+
+        let store = Store::new(user_id);
+
+        let res = store.await.try_equip_item(item_id).await?;
+
+        let content = format!("{} equipped", res.name);
         let message = CreateInteractionResponseMessage::new().content(content);
         Ok(Some(CreateInteractionResponse::Message(message)))
     }

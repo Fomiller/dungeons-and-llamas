@@ -14,6 +14,7 @@ use dnl_types::api::response::NewGameResponse;
 use dnl_types::entity::stats::get_base_stats_by_name;
 use dnl_types::error::StoreError as Error;
 use dnl_types::scenarios::battle::BattleScenarioEnemy;
+use dnl_types::scenarios::shop::ShopScenarioItem;
 use dnl_types::settings::Settings;
 
 use std::collections::HashMap;
@@ -158,7 +159,7 @@ impl Store {
     pub async fn try_generic_begins_with_query(
         &self,
         primary_key: String,
-        sk_prefix: String,
+        sk_prefix: &str,
         attributes: Vec<&str>,
     ) -> Result<QueryOutput, Error> {
         let mut expression_attribute_names = HashMap::new();
@@ -186,7 +187,7 @@ impl Store {
             .key_condition_expression("#pk = :user_id AND begins_with(#sk, :sk_prefix)")
             .set_expression_attribute_names(Some(expression_attribute_names))
             .expression_attribute_values(":user_id", AttributeValue::S(primary_key))
-            .expression_attribute_values(":sk_prefix", AttributeValue::S(sk_prefix))
+            .expression_attribute_values(":sk_prefix", AttributeValue::S(sk_prefix.to_string()))
             .set_projection_expression(projection_expression)
             .send()
             .await
@@ -289,6 +290,247 @@ impl Store {
         self.try_generic_put(state_component).await?;
 
         Ok(())
+    }
+
+    pub async fn try_get_items(&self) -> Result<Vec<ShopScenarioItem>, Error> {
+        let game_id = self.try_get_active_game_id().await?;
+        let game_state = self.try_get_state().await?;
+
+        let level = match game_state.level {
+            Some(level) => level,
+            None => {
+                let err = anyhow::anyhow!("GameState.level should not be None");
+                return Err(Error::Other(err.to_string()));
+            }
+        };
+
+        let round = match game_state.round {
+            Some(round) => round,
+            None => {
+                let err = anyhow::anyhow!("GameState.round should not be None");
+                return Err(Error::Other(err.to_string()));
+            }
+        };
+
+        let curr_encounter = match game_state.curr_encounter {
+            Some(curr_encounter) => curr_encounter,
+            None => {
+                let err = anyhow::anyhow!("GameState.curr_encounter should not be None");
+                return Err(Error::Other(err.to_string()));
+            }
+        };
+
+        let sk = format!(
+            "{}#Game#Level#{}#Encounter#{}#Round#{}",
+            game_id, level, curr_encounter, round
+        );
+
+        info!("Sk: {}", sk);
+
+        let res = self.try_generic_query(sk.clone(), &vec!["items"]).await?;
+
+        if let Some(items) = res.items {
+            info!("Items: {:?}", items);
+            let item = items
+                .first()
+                .expect("items should have a length of at least one");
+
+            let value = item
+                .get("items")
+                .expect(&format!("{} should be a valid key", "items"));
+
+            let _items: Vec<_> = value
+                .as_l()
+                .expect(&format!("{} value should be a list", "items"))
+                .to_owned()
+                .into_iter()
+                .filter_map(|v| v.as_m().ok().cloned())
+                .collect();
+
+            let items: Vec<ShopScenarioItem> =
+                serde_dynamo::from_items(_items).map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+
+            Ok(items)
+        } else {
+            Err(Error::ItemsNotFound(sk))
+        }
+    }
+
+    pub async fn try_unequip_weapon(&self) -> Result<(), Error> {
+        let game_id = self.try_get_active_game_id().await?;
+        let equipped_items = self.try_get_equipped().await?;
+        info!("Equipped: {:?}", equipped_items);
+        // this should be batch updates because it is transactional
+        let mut unequipped_items = self.try_get_unequipped().await?;
+        info!("UnEquipped: {:?}", unequipped_items);
+
+        // if equipped items is some
+        if let Some(equipped) = equipped_items {
+            let unequipped_sk = SortKeyFactory::new(&self.user_id)
+                .create_equipped_state_weapon_sk(
+                    &game_id,
+                    Entity::Player,
+                    EquippedStateSortKey::UnEquipped,
+                )
+                .build();
+
+            unequipped_items.push(equipped);
+
+            info!("NEW UnEquipped: {:?}", unequipped_items);
+
+            let new_items = unequipped_items
+                .into_iter()
+                .map(|item| serde_dynamo::to_item(item).expect("failed to serialize item"))
+                .map(AttributeValue::M)
+                .collect::<Vec<_>>();
+
+            info!("NEW UnEquipped as ITEMS: {:?}", new_items);
+
+            let mut item = HashMap::new();
+
+            item.insert("items".to_string(), AttributeValue::L(new_items));
+
+            info!("UPDATE NEW UnEquipped as ITEMS: {:?}", item);
+
+            self.try_generic_update(&self.user_id, &unequipped_sk, item)
+                .await?;
+        }
+        Ok(())
+    }
+
+    pub async fn try_get_unequipped(&self) -> Result<Vec<ShopScenarioItem>, Error> {
+        let game_id = self.try_get_active_game_id().await?;
+
+        let sk = SortKeyFactory::new(&self.user_id)
+            .create_equipped_state_weapon_sk(
+                &game_id,
+                Entity::Player,
+                EquippedStateSortKey::UnEquipped,
+            )
+            .build();
+
+        let res = self.try_generic_query(sk.clone(), &vec!["items"]).await?;
+
+        if let Some(items) = res.items {
+            if items.iter().all(|map| map.is_empty()) {
+                Ok(vec![])
+            } else {
+                info!("Items: {:?}", items);
+                let item = items
+                    .first()
+                    .expect("items should have a length of at least one");
+
+                let value = item
+                    .get("items")
+                    .expect(&format!("{} should be a valid key", "items"));
+
+                let _items: Vec<_> = value
+                    .as_l()
+                    .expect(&format!("{} value should be a list", "items"))
+                    .to_owned()
+                    .into_iter()
+                    .filter_map(|v| v.as_m().ok().cloned())
+                    .collect();
+
+                let items: Vec<ShopScenarioItem> = serde_dynamo::from_items(_items)
+                    .map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+
+                Ok(items)
+            }
+        } else {
+            Err(Error::ItemsNotFound(sk))
+        }
+    }
+
+    pub async fn try_get_equipped(&self) -> Result<Option<ShopScenarioItem>, Error> {
+        let game_id = self.try_get_active_game_id().await?;
+
+        let sk = SortKeyFactory::new(&self.user_id)
+            .create_equipped_state_weapon_sk(
+                &game_id,
+                Entity::Player,
+                EquippedStateSortKey::Equipped,
+            )
+            .build();
+
+        info!("EQUIPPED SK: {:?}", sk);
+
+        let res = self.try_generic_get(&sk).await?;
+
+        match serde_dynamo::from_item(res.item.unwrap()) {
+            Ok(item) => Ok(Some(item)),
+            Err(_) => Ok(None),
+        }
+
+        // info!("ITEMS2 EMPTY: {:?}", res.items.clone().unwrap().is_empty());
+        // if let Some(items) = res.items {
+        //     info!("EQUIPPED Items: {:?}", items);
+        //
+        //     if items.iter().all(|map| map.is_empty()) {
+        //         Ok(vec![])
+        //     } else {
+        //         let item = items
+        //             .first()
+        //             .expect("items should have a length of at least one");
+        //
+        //         let value = item
+        //             .get("items")
+        //             .expect(&format!("{} should be a valid key", "items"));
+        //
+        //         let _items: Vec<_> = value
+        //             .as_l()
+        //             .expect(&format!("{} value should be a list", "items"))
+        //             .to_owned()
+        //             .into_iter()
+        //             .filter_map(|v| v.as_m().ok().cloned())
+        //             .collect();
+        //
+        //         info!("Items1: {:?}", _items[0].clone());
+        //         info!("Items2: {:?}", _items);
+        //
+        //         let items: Vec<ShopScenarioItem> = serde_dynamo::from_items(_items)
+        //             .map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+        //
+        //         Ok(items)
+        //     }
+        // } else {
+        //     Err(Error::ItemsNotFound(sk))
+        // }
+    }
+
+    pub async fn try_equip_item(&self, idx: usize) -> Result<ShopScenarioItem, Error> {
+        // get items from current encounter
+        let items = self.try_get_items().await?;
+        // get item from list of items matching index
+        let item = items[idx].clone();
+        info!("ITEM BY INDEX: {:?}", item);
+        // unequip item if equipped
+        // let equipped = self.try_get_equipped().await?;
+        // info!("EQUIPPED: {:?}", equipped);
+        // info!("EQUIPPED len: {:?}", equipped.len());
+        // info!("EQUIPPED empty: {:?}", equipped.is_empty());
+
+        self.try_unequip_weapon().await?;
+
+        let game_id = self.try_get_active_game_id().await?;
+
+        let sk_factory = SortKeyFactory::new(&self.user_id);
+
+        let sk = sk_factory
+            .create_equipped_state_weapon_sk(
+                &game_id,
+                Entity::Player,
+                EquippedStateSortKey::Equipped,
+            )
+            .build();
+
+        let update_item: Item =
+            serde_dynamo::to_item(&item).map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+
+        self.try_generic_update(&self.user_id, &sk, update_item)
+            .await?;
+
+        Ok(item)
     }
 
     pub async fn try_save_new_game_state(&self) -> Result<(), Error> {
@@ -401,7 +643,7 @@ impl Store {
         info!("Sk: {}", sk);
 
         let res = self
-            .try_generic_begins_with_query(self.user_id.to_string(), sk, vec!["text", "name"])
+            .try_generic_begins_with_query(self.user_id.to_string(), &sk, vec!["text", "name"])
             .await?;
 
         debug!("Begins with query response: {:?}", res);
