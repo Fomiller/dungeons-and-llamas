@@ -187,7 +187,7 @@ impl EquipItemCmd {
 
         let store = Store::new(user_id);
 
-        let res = store.await.try_equip_item(item_id).await?;
+        let res = store.await.try_equip_weapon(item_id).await?;
 
         let content = format!("{} equipped", res.name);
         let message = CreateInteractionResponseMessage::new().content(content);
