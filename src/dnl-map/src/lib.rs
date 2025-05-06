@@ -528,7 +528,71 @@ impl GameMap {
     }
 
     #[allow(dead_code)]
-    fn print(&self) {
+    pub fn as_discord_msg(&self) -> String {
+        let mut output = String::new();
+
+        for row in (0..self.rows).rev() {
+            for col in 0..self.cols {
+                if row == self.rows {
+                    // println!("Boss Row");
+                }
+                let cell_str = match self.get_value(row, col) {
+                    GameMapQueryResult::Value(e) => {
+                        if e.encounter_type == EncounterType::Boss {};
+                        let mut color = e.color;
+
+                        let red = Rgb::new(255, 0, 0);
+
+                        if row > 0 {
+                            // find all connections that have the same p2 as the current encounter
+                            let connections: Vec<&Connection> = self
+                                .connections
+                                .iter()
+                                .filter(|c| c.p2 == e.location)
+                                .collect();
+
+                            if connections.len() > 1 {
+                                for conn in connections.iter() {
+                                    if let GameMapQueryResult::Value(_) =
+                                        self.get_value(conn.p2.row, conn.p2.col)
+                                    {
+                                        color = red;
+                                    }
+                                }
+                            }
+                        } else {
+                            let origins: Vec<&Connection> = self
+                                .connections
+                                .iter()
+                                .filter(|c| c.p1 == e.location && e.location.row == 0)
+                                .collect();
+
+                            if origins.len() > 1 {
+                                for conn in origins.iter() {
+                                    if let GameMapQueryResult::Value(_) =
+                                        self.get_value(conn.p1.row, conn.p1.col)
+                                    {
+                                        let _color = red;
+                                    }
+                                }
+                            }
+                        }
+
+                        format!(" {} ", e.encounter_type.to_string())
+                    }
+                    GameMapQueryResult::NotPresent | GameMapQueryResult::OutOfBounds => {
+                        ":black_small_square:".to_string()
+                    }
+                };
+                output.push_str(&format!(" {} ", cell_str));
+            }
+            output.push_str("\n\n");
+        }
+        output
+    }
+
+    #[allow(dead_code)]
+    pub fn print(&self) {
         for row in (0..self.rows).rev() {
             for col in 0..self.cols {
                 if row == self.rows {

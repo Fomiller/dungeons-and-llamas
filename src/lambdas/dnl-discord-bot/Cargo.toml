@@ -20,6 +20,7 @@ dnl-dice = { path = "../../dnl-dice/" }
 dnl-sort-keys = { path = "../../dnl-sort-keys/" }
 dnl-store = { path = "../../dnl-store/" }
 dnl-types = { path = "../../dnl-types/" }
+dnl-map = { path = "../../dnl-map/" }
 
 anyhow = "1.0.89"
 async-trait = "0.1.88"

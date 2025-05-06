@@ -4,6 +4,7 @@ pub mod class;
 pub mod edit;
 pub mod embed;
 pub mod list_games;
+pub mod map;
 pub mod menu;
 pub mod new_game;
 pub mod resume_game;
@@ -20,6 +21,7 @@ use attack::*;
 use buttons::*;
 use class::*;
 use list_games::*;
+use map::*;
 use menu::*;
 use new_game::*;
 use resume_game::*;
@@ -63,6 +65,8 @@ pub enum SlashCommands {
     Attack(AttackCmd),
     #[strum(serialize = "settings", ascii_case_insensitive)]
     Settings(SettingsCmd),
+    #[strum(serialize = "map", ascii_case_insensitive)]
+    Map(MapCmd),
 }
 
 pub async fn try_handle_command_interaction(
@@ -85,6 +89,7 @@ pub async fn try_handle_command_interaction(
         SlashCommands::Scenario(cmd) => cmd.execute(interaction).await,
         SlashCommands::Attack(cmd) => cmd.execute(interaction).await,
         SlashCommands::Settings(cmd) => cmd.execute(interaction).await,
+        SlashCommands::Map(cmd) => cmd.execute(interaction).await,
     }?;
 
     Ok(res)

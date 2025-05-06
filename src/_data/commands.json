@@ -277,6 +277,11 @@
         "description": "List all games"
     },
     {
+        "name": "map",
+        "type": 1,
+        "description": "generate game map"
+    },
+    {
         "name": "settings",
         "type": 1,
         "description": "Change game settings",

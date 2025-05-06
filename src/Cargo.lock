@@ -1348,6 +1348,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "dnl-dice",
+ "dnl-map",
  "dnl-sort-keys",
  "dnl-store",
  "dnl-types",
