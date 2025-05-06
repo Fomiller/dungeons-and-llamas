@@ -49,6 +49,10 @@ deploy-lambdas: build-lambdas
 update-commands:
     aws s3 cp src/_data/commands.json s3://fomiller-dev-dungeons-and-llamas/data/commands.json
 
+test-map:
+    doppler run -- \
+    cargo test --manifest-path src/Cargo.toml -p dnl-map test_map_generation -- --nocapture
+
 bacon:
     bacon --project src/
     
