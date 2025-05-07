@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EncounterType {
-    #[strum(to_string = ":troll:")]
+    #[strum(to_string = ":crossed_swords:")]
     Monster,
     #[strum(to_string = ":skull:")]
     Boss,
