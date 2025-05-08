@@ -10,6 +10,7 @@ use crate::encounter::EncounterQuery;
 use crate::state_component::StateComponent;
 use crate::utils::QueryOutputToVec;
 
+use dnl_map::GameMap;
 use dnl_sort_keys::prelude::*;
 use dnl_types::api::request::NewGameData;
 use dnl_types::api::response::NewGameResponse;
@@ -445,8 +446,42 @@ impl Store {
         Ok(item)
     }
 
+    pub async fn try_save_new_map(&self) -> Result<(), Error> {
+        let game_id = self.try_get_active_game_id().await?;
+
+        let height = 10;
+        let width = 8;
+        let paths = 3;
+
+        let sk = RootSortKeyBuilder::create_map_sk(&game_id).build();
+
+        let game_map = match GameMap::generate(width, height, paths) {
+            Ok(map) => map,
+            Err(_) => {
+                panic!("Map failed to generate.")
+            }
+        };
+
+        let mut state_component: Item = serde_dynamo::to_item(StateComponent {
+            user_id: self.user_id.to_string(),
+            state_component: sk,
+            ..Default::default()
+        })
+        .map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+
+        let item: Item =
+            serde_dynamo::to_item(game_map).map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+
+        state_component.extend(item);
+
+        self.try_generic_put(state_component).await?;
+
+        Ok(())
+    }
+
     pub async fn try_save_new_game_state(&self) -> Result<(), Error> {
         let game_id = self.try_get_active_game_id().await?;
+
         let sk = RootSortKeyBuilder::create_state_sk(&game_id).build();
 
         let mut state_component: Item = serde_dynamo::to_item(StateComponent {
@@ -458,7 +493,7 @@ impl Store {
 
         let mut map = HashMap::new();
 
-        map.insert("round".to_string(), 1.to_string());
+        map.insert("round".to_string(), 0.to_string());
         map.insert("level".to_string(), 1.to_string());
         map.insert(
             "curr_encounter".to_string(),
@@ -590,6 +625,29 @@ impl Store {
         }
     }
 
+    pub async fn try_get_map(&self) -> Result<GameMap, Error> {
+        let game_id = self.try_get_active_game_id().await?;
+
+        info!("Game Id: {}", game_id);
+
+        let sk = RootSortKeyBuilder::create_map_sk(&game_id).build();
+
+        info!("GameMap Sk: {}", sk);
+
+        let res = self.try_generic_get(&sk).await?;
+
+        info!("get map res : {:?}", res);
+
+        let item = res.item.unwrap();
+
+        info!("item: {:?}", item);
+
+        let state: GameMap =
+            serde_dynamo::from_item(item).map_err(|e| Error::SerdeDynamo(e.to_string()))?;
+
+        Ok(state)
+    }
+
     pub async fn try_get_state(&self) -> Result<State, Error> {
         let game_id = self.try_get_active_game_id().await?;
 
@@ -599,7 +657,13 @@ impl Store {
 
         info!("GameState Sk: {}", sk);
 
-        let attributes = vec!["round", "level", "curr_encounter", "prev_encounter"];
+        let attributes = vec![
+            "round",
+            "level",
+            "curr_encounter",
+            "curr_encounter_id",
+            "prev_encounter",
+        ];
 
         let res = self.try_generic_query(sk.clone(), &attributes).await?;
 
@@ -773,6 +837,7 @@ impl Store {
         self.try_generic_batch_update(update_items).await?;
         self.try_save_active_game_id(&game_id).await?;
         self.try_save_new_game_state().await?;
+        self.try_save_new_map().await?;
         self.try_save_game_settings(&game_id, settings).await?;
 
         Ok(NewGameResponse { game_id })

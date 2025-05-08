@@ -1,6 +1,7 @@
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Rgb {
     pub r: u8,
     pub g: u8,

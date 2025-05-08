@@ -201,11 +201,18 @@ impl MapEventCmd {
 
         let state = store.try_get_state().await?;
 
+        let map = store.try_get_map().await?;
+
         let round: usize = state.round.unwrap().parse()?;
         println!("ROUND: {}", round);
 
         let new_round = round + 1;
         println!("NEW ROUND: {}", new_round);
+
+        let curr_encounter = map
+            .get_row_values(round)
+            .into_iter()
+            .find(|&e| e.id.to_string() == self.id);
 
         let mut updates = HashMap::new();
 
@@ -213,6 +220,36 @@ impl MapEventCmd {
             "round".to_string(),
             AttributeValue::S(new_round.to_string()),
         );
+
+        updates.insert(
+            "curr_encounter_id".to_string(),
+            AttributeValue::S(self.id.clone()),
+        );
+
+        updates.insert(
+            "curr_encounter".to_string(),
+            AttributeValue::S(format!("{:?}", curr_encounter.unwrap().encounter_type)),
+        );
+
+        if round > 0 {
+            updates.insert(
+                "prev_encounter".to_string(),
+                AttributeValue::S(
+                    state
+                        .curr_encounter
+                        .expect("curr_encounter should not be none"),
+                ),
+            );
+
+            updates.insert(
+                "prev_encounter_id".to_string(),
+                AttributeValue::S(
+                    state
+                        .curr_encounter_id
+                        .expect("curr_encounter_id should not be none"),
+                ),
+            );
+        }
 
         store.try_update_state(updates).await?;
 

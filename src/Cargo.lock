@@ -1432,6 +1432,7 @@ dependencies = [
  "ansi_term",
  "anyhow",
  "rand",
+ "serde",
  "strum",
  "uuid",
 ]
@@ -1440,6 +1441,7 @@ dependencies = [
 name = "dnl-sort-keys"
 version = "0.1.0"
 dependencies = [
+ "dnl-map",
  "serde",
  "strum",
 ]
@@ -1451,6 +1453,7 @@ dependencies = [
  "anyhow",
  "aws-config",
  "aws-sdk-dynamodb",
+ "dnl-map",
  "dnl-sort-keys",
  "dnl-types",
  "lambda_http",
@@ -4289,6 +4292,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
 dependencies = [
  "getrandom",
+ "serde",
 ]
 
 [[package]]

@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 dnl-types = { path = "../dnl-types/" }
 dnl-sort-keys = { path = "../dnl-sort-keys/" }
+dnl-map = {path = "../dnl-map/"}
+
 anyhow = "1.0.89"
 aws-config = "1.5.8"
 aws-sdk-dynamodb = "1.49.0"

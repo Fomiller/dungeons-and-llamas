@@ -9,10 +9,11 @@ use ansi_term::Color;
 use color::Rgb;
 use rand::seq::SliceRandom;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use std::usize;
 use uuid::Uuid;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameMap {
     rows: usize,
     cols: usize,

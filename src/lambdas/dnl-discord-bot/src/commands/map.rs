@@ -18,81 +18,78 @@ impl MapCmd {
         &self,
         cmd: CommandInteraction,
     ) -> anyhow::Result<Option<CreateInteractionResponse>> {
-        let height = 10;
-        let width = 8;
-        let paths = 3;
+        let store = Store::new(&cmd.user.id.to_string()).await;
 
-        let map = match GameMap::generate(width, height, paths) {
-            Ok(map) => map,
-            Err(_) => {
-                panic!("Map failed to generate.")
-            }
-        };
+        let state = store.try_get_state().await?;
 
-        // let token =
-        //     std::env::var("DISCORD_BOT_TOKEN").expect("Expected a token in the environment");
+        println!("Got state");
 
-        // let http = Http::new(&token);
-        //
-        // http.set_application_id(cmd.application_id);
-        //
-        // cmd.defer(&http).await.context("Failed to defer command")?;
+        let round = state.round.unwrap().parse()?;
+
+        let map = store.try_get_map().await?;
+
+        println!("Got state");
 
         let content = format!("{}", map.as_discord_msg());
 
         println!("{}", content);
 
-        let store = Store::new(&cmd.user.id.to_string()).await;
-
-        let state = store.try_get_state().await?;
-
-        let round = state.round.unwrap().parse()?;
         println!("ROUND: {}", round);
-
-        let events = map.get_row_values(round);
-
-        println!("EVENTS: {:?}", events);
 
         let mut buttons = Vec::new();
 
-        for event in events.clone() {
-            buttons.push(
-                CreateButton::new(
-                    Component::Button(ButtonType::MapEvent(event.id.to_string())).to_string(),
-                )
-                .style(ButtonStyle::Primary)
-                .label(format!("{:?}", &event.encounter_type).to_lowercase()),
-            );
-        }
+        if let Some(curr_encounter_id) = state.curr_encounter_id {
+            let events = map.get_row_values(round);
 
-        let components = CreateActionRow::Buttons(buttons);
+            println!("EVENTS: {:?}", events);
 
-        let events_2 = map.get_row_values(round + 1);
+            for event in events {
+                let current_location = map
+                    .get_row_values(round - 1)
+                    .iter()
+                    .find(|e| e.id.to_string() == curr_encounter_id)
+                    .unwrap()
+                    .location;
 
-        println!("EVENTS_2: {:?}", events_2);
+                if event.parent.unwrap() == current_location {
+                    println!("Has parent");
+                    buttons.push(
+                        CreateButton::new(
+                            Component::Button(ButtonType::MapEvent(event.id.to_string()))
+                                .to_string(),
+                        )
+                        .style(ButtonStyle::Primary)
+                        .label(format!("{:?}", &event.encounter_type).to_lowercase()),
+                    );
+                } else if [
+                    current_location.col - 1,
+                    current_location.col,
+                    current_location.col + 1,
+                ]
+                .contains(&event.location.col)
+                {
+                    println!("valid next position");
+                    println!("EVENT: {:?}", event);
 
-        let mut buttons_2 = Vec::new();
-
-        for event in events_2 {
-            let current_location = events.clone()[0].location;
-            if event.parent.unwrap() == current_location {
-                println!("Has parent");
-                buttons_2.push(
-                    CreateButton::new(
+                    let button = CreateButton::new(
                         Component::Button(ButtonType::MapEvent(event.id.to_string())).to_string(),
                     )
                     .style(ButtonStyle::Primary)
-                    .label(format!("{:?}", &event.encounter_type).to_lowercase()),
-                );
-            } else if [
-                current_location.col - 1,
-                current_location.col,
-                current_location.col + 1,
-            ]
-            .contains(&event.location.col)
-            {
-                println!("valid next position");
-                buttons_2.push(
+                    .label(format!("{:?}", &event.encounter_type).to_lowercase());
+
+                    println!("BUTTON: {:?}", button);
+
+                    buttons.push(button);
+                    println!("hello")
+                }
+            }
+        } else {
+            let events = map.get_row_values(round);
+
+            println!("EVENTS: {:?}", events);
+
+            for event in events.clone() {
+                buttons.push(
                     CreateButton::new(
                         Component::Button(ButtonType::MapEvent(event.id.to_string())).to_string(),
                     )
@@ -101,20 +98,19 @@ impl MapCmd {
                 );
             }
         }
+        println!("BUTTONs: {:?}", buttons);
 
-        let components_2 = CreateActionRow::Buttons(buttons_2);
+        let components = CreateActionRow::Buttons(buttons);
+
+        println!("Components {:?}", components);
 
         let message = CreateInteractionResponseMessage::new()
             .content(content)
-            .components(vec![components, components_2]);
+            .components(vec![components]);
+
+        println!("Message {:?}", message);
 
         let res = CreateInteractionResponse::Message(message);
-
-        // let message = CreateInteractionResponseFollowup::new().content(content);
-
-        // let res = cmd.create_followup(&http, message).await?;
-
-        // println!("{:?}", res);
 
         Ok(Some(res))
     }

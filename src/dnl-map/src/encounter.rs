@@ -1,8 +1,21 @@
 use super::color::Rgb;
 use super::connection::Point;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Copy, strum::Display, strum::EnumIter, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Serialize,
+    Deserialize,
+    strum::Display,
+    strum::EnumIter,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+)]
 pub enum EncounterType {
     #[strum(to_string = ":crossed_swords:")]
     Monster,
@@ -22,7 +35,7 @@ pub enum EncounterType {
     None,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Encounter {
     pub encounter_type: EncounterType,
     pub visited: bool,

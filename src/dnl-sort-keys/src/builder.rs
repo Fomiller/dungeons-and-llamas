@@ -54,6 +54,12 @@ impl RootSortKeyBuilder {
             .state(StateSortKey::GameState)
     }
 
+    pub fn create_map_sk(id: &str) -> RootSortKeyBuilder {
+        RootSortKeyBuilder::new()
+            .id(id)
+            .state(StateSortKey::GameMap)
+    }
+
     pub fn create_inventory_sk(
         id: String,
         inventory: InventorySortKeyBuilder,

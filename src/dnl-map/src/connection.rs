@@ -1,10 +1,12 @@
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {
     pub row: usize,
     pub col: usize,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Connection {
     pub p1: Point,
     pub p2: Point,
