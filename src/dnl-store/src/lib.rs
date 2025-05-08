@@ -619,7 +619,10 @@ impl Store {
         &self,
         updates: HashMap<String, AttributeValue>,
     ) -> Result<UpdateItemOutput, Error> {
-        let sk = RootSortKeyBuilder::create_state_sk(&self.user_id).build();
+        let game_id = self.try_get_active_game_id().await?;
+
+        let sk = RootSortKeyBuilder::create_state_sk(&game_id).build();
+        println!("SK: {:?}", sk);
 
         let res = self.try_generic_update(&self.user_id, &sk, updates).await?;
 

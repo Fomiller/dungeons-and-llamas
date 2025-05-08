@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use aws_sdk_dynamodb::types::AttributeValue;
 use dnl_store::Store;
 use lambda_http::tracing::info;
 use serenity::builder::*;
@@ -15,6 +18,7 @@ pub async fn try_handle_component_interaction(
         ComponentCustomId::RaceMenu(cmd) => cmd.execute(),
         ComponentCustomId::EquipItem(cmd) => cmd.execute(interaction).await,
         ComponentCustomId::BuyItem(cmd) => cmd.execute().await,
+        ComponentCustomId::MapEvent(cmd) => cmd.execute(interaction).await,
         ComponentCustomId::Unknown(cmd) => cmd.execute().await,
     }
 }
@@ -33,6 +37,11 @@ pub struct BackGroundSelectMenuCmd;
 
 #[derive(Debug, PartialEq, Default)]
 pub struct BuyItemCmd {
+    id: String,
+}
+
+#[derive(Debug, PartialEq, Default)]
+pub struct MapEventCmd {
     id: String,
 }
 
@@ -64,6 +73,8 @@ pub enum MenuType {
 
 #[derive(Debug, PartialEq, strum::Display)]
 pub enum ButtonType {
+    #[strum(to_string = "map_event_{0}")]
+    MapEvent(String),
     #[strum(to_string = "equip_item_{0}")]
     EquipItem(usize),
     #[strum(to_string = "buy_item_{0}")]
@@ -77,6 +88,7 @@ pub enum ComponentCustomId {
     BackGroundMenu(BackGroundSelectMenuCmd),
     EquipItem(EquipItemCmd),
     BuyItem(BuyItemCmd),
+    MapEvent(MapEventCmd),
     Unknown(UnknownCmd),
 }
 
@@ -99,6 +111,10 @@ impl From<&str> for ComponentCustomId {
                 })
             } else if let Some(item_id) = id_stripped.strip_prefix("equip_item_") {
                 ComponentCustomId::EquipItem(EquipItemCmd {
+                    id: item_id.to_string(),
+                })
+            } else if let Some(item_id) = id_stripped.strip_prefix("map_event_") {
+                ComponentCustomId::MapEvent(MapEventCmd {
                     id: item_id.to_string(),
                 })
             } else {
@@ -171,6 +187,40 @@ impl BackGroundSelectMenuCmd {
 impl BuyItemCmd {
     pub async fn execute(&self) -> anyhow::Result<Option<CreateInteractionResponse>> {
         let content = format!("Buy item custom_id for component interaction: {}", self.id);
+        let message = CreateInteractionResponseMessage::new().content(content);
+        Ok(Some(CreateInteractionResponse::Message(message)))
+    }
+}
+
+impl MapEventCmd {
+    pub async fn execute(
+        &self,
+        interaction: ComponentInteraction,
+    ) -> anyhow::Result<Option<CreateInteractionResponse>> {
+        let store = Store::new(&interaction.user.id.to_string()).await;
+
+        let state = store.try_get_state().await?;
+
+        let round: usize = state.round.unwrap().parse()?;
+        println!("ROUND: {}", round);
+
+        let new_round = round + 1;
+        println!("NEW ROUND: {}", new_round);
+
+        let mut updates = HashMap::new();
+
+        updates.insert(
+            "round".to_string(),
+            AttributeValue::S(new_round.to_string()),
+        );
+
+        store.try_update_state(updates).await?;
+
+        let content = format!(
+            "Selected Event custom_id for component interaction: {}",
+            self.id
+        );
+
         let message = CreateInteractionResponseMessage::new().content(content);
         Ok(Some(CreateInteractionResponse::Message(message)))
     }

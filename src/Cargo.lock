@@ -1347,6 +1347,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "aws-sdk-dynamodb",
  "dnl-dice",
  "dnl-map",
  "dnl-sort-keys",
