@@ -46,6 +46,9 @@ jobs:
   Deploy-infra:
     name: 'Deploy Infra'
     needs: [Pre-check, Build-Rust-Lambdas]
+    permissions:
+      id-token: write
+      contents: read
     uses: fomiller/gh-actions/.github/workflows/terragrunt.yaml@main
     with:
       environment: ${{ contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref) && 'prod' || 'dev' }}
@@ -53,6 +56,7 @@ jobs:
       doppler-project: dungeons-and-llamas
       download-artifacts: true
       artifacts_dir: infra/modules/aws/lambda/bin
+      use-oidc: true
     secrets: inherit
      
     
