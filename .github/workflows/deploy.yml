@@ -2,18 +2,10 @@
 
 name: 'Terragrunt Deploy'
   
+# Manual only. This repo isn't deployed anymore and its AWS infra is being torn
+# down (FOM-132), so a push must not apply terraform.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "develop"
-      - "feature/*"
-    paths:
-      - '.github/**'
-      - 'infra/**'
-      - 'src/**'
-      - 'just/**'
-      - 'justfile'
    
 jobs:
   Pre-check:
